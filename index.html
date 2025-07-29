@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Dynamic SQL Builder Dashboard</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+  <!-- Your dynamic viewmodel.js will be loaded here -->
+  <script src="viewmodel.js"></script>
+  <script>
+$(function() {
+  // Auto-select "date" in dropdown if field name includes "date"
+  $('#keyfieldNameInput').on('keyup', function() {
+    var val = $(this).val();
+    if (/date/i.test(val)) {
+      $('#keyfieldTypeInput').val('date');
+    } else {
+      $('#keyfieldTypeInput').val('text');
+    }
+  });
+});
+</script>
+
+  <style>
+    body { padding-top: 1rem; }
+    h2 { margin-top: 2rem; }
+    .instruction-box {
+      background: #f1f7ff;
+      border-left: 4px solid #007bff;
+      padding: .75rem;
+      margin-bottom: 1rem;
+    }
+    .list-container {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      height: 200px;
+      overflow-y: auto;
+      margin-top: .5rem;
+      margin-bottom: 1rem;
+      padding: 0;
+    }
+    .list-group-item-action { cursor: pointer; }
+    .list-group-item.active { background-color: #007bff; color: #fff; }
+    .mb-5 { margin-bottom: 3rem!important; }
+    .mb-4 { margin-bottom: 1.5rem!important; }
+    .mb-3 { margin-bottom: 1rem!important; }
+    .mb-2 { margin-bottom: .5rem!important; }
+  </style>
+</head>
+<body class="container">
+
+  <h1>SQL Builder Dashboard v1.0</h1>
+  <div class="instruction-box mb-4">
+    <b>Welcome!</b> This tool helps you build self-maintaining, dynamic dashboards for Softdocs Content.<br>
+    <ul class="mt-2">
+      <li>Auto-discovers all linked party/person/entity fields (no technical FieldIDs needed)</li>
+      <li>Works from real Content metadata, not unfinished forms</li>
+      <li>Minimal steps - clear guidance and instant live preview</li>
+      <li>Do Not Change Anything Unless Specified</li>
+    </ul>
+    <b>Tip:</b> Start with a flexible baseline. Always include fields like Document Link, Name(s), and Status for adaptability.
+  </div>
+
+  <!-- STEP 1: NAME INTEGRATION -->
+  <h2>Step 1: Name Your Softdocs Integration Source</h2>
+  <div class="instruction-box">
+    Enter a clear, unique name. Avoid spaces and special characters.<br>
+    <b>Example:</b> <code>myDashboardIntegration</code> <br>
+    <b>Note:</b> This name must exactly match what you provide in Softdocs when creating the integration.  <br> Go to Central -> Admin Settings -> Sources, Add New Source, name your source the same as here, set the schema to dbo, and set the connection to Etrieve Content.
+  </div>
+  <input id="integrationNameInput" class="form-control mb-3" placeholder="e.g. myDashboardIntegration">
+
+  <!-- STEP 2: CHOOSE AREAS -->
+  <h2>Step 2: Choose Content Areas</h2>
+  <div class="instruction-box">
+    Click "Load Areas" to fetch available Content Areas (such as departments or programs).
+    <br>
+    <b>Tip:</b> These are the top-level groupings in your Content system.
+  </div>
+  <button id="loadAreasBtn" class="btn btn-primary mb-3">Load Areas</button>
+  <div class="row mb-5">
+    <div class="col-md-6">
+      <h5>Available Areas</h5>
+      <div class="list-container">
+        <ul id="availableAreas" class="list-group"></ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <h5>Selected Areas</h5>
+      <div class="list-container">
+        <ul id="selectedAreas" class="list-group"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: CHOOSE DOCUMENT TYPES -->
+  <h2>Step 3: Choose Document Types</h2>
+  <div class="instruction-box">
+    Choose one or more document types for your dashboard (for example: "Transcript", "Key Request").<br>
+    <b>After this, all linked party/person/entity fields will be discovered automatically for you!</b>
+  </div>
+  <div class="row mb-5">
+    <div class="col-md-6">
+      <h5>Available Document Types</h5>
+      <div class="list-container">
+        <ul id="availableDocTypes" class="list-group"></ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <h5>Selected Document Types</h5>
+      <div class="list-container">
+        <ul id="selectedDocTypes" class="list-group"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: SELECT PARTY FIELDS (Auto-Discovered) -->
+  <h2>Step 4: Choose Person/Entity Fields</h2>
+  <div class="instruction-box">
+    <b>All available party/person/entity fields will appear below (auto-discovered from your document type choices).</b>
+    <br>Select the fields you want to show as columns, or filter/group by (examples: Student, Institution, Faculty, School, etc.).
+    <br><b>No technical FieldIDs required!</b>
+    <br>Tip: You can select multiple fields; rename columns later for clarity.
+  </div>
+  <div class="list-container mb-3">
+    <ul id="discoveredPartyFields" class="list-group"></ul>
+  </div>
+
+<!-- STEP 4b: ADD ADDITIONAL KEYFIELDS -->
+<h2>Step 4b: Add Additional Keyfields</h2>
+<div class="instruction-box">
+  Enter the <b>Field ID</b> and <b>Field Name</b> for each additional document field (not a person/entity lookup) you want in your dashboard.<br>
+  <ul>
+    <li><b>Field ID:</b> Numeric Softdocs FieldID (e.g. "15" for Status, "11" for Term, etc.)</li>
+    <li><b>Field Name:</b> Friendly name for users (e.g. "Term", "Transcript Status", "Doc Owner")</li>
+  </ul>
+  <b>Tip:</b> These are usually dropdowns, statuses, dates, or owner fields from your document form.
+</div>
+<div class="row mb-5">
+  <div class="col-md-5">
+    <h5 class="mb-2">Add New Keyfield</h5>
+    <input id="keyfieldIdInput" class="form-control mb-2" placeholder="Field ID (e.g. 15)">
+<input id="keyfieldNameInput" class="form-control mb-2" placeholder="Field Name (e.g. Transcript Status)">
+<select id="keyfieldTypeInput" class="form-control mb-2">
+  <option value="text">Text</option>
+  <option value="date">Date</option>
+</select>
+<button id="addKeyfieldBtn" class="btn btn-info mb-2">Add Keyfield</button>
+
+  </div>
+  <div class="col-md-7">
+    <h5 class="mb-2">Selected Keyfields</h5>
+    <div class="list-container">
+      <ul id="selectedKeyfields" class="list-group"></ul>
+    </div>
+  </div>
+</div>
+
+
+
+  <!-- STEP 5: EXIT STATUS -->
+  <h2>Step 5: Define Completion/Exit Status</h2>
+  <div class="instruction-box">
+    Select a discovered field and the value which marks a document as "complete" or "processed."<br>
+    <b>Best Practice:</b> Automate hiding by status, never manually remove rows.
+  </div>
+  <div class="row mb-5">
+    <div class="col-md-4">
+      <select id="exitStatusFieldSelect" class="form-control mb-2">
+        <option disabled selected>Choose Field</option>
+      </select>
+      <input id="exitStatusValueInput" class="form-control mb-2" placeholder="Exit/Completion Value (e.g. Complete)">
+    </div>
+    <div class="col-md-8">
+      <div class="alert alert-secondary">
+        Any document where this field matches this value will be hidden from all swimlanes.
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6: DEFINE SWIMLANES -->
+  <h2>Step 6: Define Swimlanes</h2>
+  <div class="instruction-box">
+    Organize your dashboard by logical groups (status, type, or any discovered field).
+    <ul>
+      <li>Name each swimlane (e.g., "High School", "Pending", "Completed")</li>
+      <li>Select one or more document types per swimlane</li>
+      <li>(Optional) Choose a discovered field and match value to filter into this swimlane</li>
+    </ul>
+    <b>Tip:</b> Swimlanes make dashboards easier to use and more readable.
+  </div>
+  <div class="row mb-5">
+    <div class="col-md-4">
+      <input id="swimlaneNameInput" class="form-control mb-2" placeholder="Swimlane Name">
+      <select id="swimlaneDocTypesSelect" class="form-control mb-2" multiple size="6"></select>
+      <select id="swimlaneFieldSelect" class="form-control mb-2">
+        <option value="">(Optional) Field</option>
+      </select>
+      <input id="swimlaneValueInput" class="form-control mb-2" placeholder="(Optional) Value to match">
+      <button id="addSwimlaneBtn" class="btn btn-info mb-2">Add Swimlane</button>
+    </div>
+    <div class="col-md-8">
+      <h5>Defined Swimlanes</h5>
+      <div class="list-container">
+        <ul id="selectedSwimlanes" class="list-group"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7: CHOOSE COLUMNS -->
+  <h2>Step 7: Choose Columns</h2>
+  <div class="instruction-box">
+    Click any column below to add or remove it from your dashboard view. You can reorder columns for your users’ convenience.<br>
+    <b>Tip:</b> Use friendly, descriptive names for clarity. All discovered fields are available.
+  </div>
+  <div class="row mb-5">
+    <div class="col-md-6">
+      <h5>Available Columns</h5>
+      <div class="list-container">
+        <ul id="availableColumns" class="list-group"></ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <h5>Selected Columns</h5>
+      <div class="list-container">
+        <ul id="selectedColumns" class="list-group"></ul>
+      </div>
+    </div>
+  </div>
+  
+  <!-- STEP 8: FILTER BY DOCUMENT DATE -->
+  <h2>Step 8: Filter by Document Date</h2>
+  <div class="instruction-box">
+    Optionally filter documents by when they were created.<br>
+    Enter a specific start date or choose a relative time range (past 3, 6, 12, or 24 months). Only one will be used.
+  </div>
+  <div class="row mb-5">
+    <div class="col-md-6">
+      <label for="startDateInput">Start Date (optional):</label>
+      <input id="startDateInput" class="form-control mb-3" type="date">
+    </div>
+    <div class="col-md-6">
+      <label for="dateRangeSelect">Or select a relative range:</label>
+      <select id="dateRangeSelect" class="form-control mb-3">
+        <option value="">-- None --</option>
+        <option value="3">Last 3 months</option>
+        <option value="6">Last 6 months</option>
+        <option value="12">Last 12 months</option>
+        <option value="24">Last 24 months</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- STEP 9: BUILD SQL -->
+  <h2>Step 9: Build SQL</h2>
+  <div class="instruction-box">
+    Click "Build SQL" to generate your dynamic SQL for Softdocs. You can share this query with your Softdocs admin!
+    <ul>
+      <li>Review which document types and discovered fields are included</li>
+      <li>Dynamic queries update as new values are added to your Content system</li>
+      <li>If unsure, copy and share the SQL with your Softdocs technical lead</li>
+    </ul>
+  </div>
+  <button id="buildSqlBtn" class="btn btn-secondary mb-3">Build SQL</button>
+  <pre id="sqlOutput" class="bg-light p-2 mb-4" style="min-height:4em"></pre>
+
+<!-- STEP 10: Generate Dashboard Index File -->
+<h2>Step 10: Generate Dashboard Index File</h2>
+<div class="instruction-box">
+  Enter your dashboard title and subtitle, then generate <code>index.html</code> for your dashboard.
+</div>
+<div class="form-group mb-2">
+  <input id="dashboardTitleInput" class="form-control mb-2" placeholder="Dashboard Title">
+  <input id="dashboardSubtitleInput" class="form-control mb-2" placeholder="Dashboard Subtitle">
+</div>
+<button id="generateIndexBtn" class="btn btn-primary mb-4">Generate index.html</button>
+
+
+<!-- STEP 11: Generate Config -->
+<h2>Step 11: Generate Config File</h2>
+<div class="instruction-box mb-2">
+  Click to generate <code>config.js</code> reflecting your dashboard selections.
+</div>
+<div class="form-group mb-3">
+  <label for="contentUrlInput" class="font-weight-bold">Content URL</label>
+  <input type="text" id="contentUrlInput" class="form-control" placeholder="e.g. https://<your-institution>content.etrieve.cloud" />
+  <small class="form-text text-muted">
+    Enter the base URL where the dashboard will be hosted.<br>
+    If left blank, you will be prompted before generation.
+  </small>
+</div>
+<button id="generateConfigBtn" class="btn btn-info mb-4">Generate config.js</button>
+
+<!-- STEP 12: Generate ViewModel -->
+<h2>Step 12: Generate ViewModel File</h2>
+<div class="instruction-box mb-2">
+  Click to generate <code>viewmodel.js</code> for dashboard operation.
+</div>
+<button id="generateViewModelBtn" class="btn btn-success mb-5">Generate viewmodel.js</button>
+
+
+  <!-- Tips and Live Preview stay the same -->
+  <h2>Tips for Effective Dashboards</h2>
+  <div class="instruction-box">
+    <ul>
+      <li><b>Start with a flexible baseline:</b> Always include core fields like link, names, and status</li>
+      <li><b>Never hardcode values if you can avoid it</b></li>
+      <li><b>Use clear, descriptive labels for columns</b></li>
+      <li><b>Share your dashboard early and gather user feedback</b></li>
+      <li><b>Use AI to brainstorm SQL, logic, or field labels!</b></li>
+    </ul>
+    <b>For more details, see the in-file help and comments in config.js.</b>
+  </div>
+
+
+
+</body>
+</html>
