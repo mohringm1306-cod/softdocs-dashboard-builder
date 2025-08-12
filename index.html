@@ -10,11 +10,13 @@
   <script src="viewmodel.js"></script>
   <script>
 $(function() {
-  // Auto-select "date" in dropdown if field name includes "date"
+  // Auto-select type based on name heuristics
   $('#keyfieldNameInput').on('keyup', function() {
-    var val = $(this).val();
+    const val = $(this).val();
     if (/date/i.test(val)) {
       $('#keyfieldTypeInput').val('date');
+    } else if (/\$|amount|total|balance|fee|cost|price|tuition|payment/i.test(val)) {
+      $('#keyfieldTypeInput').val('money');
     } else {
       $('#keyfieldTypeInput').val('text');
     }
@@ -46,6 +48,49 @@ $(function() {
     .mb-4 { margin-bottom: 1.5rem!important; }
     .mb-3 { margin-bottom: 1rem!important; }
     .mb-2 { margin-bottom: .5rem!important; }
+    
+    /* Docked Preview Styles */
+    #dashboardPreviewDock {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+      background: #fff;
+      border-top: 2px solid #007bff;
+      box-shadow: 0 -2px 14px rgba(0,0,0,0.18);
+      max-height: 50vh;
+      overflow-y: auto;
+      transition: max-height 0.3s;
+    }
+    #dashboardPreviewDock.minimized {
+      max-height: 36px;
+      overflow: hidden;
+    }
+    #dashboardPreviewDock .dock-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 16px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+      cursor: pointer;
+      user-select: none;
+    }
+    #dashboardPreviewDock .dock-header strong {
+      font-size: 1.15em;
+    }
+    #dashboardPreviewDock .dock-content {
+      padding: 12px 16px;
+    }
+    #dashboardPreviewDock .min-btn {
+      background: none;
+      border: none;
+      font-size: 1.4em;
+      color: #555;
+      outline: none;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body class="container">
@@ -134,20 +179,21 @@ $(function() {
   <ul>
     <li><b>Field ID:</b> Numeric Softdocs FieldID (e.g. "15" for Status, "11" for Term, etc.)</li>
     <li><b>Field Name:</b> Friendly name for users (e.g. "Term", "Transcript Status", "Doc Owner")</li>
+    <li><b>Field Type:</b> Select Text, Date, or Money based on the field's data type</li>
   </ul>
-  <b>Tip:</b> These are usually dropdowns, statuses, dates, or owner fields from your document form.
+  <b>Tip:</b> These are usually dropdowns, statuses, dates, amounts, or owner fields from your document form.
 </div>
 <div class="row mb-5">
   <div class="col-md-5">
     <h5 class="mb-2">Add New Keyfield</h5>
     <input id="keyfieldIdInput" class="form-control mb-2" placeholder="Field ID (e.g. 15)">
-<input id="keyfieldNameInput" class="form-control mb-2" placeholder="Field Name (e.g. Transcript Status)">
-<select id="keyfieldTypeInput" class="form-control mb-2">
-  <option value="text">Text</option>
-  <option value="date">Date</option>
-</select>
-<button id="addKeyfieldBtn" class="btn btn-info mb-2">Add Keyfield</button>
-
+    <input id="keyfieldNameInput" class="form-control mb-2" placeholder="Field Name (e.g. Transcript Status)">
+    <select id="keyfieldTypeInput" class="form-control mb-2">
+      <option value="text">Text</option>
+      <option value="date">Date</option>
+      <option value="money">Money</option>
+    </select>
+    <button id="addKeyfieldBtn" class="btn btn-info mb-2">Add Keyfield</button>
   </div>
   <div class="col-md-7">
     <h5 class="mb-2">Selected Keyfields</h5>
@@ -156,8 +202,6 @@ $(function() {
     </div>
   </div>
 </div>
-
-
 
   <!-- STEP 5: EXIT STATUS -->
   <h2>Step 5: Define Completion/Exit Status</h2>
@@ -211,7 +255,7 @@ $(function() {
   <!-- STEP 7: CHOOSE COLUMNS -->
   <h2>Step 7: Choose Columns</h2>
   <div class="instruction-box">
-    Click any column below to add or remove it from your dashboard view. You can reorder columns for your users’ convenience.<br>
+    Click any column below to add or remove it from your dashboard view. You can reorder columns for your users' convenience.<br>
     <b>Tip:</b> Use friendly, descriptive names for clarity. All discovered fields are available.
   </div>
   <div class="row mb-5">
@@ -276,7 +320,6 @@ $(function() {
 </div>
 <button id="generateIndexBtn" class="btn btn-primary mb-4">Generate index.html</button>
 
-
 <!-- STEP 11: Generate Config -->
 <h2>Step 11: Generate Config File</h2>
 <div class="instruction-box mb-2">
@@ -299,7 +342,6 @@ $(function() {
 </div>
 <button id="generateViewModelBtn" class="btn btn-success mb-5">Generate viewmodel.js</button>
 
-
   <!-- Tips and Live Preview stay the same -->
   <h2>Tips for Effective Dashboards</h2>
   <div class="instruction-box">
@@ -312,8 +354,6 @@ $(function() {
     </ul>
     <b>For more details, see the in-file help and comments in config.js.</b>
   </div>
-
-
 
 </body>
 </html>
