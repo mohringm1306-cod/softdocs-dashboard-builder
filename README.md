@@ -1,102 +1,172 @@
-
 # Softdocs Dashboard Builder
 
-A hands-on toolkit and guide for creating powerful dashboards in Softdocs Etrieve—no coding experience required!
+A hands-on toolkit and guide for creating powerful dashboards in Softdocs Etrieve—no deep coding experience required.
 
-## What Is This?
+---
 
-This project helps College of DuPage staff and session attendees build real, flexible dashboards for Softdocs Etrieve Content. Dashboards let you track, sort, and export data from completed documents—quickly and visually—without touching in-progress forms or changing any records.
+## 📌 What Is This?
+
+This project helps College of DuPage staff and session attendees build flexible dashboards for Softdocs Etrieve Content. Dashboards let you **track, filter, and export** data from completed documents—quickly and visually—without touching in-progress forms or altering stored records.
 
 **Dashboards provide:**
-- Fast, organized views of your documents (by type, status, date, etc.)
-- Export to Excel or PDF
-- Filters and swim lanes (side-by-side trays)
-- Collaboration and transparency—multiple users can view at once
 
-Dashboards **do NOT**:
-- Change or update document data
-- Show forms/workflows that are still in progress
+* Fast, organized views of documents (by type, status, date, etc.)
+* Export to Excel or PDF
+* Filters, swim lanes, and sortable trays
+* Collaboration and transparency—multiple users can view at once
 
-## Why Build Dashboards?
+**Dashboards do *not*:**
 
-- **Efficiency:** Save hours by surfacing key information instantly—no more searching line by line.
-- **Accuracy:** Real-time, consistent data.
-- **Collaboration:** Multiple people can use dashboards at the same time.
-- **Flexibility:** Adapt quickly to new processes.
-- **Automation:** Enable reminders and notifications (using key fields).
+* Change or update document data
+* Show forms/workflows still in progress
 
-## How To Set Up Your Dashboard (Step by Step)
+---
 
-1. **Create These Three Sources in Etrieve Central**
+## 💡 Why Build Dashboards?
 
-Go to: *Etrieve Central → Admin Settings → Sources*  
-For each, click “Add New Source”, set Source Type to Database, and use the following names and SQL:
+* **Efficiency** – Surface key information instantly without line-by-line searches.
+* **Accuracy** – Always pull real-time, consistent data.
+* **Collaboration** – Multiple users can view simultaneously.
+* **Flexibility** – Adapt quickly to new or changing processes.
+* **Automation** – Enable reminders and notifications from key fields.
 
-**doctypesIntegration**  
+---
+
+## ⚙️ Setting Up Your Dashboard
+
+You’ll configure a few **database sources** in *Etrieve Central* so your dashboard can query the right data.
+
+### 1️⃣ Create These Sources in Etrieve Central
+
+Go to:
+**Central → Admin Settings → Sources → Add New Source → Type: Database**
+
+---
+
+**`doctypesIntegration`**
+
+```sql
 SELECT 
     d.DocumentTypeID,
     d.Name AS DocumentTypeName,
     cd.CatalogID
-FROM 
-    [dbo].[DocumentType] d
-LEFT JOIN 
-    [dbo].[CatalogDocumentType] cd ON d.DocumentTypeID = cd.DocumentTypeID
-ORDER BY 
-    d.Name;
+FROM dbo.DocumentType AS d
+LEFT JOIN dbo.CatalogDocumentType AS cd
+    ON d.DocumentTypeID = cd.DocumentTypeID
+ORDER BY d.Name;
+```
 
-**metadataIntegration**  
+---
+
+**`metadataIntegration`**
+
+```sql
 SELECT 
     CatalogID,
-    [Name] AS CatalogName
-    -- (Optionally include Description column)
-FROM [dbo].[Catalog]
-ORDER BY 
-    CatalogID;
+    Name AS CatalogName
+FROM dbo.Catalog
+ORDER BY CatalogID;
+```
 
-**partyFieldsIntegration**  
+---
+
+**`partyFieldsIntegration`**
+
+```sql
 SELECT DISTINCT
     dfpv.FieldID,
-    f.[Name] AS FieldName
-FROM 
-    [dbo].[Document] d
-INNER JOIN 
-    [dbo].[DocumentType] dt ON d.DocumentTypeID = dt.DocumentTypeID
-INNER JOIN
-    [dbo].[DocumentFieldPartyVersion] dfpv ON d.DocumentID = dfpv.DocumentID
-INNER JOIN
-    [dbo].[Field] f ON dfpv.FieldID = f.FieldID
-ORDER BY
-    f.[Name];
+    f.Name AS FieldName
+FROM dbo.Document AS d
+INNER JOIN dbo.DocumentType AS dt
+    ON d.DocumentTypeID = dt.DocumentTypeID
+INNER JOIN dbo.DocumentFieldPartyVersion AS dfpv
+    ON d.DocumentID = dfpv.DocumentID
+INNER JOIN dbo.Field AS f
+    ON dfpv.FieldID = f.FieldID
+ORDER BY f.Name;
+```
 
+---
 
-2. **Connect Your Sources to Your Dashboard Form**
+**`fieldListIntegration`** *(NEW – full field catalog with data type)*
 
-In *Etrieve Central → Admin Settings → Forms*:
-- Open the dashboard form you want to use.
-- Under “Connect > Available Sources,” search for your new integrations by name and add them.
-- Check “Get” for each one.
-- Check "run on origination" for each one.
+> Uses reporting views for read-only, cloud-safe access.
 
-3. **Configure Your Dashboard Files**
+```sql
+SELECT
+    f.FieldID,
+    f.Name AS FieldName,
+    f.Code,
+    dt.Name AS DataTypeName
+FROM reporting.content_dbo_Field AS f
+LEFT JOIN reporting.content_dbo_DataType AS dt
+    ON dt.DataTypeID = f.DataTypeID
+ORDER BY f.Name;
+```
 
-- In config.js, set integrationName to match each source you created.
-- Edit tray/column names to fit your process. Use friendly, plain-English labels.
-- Only touch viewmodel.js if you need to rename trays or set advanced logic—most users do not need to edit this file.
-- You can edit the title or logo in index.html if you want to rebrand your dashboard.
+---
 
-4. **Publish**
+**`fieldMetaIntegration`** *(NEW – lookup by FieldID(s))*
 
-## Tips for Success
+```sql
+-- Param: @FieldIds (NVARCHAR(MAX)), comma-separated list like '11,15,27'
+WITH ids AS (
+  SELECT TRY_CAST(value AS INT) AS FieldID
+  FROM STRING_SPLIT(@FieldIds, ',')
+)
+SELECT
+  f.FieldID,
+  f.Name AS FieldName,
+  dt.Name AS DataTypeName
+FROM reporting.content_dbo_Field AS f
+LEFT JOIN reporting.content_dbo_DataType AS dt
+    ON dt.DataTypeID = f.DataTypeID
+WHERE f.FieldID IN (SELECT FieldID FROM ids);
+```
 
-- **Start with a flexible baseline:** Add fields like Document Link, ID, Last Name, First Name, and Status so you can adapt for multiple uses.
-- **Don’t hardcode values:** Use dynamic SQL for status, semester, or other lists—no manual updates needed when new values are added.
-- **Use clear labels:** Rename technical or cryptic field names to be easy for anyone to understand.
-- **Get user feedback:** Show your dashboard to real users and make small, rapid improvements.
-- **Ask for help:** Your Softdocs admin or AI tools can help with SQL, troubleshooting, or dashboard design.
+---
 
-## License
+> **Permissions:** For each source, click into **Permissions** and grant your user group **Get** access. If you skip this, dashboard calls will return **403 Forbidden**.
 
-This project is licensed under the MIT License (LICENSE).
+---
+
+### 2️⃣ Attach Sources to Your Dashboard Form
+
+1. **Central → Admin Settings → Forms**
+2. Open your dashboard form.
+3. Under **Connect → Available Sources**, add each integration above.
+4. Check **Get** for each.
+5. (Optional) Check **Run on origination** if you want the data loaded immediately.
+
+---
+
+### 3️⃣ Configure Dashboard Files
+
+* **config.js** – Match integrationName variables to the Sources you created.
+* **index.html** – Optional rebranding (title, logo).
+* **viewmodel.js** – Only adjust if you need custom tray names, autopopulation, or advanced logic.
+
+---
+
+### 4️⃣ Publish
+
+Once all sources are in place and permissions set, publish your dashboard and load it in Etrieve Content.
+
+---
+
+## 🚀 Tips for Success
+
+* Start with a flexible baseline—include key fields like Document Link, ID, Last Name, First Name, and Status.
+* Use **dynamic SQL** for things like status or semester lists—avoid hardcoding.
+* Rename cryptic field names to user-friendly labels.
+* Get real user feedback early and adjust quickly.
+* Remember: **403 errors mean missing permissions or incorrect Source names**.
+
+---
+
+## 📜 License
+
+Licensed under the MIT License (LICENSE).
 
 ---
 
