@@ -1,10 +1,22 @@
-console.log('viewmodel.js loaded');
+/* builder viewmodel.js (v2.0) — COD Softdocs Dashboard
+   - Field Catalog with search (fieldListIntegration)
+   - Autopopulate keyfields by ID or Name
+   - Preserves areas, doc types, party discovery, SQL builder, preview
+*/
 
-// --- GLOBAL STATE --- //
+console.log('builder viewmodel.js loaded (v2.0)');
+
+// ---------- GLOBAL STATE / SOURCE NAMES ---------- //
 var integration;
-var areaIntegrationName = 'metadataIntegration';
-var docTypesIntegrationName = 'docTypesIntegration';
+
+// These must match Source names in Softdocs Central → Admin Settings → Sources
+var areaIntegrationName        = 'metadataIntegration';
+var docTypesIntegrationName    = 'docTypesIntegration';
 var partyFieldsIntegrationName = 'partyFieldsIntegration';
+var fieldMetaIntegrationName   = 'fieldMetaIntegration'; // single-ID resolver (fallback)
+var fieldsListIntegrationName  = 'fieldListIntegration'; // NEW: full catalog (FieldID, Name, Code, DataTypeName)
+
+// Selections / caches
 var selectedAreaIds = [];
 var selectedDocumentTypeIds = [];
 var allDocumentTypes = [];
@@ -18,106 +30,384 @@ var relativeMonthRange = null;
 var exitStatusField = null;
 var exitStatusValue = null;
 
-// --- PARTY FIELD EXPANSION HELPER --- //
-function expandPartyFieldToColumns(fieldName) {
-  // This must match your SQL builder's partyFieldMappings
-  var partyFieldMappings = {
-    'Student Info': [
-      { name: 'StudentID', fieldId: 25 },
-      { name: 'StudentFName', fieldId: 2 },
-      { name: 'StudentLName', fieldId: 4 }
-    ],
-    'Institutional Info': [
-      { name: 'InstitutionName', fieldId: 27 }
-    ]
-    // Add more if needed!
-  };
-  var columns = [];
-  columns.push(fieldName + 'Lookup');
-  if (partyFieldMappings[fieldName]) {
-    partyFieldMappings[fieldName].forEach(function(attr) {
-      columns.push(attr.name);
-    });
-  }
-  return columns;
-}
+var allFieldsCatalog = []; // [{FieldID, Name, Code, DataTypeName}]
+var fieldCatalogLoaded = false;
 
-
-// --- INIT ENTRYPOINT --- //
-require(['integration'], function(integrationModule) {
+// ---------- AMD ENTRYPOINT ---------- //
+require(['integration'], function (integrationModule) {
   integration = integrationModule;
-  $(function() { initializeUserInterface(); });
+  $(initializeUserInterface);
 });
 
-// --- INITIALIZATION & UI EVENT BINDINGS --- //
+// ---------- INIT & UI BINDINGS ---------- //
 function initializeUserInterface() {
+  // Primary actions
   $('#loadAreasBtn').click(loadAvailableAreas);
   $('#buildSqlBtn').click(buildSqlQuery);
   $('#addSwimlaneBtn').click(addSwimlaneDefinition);
-  $('#generateFilesBtn').click(generateDashboardFiles);
-
   $('#addKeyfieldBtn').click(addKeyFieldManually);
-  $('#generateIndexBtn').click(generateDashboardIndexFile);
-  $('#generateConfigBtn').click(generateDashboardConfigFile);
-  $('#generateViewModelBtn').click(generateDashboardViewModelFile);
 
+  // Date filters
+  $('#startDateInput').change(function(){ documentStartDate = $(this).val() || null; updateDashboardPreview(); });
+  $('#dateRangeSelect').change(function(){ relativeMonthRange = $(this).val() ? parseInt($(this).val(),10) : null; updateDashboardPreview(); });
 
-  $('#startDateInput').change(function () {
-    documentStartDate = $(this).val() || null;
+  // Exit status controls
+  $('#exitStatusFieldSelect').change(function(){ exitStatusField = $(this).val(); });
+  $('#exitStatusValueInput').on('input', function(){ exitStatusValue = $(this).val(); });
+
+  // Field Catalog controls
+  $('#loadAllFieldsBtn').click(function(){ loadAllFieldsCatalog(true); });
+  $('#fieldSearchInput').on('input', function(){
+    renderAllFieldsNested(($(this).val() || '').toLowerCase());
   });
-  $('#dateRangeSelect').change(function () {
-    relativeMonthRange = $(this).val() ? parseInt($(this).val(), 10) : null;
+
+  // Autopopulate events — ID or Name
+  const debouncedId = debounce(autoResolveIdOrName, 200);
+  const debouncedName = debounce(onKeyfieldNameTyping, 200);
+
+  $('#keyfieldIdInput').on('input', debouncedId).on('blur', autoResolveIdOrName);
+  $('#keyfieldNameInput').on('input', debouncedName).on('blur', function(){
+    hideNameSuggestions();
+    autoResolveIdOrName();
   });
-  $('#exitStatusFieldSelect').change(function() {
-    exitStatusField = $(this).val();
+  $('#keyfieldTypeInput').on('change', function(){
+    if ($(this).val() === '') autoResolveIdOrName(); // back to Auto
   });
-  $('#exitStatusValueInput').on('input', function() {
-    exitStatusValue = $(this).val();
+
+  // Dock controls
+  $('#dashboardPreviewDock .min-btn').on('click', function(){
+    $('#dashboardPreviewDock').toggleClass('minimized');
+    $(this).html($('#dashboardPreviewDock').hasClass('minimized') ? '&#x25B2;' : '&#x2212;');
   });
+  $('#dashboardPreviewDock .dock-header').on('dblclick', function(){
+    $('#dashboardPreviewDock .min-btn').click();
+  });
+
+  // Initial render
   updateDashboardPreview();
   renderKeyFieldList();
 }
 
-// --- AREA AND DOCUMENT TYPE LOGIC --- //
+// ---------- HELPERS ---------- //
+function debounce(fn, ms) {
+  var t; return function(){ var ctx=this, args=arguments; clearTimeout(t); t=setTimeout(function(){ fn.apply(ctx,args); }, ms); };
+}
+function toArray(res) {
+  if (!res) return [];
+  if (Array.isArray(res)) return res;
+  if (Array.isArray(res.Results)) return res.Results;
+  if (Array.isArray(res.rows)) return res.rows;
+  if (Array.isArray(res.recordset)) return res.recordset;
+  if (Array.isArray(res.data)) return res.data;
+  return [];
+}
+function mapSoftdocsType(t) {
+  if (t == null) return 'text';
+  var lower = String(t).trim().toLowerCase();
+  if (lower === 'text')    return 'text';
+  if (lower === 'number')  return 'number';
+  if (lower === 'date')    return 'date';
+  if (lower === 'money')   return 'money';
+  if (lower === 'decimal') return 'decimal';
+  if (lower === 'lookup')  return 'lookup';
+  // numeric fallbacks (if ever used)
+  if (lower === '0') return 'text';
+  if (lower === '1') return 'number';
+  if (lower === '2') return 'date';
+  if (lower === '3') return 'money';
+  if (lower === '4') return 'decimal';
+  if (lower === '5') return 'lookup';
+  console.log('Unknown DataType:', t, '- defaulting to text');
+  return 'text';
+}
+function firstRow(res) {
+  var arr = toArray(res);
+  return arr.length ? arr[0] : null;
+}
+
+// ---------- FIELD CATALOG (full list) ---------- //
+function loadAllFieldsCatalog(showLoader) {
+  if (showLoader) $('.loading').show();
+  return integration.all(fieldsListIntegrationName)
+    .then(function (rows) {
+      allFieldsCatalog = toArray(rows).map(function (r) {
+        return {
+          FieldID: Number(r.FieldID),
+          Name: r.Name || r.FieldName || '',
+          Code: r.Code || '',
+          DataTypeName: r.DataTypeName || r.DataType || ''
+        };
+      });
+      allFieldsCatalog.sort(function(a,b){ return (a.Name||'').localeCompare(b.Name||''); });
+      fieldCatalogLoaded = true;
+      renderAllFieldsNested(($('#fieldSearchInput').val()||'').toLowerCase());
+    })
+    .catch(function (e) {
+      console.error('Error loading field catalog:', e);
+      $('#allFieldsNestedList').empty().append(
+        $('<div>').addClass('list-group-item text-muted')
+                  .text('Could not load field catalog (check Source name and SQL).')
+      );
+    })
+    .finally(function(){ if (showLoader) $('.loading').hide(); });
+}
+
+function renderAllFieldsNested(queryText) {
+  var q = (queryText || '').toLowerCase();
+  var rows = (q
+    ? allFieldsCatalog.filter(function (r) {
+        var hay = (r.Name||'') + ' ' + (r.Code||'') + ' ' + (r.DataTypeName||'') + ' ' + String(r.FieldID);
+        return hay.toLowerCase().indexOf(q) !== -1;
+      })
+    : allFieldsCatalog);
+
+  var groups = {};
+  rows.forEach(function (r) {
+    var ch = (r.Name || '#').charAt(0).toUpperCase();
+    if (ch < 'A' || ch > 'Z') ch = '#';
+    (groups[ch] = groups[ch] || []).push(r);
+  });
+
+  var $out = $('#allFieldsNestedList').empty();
+  var letters = Object.keys(groups).sort();
+
+  if (!rows.length) {
+    $out.append($('<div>').addClass('list-group-item text-muted').text('No matches.'));
+    return;
+  }
+
+  letters.forEach(function (letter) {
+    var list = groups[letter];
+    var $hdr = $('<div>')
+      .addClass('list-group-item active')
+      .css({ cursor: 'pointer' })
+      .text(letter + ' (' + list.length + ')');
+
+    var $ul = $('<ul>').addClass('list-group mb-2').hide();
+
+    list.forEach(function (r) {
+      var type = mapSoftdocsType(r.DataTypeName);
+      var label = r.Name || ('Field ' + r.FieldID);
+      var metaLine = 'ID: ' + r.FieldID + (r.Code ? (' | Code: ' + r.Code) : '') + ' | Type: ' + type;
+
+      var $li = $('<li>')
+        .addClass('list-group-item d-flex justify-content-between align-items-center')
+        .append(
+          $('<div>')
+            .append($('<div>').html('<b>' + escapeHtml(label) + '</b>'))
+            .append($('<div>').addClass('text-muted small').text(metaLine))
+        )
+        .append(
+          $('<button>')
+            .addClass('btn btn-sm btn-outline-success')
+            .text('Add')
+            .click(function (e) { e.stopPropagation(); addFieldFromCatalog(r); })
+        );
+
+      $ul.append($li);
+    });
+
+    $hdr.click(function () { $ul.slideToggle(100); });
+    $out.append($hdr).append($ul);
+  });
+}
+
+function addFieldFromCatalog(r) {
+  var finalName = r.Name || ('Field_' + r.FieldID);
+  var finalType = mapSoftdocsType(r.DataTypeName);
+
+  // de-dupe by FieldID OR name
+  if (selectedKeyFields.some(function (k) { return String(k.FieldID) === String(r.FieldID) || k.FieldName === finalName; })) {
+    alert('Field already added.');
+    return;
+  }
+
+  selectedKeyFields.push({ FieldID: r.FieldID, FieldName: finalName, FieldType: finalType });
+  renderKeyFieldList();
+  updateSwimlaneFieldOptions();
+  updateAvailableColumnOptions();
+  updateExitStatusFieldOptions();
+  updateDashboardPreview();
+
+  // Fill the add form for visibility
+  $('#keyfieldIdInput').val(r.FieldID);
+  $('#keyfieldNameInput').val(finalName);
+  $('#keyfieldTypeInput').val(finalType);
+}
+
+// ---------- AUTOPOPULATE (ID or Name) ---------- //
+function onKeyfieldNameTyping() {
+  var name = ($('#keyfieldNameInput').val() || '').trim();
+  if (!name) { hideNameSuggestions(); return; }
+
+  if (!fieldCatalogLoaded && !allFieldsCatalog.length) {
+    // lazy-load then try again
+    loadAllFieldsCatalog(false).then(showNameSuggestions);
+  } else {
+    showNameSuggestions();
+  }
+}
+
+function showNameSuggestions() {
+  var $box = $('#keyfieldNameSuggest');
+  var name = ($('#keyfieldNameInput').val() || '').trim().toLowerCase();
+  if (!name) { hideNameSuggestions(); return; }
+  var matches = allFieldsCatalog
+    .filter(function (r) {
+      var nm = (r.Name || '').toLowerCase();
+      var cd = (r.Code || '').toLowerCase();
+      return nm.includes(name) || cd.includes(name);
+    })
+    .slice(0, 12);
+
+  if (!matches.length) { hideNameSuggestions(); return; }
+
+  $box.empty();
+  matches.forEach(function (r, idx) {
+    var label = r.Name || ('Field ' + r.FieldID);
+    $('<div>')
+      .addClass('autocomplete-item')
+      .html('<b>' + escapeHtml(label) + '</b> &nbsp; <span class="text-muted small">ID: '
+            + r.FieldID + (r.Code ? (' | Code: ' + escapeHtml(r.Code)) : '')
+            + ' | ' + mapSoftdocsType(r.DataTypeName) + '</span>')
+      .appendTo($box)
+      .on('click', function(){
+        $('#keyfieldIdInput').val(r.FieldID);
+        $('#keyfieldNameInput').val(r.Name || '');
+        $('#keyfieldTypeInput').val(mapSoftdocsType(r.DataTypeName));
+        hideNameSuggestions();
+      });
+  });
+
+  // position under the input
+  var $inp = $('#keyfieldNameInput');
+  var off = $inp.position();
+  $box.css({ display:'block', top: (off.top + $inp.outerHeight())+'px', left: off.left+'px', width: $inp.outerWidth()+'px' });
+}
+function hideNameSuggestions(){ $('#keyfieldNameSuggest').hide().empty(); }
+
+function autoResolveIdOrName() {
+  var idRaw = ($('#keyfieldIdInput').val() || '').trim();
+  var nameRaw = ($('#keyfieldNameInput').val() || '').trim();
+
+  function setIfEmpty(meta) {
+    if (!meta) return;
+    if (!$('#keyfieldNameInput').val().trim() && meta.name) $('#keyfieldNameInput').val(meta.name);
+    if ($('#keyfieldTypeInput').val() === '' && meta.type) $('#keyfieldTypeInput').val(meta.type);
+  }
+
+  // Lazy-load catalog if not present
+  var ensureCatalog = (fieldCatalogLoaded || allFieldsCatalog.length)
+    ? Promise.resolve()
+    : loadAllFieldsCatalog(false);
+
+  return ensureCatalog.then(function () {
+    // 1) If ID given, try by ID
+    var idNum = Number(idRaw);
+    if (idRaw && !Number.isNaN(idNum)) {
+      var hit = allFieldsCatalog.find(function(x){ return x.FieldID === idNum; });
+      if (hit) {
+        setIfEmpty({
+          name: hit.Name,
+          type: mapSoftdocsType(hit.DataTypeName)
+        });
+        return;
+      }
+      // Fallback to single-ID integration (if allowed)
+      return resolveFieldMetaById(idNum).then(setIfEmpty);
+    }
+
+    // 2) If Name given, try exact | startsWith | contains over Name or Code
+    if (nameRaw) {
+      var lower = nameRaw.toLowerCase();
+      var byNameExact = allFieldsCatalog.filter(function(x){ return (x.Name||'').toLowerCase() === lower; });
+      var byCodeExact = allFieldsCatalog.filter(function(x){ return (x.Code||'').toLowerCase() === lower; });
+      var pick = (byNameExact[0] || byCodeExact[0]);
+
+      if (!pick) {
+        var starts = allFieldsCatalog.filter(function(x){
+          return (x.Name||'').toLowerCase().startsWith(lower) || (x.Code||'').toLowerCase().startsWith(lower);
+        });
+        pick = starts[0];
+      }
+      if (!pick) {
+        var contains = allFieldsCatalog.filter(function(x){
+          return (x.Name||'').toLowerCase().includes(lower) || (x.Code||'').toLowerCase().includes(lower);
+        });
+        pick = contains[0];
+      }
+
+      if (pick) {
+        if (!$('#keyfieldIdInput').val().trim()) $('#keyfieldIdInput').val(pick.FieldID);
+        setIfEmpty({ name: pick.Name, type: mapSoftdocsType(pick.DataTypeName) });
+        return;
+      }
+    }
+  }).catch(function(e){
+    console.warn('autoResolveIdOrName error:', e);
+  });
+}
+
+function resolveFieldMetaById(fieldId) {
+  if (!integration || typeof integration.all !== 'function') return Promise.resolve(null);
+  return integration.all(fieldMetaIntegrationName, { FieldIds: String(fieldId) })
+    .then(function (res) {
+      var row = firstRow(res);
+      if (!row) return null;
+      return {
+        id:   row.FieldID,
+        name: row.DisplayName || row.FieldName || row.Name || '',
+        type: mapSoftdocsType(row.DataType || row.Type || row.Data_Type || row.DataTypeName)
+      };
+    })
+    .catch(function (e) {
+      console.warn('fieldMetaIntegration error:', e);
+      return null;
+    });
+}
+
+// ---------- AREA / DOC TYPE / PARTY FIELD LOADING ---------- //
 function loadAvailableAreas() {
   $('.loading').show();
   integration.all(areaIntegrationName)
-    .then(function(areaData) {
+    .then(function (areas) {
       $('.loading').hide();
       resetAllSelections();
-      areaData.sort((a, b) => a.CatalogName.localeCompare(b.CatalogName));
-      renderList('#availableAreas', areaData, 'CatalogID', 'CatalogName', handleSelectArea);
+      areas = toArray(areas);
+      areas.sort((a,b)=>String(a.CatalogName).localeCompare(String(b.CatalogName)));
+      renderList('#availableAreas', areas, 'CatalogID', 'CatalogName', handleSelectArea);
     })
-    .catch(function(error) {
+    .catch(function (e) {
       $('.loading').hide();
-      console.error('Error loading areas:', error);
+      console.error('Error loading areas:', e);
     });
 }
 
 function handleSelectArea() {
-  var areaId = String($(this).data('id'));
-  if (selectedAreaIds.includes(areaId)) return;
-  selectedAreaIds.push(areaId);
-  $(this).addClass('active');
-  updateSelectedList('#selectedAreas', selectedAreaIds, 'CatalogID', 'CatalogName', lookupAreaName, handleRemoveArea);
-  loadDocumentTypesForAreas(selectedAreaIds);
-  updateDashboardPreview();
+  var id = String($(this).data('id'));
+  if (!selectedAreaIds.includes(id)) {
+    selectedAreaIds.push(id);
+    $(this).addClass('active');
+    updateSelectedList('#selectedAreas', selectedAreaIds, 'CatalogID', 'CatalogName', lookupAreaName, handleRemoveArea);
+    loadDocumentTypesForAreas(selectedAreaIds);
+    updateDashboardPreview();
+  }
 }
 
 function handleRemoveArea() {
-  var areaId = String($(this).data('id'));
-  selectedAreaIds = selectedAreaIds.filter(id => id !== areaId);
-  $('#availableAreas .list-group-item').filter((_, li) => String($(li).data('id')) === areaId).removeClass('active');
+  var id = String($(this).data('id'));
+  selectedAreaIds = selectedAreaIds.filter(x => x !== id);
+  $('#availableAreas .list-group-item').filter((_, li) => String($(li).data('id')) === id).removeClass('active');
   updateSelectedList('#selectedAreas', selectedAreaIds, 'CatalogID', 'CatalogName', lookupAreaName, handleRemoveArea);
   loadDocumentTypesForAreas(selectedAreaIds);
 
   var validDocTypeIds = allDocumentTypes.map(dt => String(dt.DocumentTypeID));
-  selectedDocumentTypeIds = selectedDocumentTypeIds.filter(id => validDocTypeIds.includes(id));
+  selectedDocumentTypeIds = selectedDocumentTypeIds.filter(x => validDocTypeIds.includes(x));
   updateSelectedList('#selectedDocTypes', selectedDocumentTypeIds, 'DocumentTypeID', 'DocumentTypeName', lookupDocumentTypeName, handleRemoveDocumentType);
 
-  swimlaneDefinitions = swimlaneDefinitions.filter(swimlane => {
-    swimlane.documentTypeIds = swimlane.documentTypeIds.filter(id => validDocTypeIds.includes(id));
-    return swimlane.documentTypeIds.length > 0;
+  swimlaneDefinitions = swimlaneDefinitions.filter(function (sl) {
+    sl.documentTypeIds = sl.documentTypeIds.filter(x => validDocTypeIds.includes(x));
+    return sl.documentTypeIds.length > 0;
   });
   renderSwimlaneList();
   updateSwimlaneDocTypesSelect();
@@ -127,32 +417,54 @@ function handleRemoveArea() {
 function loadDocumentTypesForAreas(areaIds) {
   $('.loading').show();
   integration.all(docTypesIntegrationName)
-    .then(function(documentTypes) {
+    .then(function (docTypes) {
       $('.loading').hide();
-      allDocumentTypes = documentTypes.filter(dt => areaIds.includes(String(dt.CatalogID)));
-      allDocumentTypes.sort((a, b) => a.DocumentTypeName.localeCompare(b.DocumentTypeName));
+      allDocumentTypes = toArray(docTypes).filter(dt => areaIds.includes(String(dt.CatalogID)));
+      allDocumentTypes.sort((a,b)=>String(a.DocumentTypeName).localeCompare(String(b.DocumentTypeName)));
       renderList('#availableDocTypes', allDocumentTypes, 'DocumentTypeID', 'DocumentTypeName', handleSelectDocumentType);
       updateSwimlaneDocTypesSelect();
 
-      var validDocTypeIds = allDocumentTypes.map(dt => String(dt.DocumentTypeID));
-      selectedDocumentTypeIds = selectedDocumentTypeIds.filter(id => validDocTypeIds.includes(id));
+      var valid = allDocumentTypes.map(dt => String(dt.DocumentTypeID));
+      selectedDocumentTypeIds = selectedDocumentTypeIds.filter(x => valid.includes(x));
       updateSelectedList('#selectedDocTypes', selectedDocumentTypeIds, 'DocumentTypeID', 'DocumentTypeName', lookupDocumentTypeName, handleRemoveDocumentType);
 
-      swimlaneDefinitions = swimlaneDefinitions.filter(swimlane => {
-        swimlane.documentTypeIds = swimlane.documentTypeIds.filter(id => validDocTypeIds.includes(id));
-        return swimlane.documentTypeIds.length > 0;
+      swimlaneDefinitions = swimlaneDefinitions.filter(function (sl) {
+        sl.documentTypeIds = sl.documentTypeIds.filter(x => valid.includes(x));
+        return sl.documentTypeIds.length > 0;
       });
+
       renderSwimlaneList();
       loadDiscoveredPartyFields();
       updateDashboardPreview();
     })
-    .catch(function(error) {
+    .catch(function (e) {
       $('.loading').hide();
-      console.error('Error loading document types:', error);
+      console.error('Error loading document types:', e);
     });
 }
 
-// --- PARTY FIELD DISCOVERY (Step 4) --- //
+function handleSelectDocumentType() {
+  var id = String($(this).data('id'));
+  if (!selectedDocumentTypeIds.includes(id)) {
+    selectedDocumentTypeIds.push(id);
+    $(this).addClass('active');
+    updateSelectedList('#selectedDocTypes', selectedDocumentTypeIds, 'DocumentTypeID', 'DocumentTypeName', lookupDocumentTypeName, handleRemoveDocumentType);
+    updateSwimlaneDocTypesSelect();
+    loadDiscoveredPartyFields();
+    updateDashboardPreview();
+  }
+}
+
+function handleRemoveDocumentType() {
+  var id = String($(this).data('id'));
+  selectedDocumentTypeIds = selectedDocumentTypeIds.filter(x => x !== id);
+  $('#availableDocTypes .list-group-item').filter((_, li) => String($(li).data('id')) === id).removeClass('active');
+  updateSelectedList('#selectedDocTypes', selectedDocumentTypeIds, 'DocumentTypeID', 'DocumentTypeName', lookupDocumentTypeName, handleRemoveDocumentType);
+  updateSwimlaneDocTypesSelect();
+  loadDiscoveredPartyFields();
+  updateDashboardPreview();
+}
+
 function loadDiscoveredPartyFields() {
   if (!selectedDocumentTypeIds.length) {
     allPartyFields = [];
@@ -161,16 +473,16 @@ function loadDiscoveredPartyFields() {
   }
   $('.loading').show();
   integration.all(partyFieldsIntegrationName, { docTypeIds: selectedDocumentTypeIds })
-    .then(function(partyFieldData) {
+    .then(function (rows) {
       $('.loading').hide();
-      allPartyFields = dedupePartyFields(partyFieldData);
+      allPartyFields = dedupePartyFields(toArray(rows) || []);
       renderDiscoveredPartyFields();
       updateSwimlaneFieldOptions();
       updateExitStatusFieldOptions();
       updateAvailableColumnOptions();
       updateDashboardPreview();
     })
-    .catch(function(error) {
+    .catch(function (e) {
       $('.loading').hide();
       allPartyFields = [];
       renderDiscoveredPartyFields();
@@ -178,15 +490,17 @@ function loadDiscoveredPartyFields() {
       updateExitStatusFieldOptions();
       updateAvailableColumnOptions();
       updateDashboardPreview();
-      console.error('Error loading party fields:', error);
+      console.error('Error loading party fields:', e);
     });
 }
 
 function dedupePartyFields(fields) {
   var seen = {};
-  return fields.filter(function(f) {
-    if (seen[f.FieldName]) return false;
-    seen[f.FieldName] = true;
+  return (fields || []).filter(function (f) {
+    var k = f.FieldName || f.Name;
+    if (!k) return false;
+    if (seen[k]) return false;
+    seen[k] = true;
     return true;
   });
 }
@@ -194,22 +508,21 @@ function dedupePartyFields(fields) {
 function renderDiscoveredPartyFields() {
   var $ul = $('#discoveredPartyFields').empty();
   if (!allPartyFields.length) {
-    $ul.append($('<li>').addClass('list-group-item text-muted').text('No linked person/entity fields found for these document types.'));
+    $ul.append($('<li>').addClass('list-group-item text-muted')
+      .text('No linked person/entity fields found for these document types.'));
     return;
   }
-  allPartyFields.forEach(function(field) {
+  allPartyFields.forEach(function (f) {
+    var key = f.FieldName || f.Name;
+    var label = f.DisplayName || f.FieldName || f.Name;
     var $li = $('<li>')
       .addClass('list-group-item list-group-item-action')
-      .toggleClass('active', selectedPartyFieldNames.includes(field.FieldName))
-      .text(field.DisplayName || field.FieldName)
-      .click(function() {
-        var idx = selectedPartyFieldNames.indexOf(field.FieldName);
-        if (idx === -1) {
-          selectedPartyFieldNames.push(field.FieldName);
-        } else {
-          selectedPartyFieldNames.splice(idx, 1);
-        }
-        $(this).toggleClass('active');
+      .toggleClass('active', selectedPartyFieldNames.includes(key))
+      .text(label)
+      .click(function () {
+        var idx = selectedPartyFieldNames.indexOf(key);
+        if (idx === -1) { selectedPartyFieldNames.push(key); $(this).addClass('active'); }
+        else { selectedPartyFieldNames.splice(idx, 1); $(this).removeClass('active'); }
         updateSwimlaneFieldOptions();
         updateExitStatusFieldOptions();
         updateAvailableColumnOptions();
@@ -219,54 +532,66 @@ function renderDiscoveredPartyFields() {
   });
 }
 
-// --- ADDITIONAL KEYFIELDS LOGIC (Step 4b) --- //
+// ---------- KEYFIELDS: ADD / AUTOFILL ---------- //
 function addKeyFieldManually() {
-  var fieldId = $('#keyfieldIdInput').val().trim();
-  var fieldName = $('#keyfieldNameInput').val().trim();
-  var fieldType = $('#keyfieldTypeInput').val() || 'text';
+  var fieldId = ($('#keyfieldIdInput').val() || '').trim();
+  var fieldNameInput = ($('#keyfieldNameInput').val() || '').trim();
+  var typePick = $('#keyfieldTypeInput').val(); // '' = Auto
 
-  // Auto-set type if the user didn't pick and "date" is in the field name
-  if (!fieldType && /date/i.test(fieldName)) {
-    fieldType = 'date';
+  if (!fieldId && !fieldNameInput) { alert('Enter a Field ID or Name.'); return; }
+
+  // If still Auto/empty, try to resolve using catalog/meta
+  var resolvePromise = Promise.resolve();
+  if (!typePick || !fieldNameInput) {
+    resolvePromise = autoResolveIdOrName();
   }
 
-  if (!fieldId || !fieldName) {
-    alert('Both Field ID and Name are required.');
-    return;
-  }
-  if (selectedKeyFields.some(kf => kf.FieldName === fieldName)) {
-    alert('Keyfield name already added.');
-    return;
-  }
+  resolvePromise.then(function(){
+    var finalName = ($('#keyfieldNameInput').val() || fieldNameInput || '').trim();
+    var finalType = $('#keyfieldTypeInput').val() || '';
 
-  selectedKeyFields.push({
-    FieldID: fieldId,
-    FieldName: fieldName,
-    FieldType: fieldType
+    var finalId = ($('#keyfieldIdInput').val() || fieldId || '').trim();
+    if (!finalId) { alert('Could not resolve Field ID.'); return; }
+
+    if (!finalType) {
+      // heuristics fallback
+      if (/date/i.test(finalName)) finalType = 'date';
+      else if (/\$|amount|total|balance|fee|cost|price|tuition|payment/i.test(finalName)) finalType = 'money';
+      else finalType = 'text';
+    }
+
+    if (selectedKeyFields.some(k => String(k.FieldID) === String(finalId) || k.FieldName === finalName)) {
+      alert('Keyfield already added.');
+      return;
+    }
+
+    selectedKeyFields.push({ FieldID: finalId, FieldName: finalName, FieldType: finalType });
+    renderKeyFieldList();
+
+    // reset inputs
+    $('#keyfieldIdInput').val('');
+    $('#keyfieldNameInput').val('');
+    $('#keyfieldTypeInput').val(''); // Auto
+
+    updateSwimlaneFieldOptions();
+    updateAvailableColumnOptions();
+    updateExitStatusFieldOptions();
+    updateDashboardPreview();
   });
-
-  renderKeyFieldList();
-  $('#keyfieldIdInput,#keyfieldNameInput').val('');
-  $('#keyfieldTypeInput').val('text'); // Reset to default
-
-  updateSwimlaneFieldOptions();
-  updateAvailableColumnOptions();
-  updateExitStatusFieldOptions();
-  updateDashboardPreview();
 }
-
 
 function renderKeyFieldList() {
   var $ul = $('#selectedKeyfields').empty();
-  selectedKeyFields.forEach(function(keyField, idx) {
+  selectedKeyFields.forEach(function (kf, idx) {
+    var typeLabel = kf.FieldType ? ' (' + kf.FieldType + ')' : '';
     var $li = $('<li>')
       .addClass('list-group-item list-group-item-action d-flex justify-content-between align-items-center')
-      .text(keyField.FieldName + ' (ID:' + keyField.FieldID + ')')
+      .text(kf.FieldName + ' (ID:' + kf.FieldID + typeLabel + ')')
       .append(
         $('<button>')
           .addClass('btn btn-danger btn-sm ml-2')
           .text('Remove')
-          .click(function(e) {
+          .click(function (e) {
             e.stopPropagation();
             selectedKeyFields.splice(idx, 1);
             renderKeyFieldList();
@@ -280,24 +605,19 @@ function renderKeyFieldList() {
   });
 }
 
-// --- SWIMLANE MANAGEMENT --- //
+// ---------- SWIMLANES ---------- //
 function addSwimlaneDefinition() {
-  var swimlaneName = $('#swimlaneNameInput').val().trim();
-  var selectedDocTypeOptions = $('#swimlaneDocTypesSelect').find('option:selected');
-  var documentTypeIds = $.map(selectedDocTypeOptions, function(opt) { return String($(opt).val()); });
+  var name = ($('#swimlaneNameInput').val() || '').trim();
+  var docTypeOptions = $('#swimlaneDocTypesSelect').find('option:selected');
+  var ids = $.map(docTypeOptions, function (opt) { return String($(opt).val()); });
   var field = $('#swimlaneFieldSelect').val() || null;
-  var value = $('#swimlaneValueInput').val().trim() || null;
-  if (!swimlaneName || !documentTypeIds.length) {
-    alert('Swimlane name and at least one document type are required.');
-    return;
-  }
-  swimlaneDefinitions.push({
-    name: swimlaneName,
-    documentTypeIds: documentTypeIds,
-    keyfield: field,
-    matchValue: value
-  });
+  var value = ($('#swimlaneValueInput').val() || '').trim() || null;
+
+  if (!name || !ids.length) { alert('Swimlane name and at least one document type are required.'); return; }
+
+  swimlaneDefinitions.push({ name: name, documentTypeIds: ids, keyfield: field, matchValue: value });
   renderSwimlaneList();
+
   $('#swimlaneNameInput,#swimlaneValueInput').val('');
   $('#swimlaneDocTypesSelect').val([]);
   $('#swimlaneFieldSelect').val('');
@@ -306,12 +626,10 @@ function addSwimlaneDefinition() {
 
 function renderSwimlaneList() {
   var $ul = $('<ul class="list-group"></ul>');
-  swimlaneDefinitions.forEach((swimlane, index) => {
-    var docNames = swimlane.documentTypeIds.map(id => lookupDocumentTypeName(id)).join(', ');
-    var text = swimlane.name + ' | Docs: ' + docNames;
-    if (swimlane.keyfield && swimlane.matchValue) {
-      text += ' | ' + swimlane.keyfield + ' = ' + swimlane.matchValue;
-    }
+  swimlaneDefinitions.forEach(function (sl, index) {
+    var docNames = sl.documentTypeIds.map(lookupDocumentTypeName).join(', ');
+    var text = sl.name + ' | Docs: ' + docNames;
+    if (sl.keyfield && sl.matchValue) text += ' | ' + sl.keyfield + ' = ' + sl.matchValue;
     $('<li>').addClass('list-group-item list-group-item-action')
       .text(text)
       .data('idx', index)
@@ -322,496 +640,356 @@ function renderSwimlaneList() {
 }
 
 function removeSwimlane() {
-  var swimlaneIndex = $(this).data('idx');
-  swimlaneDefinitions.splice(swimlaneIndex, 1);
+  var idx = $(this).data('idx');
+  swimlaneDefinitions.splice(idx, 1);
   renderSwimlaneList();
   updateDashboardPreview();
 }
 
-// --- DOCUMENT TYPE SELECTION --- //
-function handleSelectDocumentType() {
-  var documentTypeId = String($(this).data('id'));
-  if (selectedDocumentTypeIds.includes(documentTypeId)) return;
-  selectedDocumentTypeIds.push(documentTypeId);
-  $(this).addClass('active');
-  updateSelectedList('#selectedDocTypes', selectedDocumentTypeIds, 'DocumentTypeID', 'DocumentTypeName', lookupDocumentTypeName, handleRemoveDocumentType);
-  updateSwimlaneDocTypesSelect();
-  loadDiscoveredPartyFields();
-  updateDashboardPreview();
-}
-
-function handleRemoveDocumentType() {
-  var documentTypeId = String($(this).data('id'));
-  selectedDocumentTypeIds = selectedDocumentTypeIds.filter(id => id !== documentTypeId);
-  $('#availableDocTypes .list-group-item').filter((_, li) => String($(li).data('id')) === documentTypeId).removeClass('active');
-  updateSelectedList('#selectedDocTypes', selectedDocumentTypeIds, 'DocumentTypeID', 'DocumentTypeName', lookupDocumentTypeName, handleRemoveDocumentType);
-  updateSwimlaneDocTypesSelect();
-  loadDiscoveredPartyFields();
-  updateDashboardPreview();
-}
-
+// ---------- DOC TYPES & COLUMNS ---------- //
 function lookupAreaName(areaId) {
   return $('#availableAreas .list-group-item').filter((_, li) => String($(li).data('id')) === areaId).text() || areaId;
 }
 function lookupDocumentTypeName(documentTypeId) {
-  var docType = allDocumentTypes.find(dt => String(dt.DocumentTypeID) === documentTypeId);
-  return docType ? docType.DocumentTypeName : documentTypeId;
+  var dt = allDocumentTypes.find(x => String(x.DocumentTypeID) === documentTypeId);
+  return dt ? dt.DocumentTypeName : documentTypeId;
 }
 
-// --- COLUMN MANAGEMENT --- //
+function updateSwimlaneDocTypesSelect() {
+  var $sel = $('#swimlaneDocTypesSelect').empty();
+  var selectedDocs = allDocumentTypes.filter(dt => selectedDocumentTypeIds.includes(String(dt.DocumentTypeID)));
+  selectedDocs.forEach(function (dt) { $sel.append($('<option>').val(dt.DocumentTypeID).text(dt.DocumentTypeName)); });
+}
+function updateSwimlaneFieldOptions() {
+  var $dd = $('#swimlaneFieldSelect').empty();
+  $dd.append('<option value="">(Optional) Field</option>');
+  allPartyFields.forEach(function (f) {
+    $dd.append('<option value="' + (f.FieldName || f.Name) + '">' + (f.DisplayName || f.FieldName || f.Name) + '</option>');
+  });
+  selectedKeyFields.forEach(function (f) {
+    $dd.append('<option value="' + f.FieldName + '">' + f.FieldName + '</option>');
+  });
+}
+function updateExitStatusFieldOptions() {
+  var $dd = $('#exitStatusFieldSelect').empty();
+  $dd.append('<option disabled selected>Choose Field</option>');
+  allPartyFields.forEach(function (f) {
+    $dd.append('<option value="' + (f.FieldName || f.Name) + '">' + (f.DisplayName || f.FieldName || f.Name) + '</option>');
+  });
+  selectedKeyFields.forEach(function (f) {
+    $dd.append('<option value="' + f.FieldName + '">' + f.FieldName + '</option>');
+  });
+}
+
 function updateAvailableColumnOptions() {
-  var columns = ['Document Link', 'DocumentType'];
-
-  // --- Instead of .concat(selectedPartyFieldNames), expand mapped fields here ---
-  selectedPartyFieldNames.forEach(function(fieldName) {
-    var mapping = {
-      'Student Info': [
-        { name: 'StudentID', fieldId: 25 },
-        { name: 'StudentFName', fieldId: 2 },
-        { name: 'StudentLName', fieldId: 4 }
-      ],
-      'Institutional Info': [
-        { name: 'InstitutionName', fieldId: 27 }
-      ]
-    }[fieldName];
-
+  var cols = ['Document Link', 'DocumentType'];
+  // Party fields as columns (add both Lookup + text if mapped)
+  var partyFieldMappings = {
+    'Student Info': [
+      { name: 'StudentID',    fieldId: 25 },
+      { name: 'StudentFName', fieldId: 2  },
+      { name: 'StudentLName', fieldId: 4  }
+    ],
+    'Institutional Info': [
+      { name: 'InstitutionName', fieldId: 27 }
+    ]
+  };
+  selectedPartyFieldNames.forEach(function (fn) {
+    var mapping = partyFieldMappings[fn];
     if (mapping) {
-      // If you want the "Student Info Lookup" (the name, not the ID/FName/LName), include this line:
-      // columns.push(fieldName + 'Lookup');
-      // Add each mapped attribute as a column option
-      mapping.forEach(attr => columns.push(attr.name));
+      cols.push(fn + 'Lookup');
+      mapping.forEach(function (attr) { cols.push(attr.name); });
     } else {
-      // No mapping, just add the field itself
-      columns.push(fieldName);
+      cols.push(fn + 'Lookup');
+      cols.push(fn);
     }
   });
 
-  columns = columns.concat(selectedKeyFields.map(f => f.FieldName));
-  columns.push('DocumentDate');
+  cols = cols.concat(selectedKeyFields.map(f => f.FieldName));
+  cols.push('DocumentDate');
+  cols = Array.from(new Set(cols));
 
-  // De-duplicate columns (just in case)
-  columns = [...new Set(columns)];
-
-  // Render as before
   var $ul = $('<ul class="list-group"></ul>');
-  columns.forEach(columnName => {
-    var $li = $('<li>')
-      .addClass('list-group-item list-group-item-action')
-      .text(columnName)
-      .click(toggleColumnSelection);
-    if(selectedColumnNames.includes(columnName)){
-      $li.addClass('active');
-    }
+  cols.forEach(function (name) {
+    var $li = $('<li>').addClass('list-group-item list-group-item-action').text(name).click(toggleColumnSelection);
+    if (selectedColumnNames.includes(name)) $li.addClass('active');
     $ul.append($li);
   });
   $('#availableColumns').empty().append($ul);
   renderSelectedColumnList();
-  updateDashboardPreview();
 }
 
 function toggleColumnSelection() {
-  var columnName = $(this).text();
-  if (selectedColumnNames.includes(columnName)) {
-    selectedColumnNames = selectedColumnNames.filter(name => name !== columnName);
+  var name = $(this).text();
+  if (selectedColumnNames.includes(name)) {
+    selectedColumnNames = selectedColumnNames.filter(x => x !== name);
     $(this).removeClass('active');
   } else {
-    selectedColumnNames.push(columnName);
+    selectedColumnNames.push(name);
     $(this).addClass('active');
   }
   renderSelectedColumnList();
   updateDashboardPreview();
 }
+
 function renderSelectedColumnList() {
   var $ul = $('<ul class="list-group"></ul>');
-  selectedColumnNames.forEach(columnName => {
-    $('<li>').addClass('list-group-item list-group-item-action')
-      .text(columnName)
-      .appendTo($ul);
+  selectedColumnNames.forEach(function (name) {
+    $('<li>').addClass('list-group-item list-group-item-action').text(name).appendTo($ul);
   });
   $('#selectedColumns').empty().append($ul);
 }
 
-// --- SWIMLANE FIELD/EXIT FIELD DROPDOWNS --- //
-function updateSwimlaneDocTypesSelect() {
-  var $select = $('#swimlaneDocTypesSelect').empty();
-  var selectedDocs = allDocumentTypes.filter(dt => selectedDocumentTypeIds.includes(String(dt.DocumentTypeID)));
-  selectedDocs.forEach(dt => {
-    $select.append($('<option>').val(dt.DocumentTypeID).text(dt.DocumentTypeName));
-  });
-}
-function updateSwimlaneFieldOptions() {
-  var $dropdown = $('#swimlaneFieldSelect').empty();
-  $dropdown.append('<option value="">(Optional) Field</option>');
-  allPartyFields.forEach(field => {
-    $dropdown.append('<option value="' + field.FieldName + '">' + (field.DisplayName || field.FieldName) + '</option>');
-  });
-  selectedKeyFields.forEach(field => {
-    $dropdown.append('<option value="' + field.FieldName + '">' + field.FieldName + '</option>');
-  });
-}
-function updateExitStatusFieldOptions() {
-  var $dropdown = $('#exitStatusFieldSelect').empty();
-  $dropdown.append('<option disabled selected>Choose Field</option>');
-  allPartyFields.forEach(field => {
-    $dropdown.append('<option value="' + field.FieldName + '">' + (field.DisplayName || field.FieldName) + '</option>');
-  });
-  selectedKeyFields.forEach(field => {
-    $dropdown.append('<option value="' + field.FieldName + '">' + field.FieldName + '</option>');
-  });
-}
-
-// --- PREVIEW (Fake Data) --- //
-function getRandomString(length) {
-  var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  var result = "";
-  for (var i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-function getRandomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-function getFakeRow(columns, docTypeName) {
+// ---------- PREVIEW ---------- //
+function getRandomString(n){var c="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",r="";for(var i=0;i<n;i++)r+=c.charAt(Math.floor(Math.random()*c.length));return r;}
+function getRandomInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function getFakeRow(cols, docTypeName) {
   var row = {};
-  columns.forEach(function(col) {
-    if (col === "DocumentType") {
-      row[col] = docTypeName || "DocumentType" + getRandomInt(1, 10);
-    } else if (col.toLowerCase().includes("id")) {
-      row[col] = getRandomString(6);
-    } else if (col === "DocumentDate") {
-      var now = new Date();
-      now.setDate(now.getDate() - getRandomInt(0, 60));
-      row[col] = now.toISOString().split("T")[0];
-    } else if (col === "Document Link") {
-      row[col] = "Link";
-    } else {
-      row[col] = getRandomString(8);
+  cols.forEach(function(col){
+    if (col === 'DocumentType') row[col] = docTypeName || 'DocType'+getRandomInt(1,10);
+    else if (col.toLowerCase().includes('id')) row[col] = getRandomString(6);
+    else if (col === 'DocumentDate') {
+      var d = new Date(); d.setDate(d.getDate()-getRandomInt(0,60));
+      row[col] = d.toISOString().split('T')[0];
+    } else if (col === 'Document Link') row[col] = 'Link';
+    else {
+      var kf = selectedKeyFields.find(k => k.FieldName === col);
+      if (kf && (kf.FieldType === 'money' || kf.FieldType === 'decimal' || kf.FieldType === 'number')) {
+        var val = kf.FieldType === 'number' ? getRandomInt(0,9999) : (Math.random()*10000).toFixed(2);
+        row[col] = kf.FieldType === 'money' ? ('$' + val) : val;
+      } else {
+        row[col] = getRandomString(8);
+      }
     }
   });
   return row;
 }
 function updateDashboardPreview() {
-  // Ensure the docked preview and minimize button exist
-  const $dock = ensureDockedDashboardPreview();
-  const $previewSection = $("#dashboardPreviewSection");
-  $previewSection.empty();
+  const $section = $('#dashboardPreviewSection').empty();
 
-  // If no swimlanes or no columns are selected, show a friendly message
   if (!swimlaneDefinitions.length || !selectedColumnNames.length) {
-    $previewSection.append(
-      '<div class="alert alert-info mb-0">Define at least one swimlane and select columns to preview the dashboard layout.</div>'
-    );
+    $section.append('<div class="alert alert-info mb-0">Define a swimlane and select columns to preview the layout.</div>');
     return;
   }
 
-  // Expand all columns for display (using your party field mapping logic)
-  let expandedColumns = [];
-  selectedColumnNames.forEach(function(col) {
-    var expanded = expandPartyFieldToColumns(col);
-    if (expanded.length > 1 || col.endsWith(' Info')) {
-      expandedColumns = expandedColumns.concat(expanded);
-    } else {
-      expandedColumns.push(col);
-    }
+  var expanded = [];
+  selectedColumnNames.forEach(function (c) {
+    var exp = expandPartyFieldToColumns(c);
+    if (exp.length > 1 || / Info$/.test(c)) expanded = expanded.concat(exp);
+    else expanded.push(c);
   });
-  expandedColumns = [...new Set(expandedColumns)];
+  expanded = Array.from(new Set(expanded));
 
-  // For each swimlane, build a mini preview table with fake data
-  swimlaneDefinitions.forEach(function(swimlane, idx) {
-    const docTypeNames = swimlane.documentTypeIds.map(lookupDocumentTypeName).join(', ');
-    const previewId = "preview_swimlane_" + idx;
+  swimlaneDefinitions.forEach(function (sl) {
+    var docNames = sl.documentTypeIds.map(lookupDocumentTypeName).join(', ');
+    var rows = []; for (var r=0;r<3;r++) rows.push(getFakeRow(expanded, docNames.split(',')[0]));
 
-    // Generate 3 fake rows for preview
-    let fakeRows = [];
-    for (let r = 0; r < 3; r++) {
-      fakeRows.push(getFakeRow(expandedColumns, docTypeNames.split(',')[0]));
-    }
+    var tableHtml = '<table class="table table-bordered table-sm mb-2" style="background:#fcfcfc;">' +
+      '<thead><tr>' + expanded.map(c => '<th>'+escapeHtml(c)+'</th>').join('') + '</tr></thead>' +
+      '<tbody>' + rows.map(row => '<tr>' + expanded.map(c => '<td>'+(row[c]!==undefined?escapeHtml(String(row[c])):'')+'</td>').join('') + '</tr>').join('') + '</tbody>' +
+      '</table>';
 
-    // Build table HTML
-    let tableHtml = `<table class="table table-bordered table-sm mb-2" style="background:#fcfcfc;">
-      <thead>
-        <tr>
-          ${expandedColumns.map(col => `<th>${col}</th>`).join('')}
-        </tr>
-      </thead>
-      <tbody>
-        ${fakeRows.map(row => '<tr>' +
-          expandedColumns.map(col => `<td>${row[col] !== undefined ? row[col] : ''}</td>`).join('')
-        + '</tr>').join('')}
-      </tbody>
-    </table>`;
-
-    // Add section for this swimlane
-    $previewSection.append(
-      `<div class="mb-4">
-        <div style="font-weight:bold;">${swimlane.name} <small class="text-muted">[${docTypeNames}]</small></div>
-        ${tableHtml}
-      </div>`
-    );
+    $section.append('<div class="mb-4"><div style="font-weight:bold;">'+escapeHtml(sl.name)+' <small class="text-muted">['+escapeHtml(docNames)+']</small></div>'+tableHtml+'</div>');
   });
 }
 
-
-// --- SQL BUILDER --- //
-function buildSqlQuery() {
-  $('#sqlOutput').text('');
-
-  function pascalize(name) {
-    return name
-      .replace(/[^A-Za-z0-9]+/g, ' ')
-      .replace(/(?:^\w|[A-Z]|\b\w)/g, function(word) {
-        return word.toUpperCase();
-      })
-      .replace(/\s+/g, '')
-      .replace(/[^A-Za-z0-9]/g, '');
-  }
-
-  // --- Composite party field mappings --- //
+// Party field expansion used in preview & columns
+function expandPartyFieldToColumns(fieldName) {
   var partyFieldMappings = {
     'Student Info': [
-      { name: 'StudentID', fieldId: 25 },
-      { name: 'StudentFName', fieldId: 2 },
-      { name: 'StudentLName', fieldId: 4 }
+      { name: 'StudentID',    fieldId: 25 },
+      { name: 'StudentFName', fieldId: 2  },
+      { name: 'StudentLName', fieldId: 4  }
     ],
     'Institutional Info': [
       { name: 'InstitutionName', fieldId: 27 }
     ]
-    // Add other mappings as needed
   };
+  var cols = [ fieldName + 'Lookup' ];
+  if (partyFieldMappings[fieldName]) {
+    partyFieldMappings[fieldName].forEach(function (attr) { cols.push(attr.name); });
+  }
+  return cols;
+}
+
+// ---------- SQL BUILDER ---------- //
+function buildSqlQuery() {
+  $('#sqlOutput').text('');
+
+  function pascalize(name){
+    return name.replace(/[^A-Za-z0-9]+/g,' ')
+      .replace(/(?:^\w|[A-Z]|\b\w)/g,function(w){return w.toUpperCase();})
+      .replace(/\s+/g,'').replace(/[^A-Za-z0-9]/g,'');
+  }
+
+  var partyFieldMappings = {
+    'Student Info': [
+      { name: 'StudentID',    fieldId: 25 },
+      { name: 'StudentFName', fieldId: 2  },
+      { name: 'StudentLName', fieldId: 4  }
+    ],
+    'Institutional Info': [
+      { name: 'InstitutionName', fieldId: 27 }
+    ]
+  };
+
+  // Choose numeric view/column used in your environment
+  var NUMERIC_VIEW = '[dbo].[ivDocumentNumberFieldValue]';
+  var NUMERIC_COL  = 'Number';
+  // Alternative:
+  // var NUMERIC_VIEW = '[dbo].[ivDocumentDecimalFieldValue]';
+  // var NUMERIC_COL  = 'Decimal';
 
   var sourceName = $('#integrationNameInput').val().trim();
   if (!sourceName) {
-    sourceName = prompt('Enter your SoftDocs integration name for the SQL source:', areaIntegrationName);
+    sourceName = prompt('Enter your Softdocs integration name for the SQL source:', areaIntegrationName);
     if (!sourceName) return;
     $('#integrationNameInput').val(sourceName);
   }
   areaIntegrationName = sourceName;
 
-  if (!selectedAreaIds.length) return $('#sqlOutput').text('No Areas selected.');
-  if (!selectedDocumentTypeIds.length) return $('#sqlOutput').text('No Document Types selected.');
-  if (!selectedPartyFieldNames.length && !selectedKeyFields.length) return $('#sqlOutput').text('No fields selected for columns/person lookup.');
+  if (!selectedAreaIds.length)               return $('#sqlOutput').text('No Areas selected.');
+  if (!selectedDocumentTypeIds.length)       return $('#sqlOutput').text('No Document Types selected.');
+  if (!selectedPartyFieldNames.length && !selectedKeyFields.length) return $('#sqlOutput').text('No fields selected.');
 
   var selectLines = [];
-  var joinLines = [];
-  var whereLines = [];
-  var addedPartyEntities = {};
-  var addedFieldAliases = {};
+  var joinLines   = [];
+  var whereLines  = [];
+  var addedParty  = {};
+  var addedAlias  = {};
 
-  // ---- SELECT clause ----
-  selectLines.push("SELECT");
-  selectLines.push("  dt.[Name] AS DocumentType,");
+  selectLines.push('SELECT');
+  selectLines.push('  dt.[Name] AS DocumentType,');
 
-  // ---- Party fields with mapping ----
-  selectedPartyFieldNames.forEach(function(fieldName) {
-    var mapping = partyFieldMappings[fieldName];
+  // Party fields
+  selectedPartyFieldNames.forEach(function (fn) {
+    var mapping = partyFieldMappings[fn];
     if (mapping) {
-      // One join for this entity
-      var fieldObj = allPartyFields.find(f => f.FieldName === fieldName);
-      var fieldID = fieldObj ? fieldObj.FieldID : null;
-      var partyAlias = 'baseParty_' + pascalize(fieldName);
-      var partyVersionAlias = 'basePartyVersion_' + pascalize(fieldName);
-      if (!addedPartyEntities[fieldName]) {
-        joinLines.push("INNER JOIN [dbo].[DocumentFieldPartyVersion] AS " + partyAlias + " ON d.DocumentID = " + partyAlias + ".DocumentID AND " + partyAlias + ".FieldID = " + fieldID);
-        joinLines.push("LEFT JOIN [dbo].[PartyVersion] AS " + partyVersionAlias + " ON " + partyAlias + ".PartyVersionID = " + partyVersionAlias + ".PartyVersionID");
-        selectLines.push("  " + partyVersionAlias + ".name AS [" + fieldName + "Lookup],");
-        addedPartyEntities[fieldName] = { partyAlias: partyAlias, partyVersionAlias: partyVersionAlias };
+      var fObj = allPartyFields.find(f => (f.FieldName||f.Name) === fn);
+      var fieldID = fObj ? fObj.FieldID : null;
+      var pAlias = 'baseParty_' + pascalize(fn);
+      var pvAlias = 'basePartyVersion_' + pascalize(fn);
+      if (!addedParty[fn]) {
+        joinLines.push('INNER JOIN [dbo].[DocumentFieldPartyVersion] AS '+pAlias+' ON d.DocumentID = '+pAlias+'.DocumentID AND '+pAlias+'.FieldID = '+fieldID);
+        joinLines.push('LEFT JOIN [dbo].[PartyVersion] AS '+pvAlias+' ON '+pAlias+'.PartyVersionID = '+pvAlias+'.PartyVersionID');
+        selectLines.push('  '+pvAlias+'.name AS ['+fn+'Lookup],');
+        addedParty[fn] = { pAlias: pAlias, pvAlias: pvAlias };
       }
-      // Now add all mapped attributes (fields)
-      mapping.forEach(function(attr) {
-        var attrAlias = "ivParty" + attr.name;
-        if (!addedFieldAliases[attrAlias]) {
-          joinLines.push("LEFT JOIN [dbo].[ivPartyTextFieldValue] AS " + attrAlias +
-            " ON " + partyAlias + ".PartyVersionID = " + attrAlias + ".PartyVersionID AND " + attrAlias + ".FieldID = " + attr.fieldId);
-          selectLines.push("  " + attrAlias + ".text AS [" + attr.name + "],");
-          addedFieldAliases[attrAlias] = true;
+      mapping.forEach(function (attr) {
+        var attrAlias = 'ivParty'+attr.name;
+        if (!addedAlias[attrAlias]) {
+          joinLines.push('LEFT JOIN [dbo].[ivPartyTextFieldValue] AS '+attrAlias+' ON '+pAlias+'.PartyVersionID = '+attrAlias+'.PartyVersionID AND '+attrAlias+'.FieldID = '+attr.fieldId);
+          selectLines.push('  '+attrAlias+'.text AS ['+attr.name+'],');
+          addedAlias[attrAlias] = true;
         }
       });
     } else {
-      // Fallback for unmapped party fields
-      var fieldObj = allPartyFields.find(f => f.FieldName === fieldName);
-      var fieldID = fieldObj ? fieldObj.FieldID : null;
-      var partyJoinAlias = "pf_" + pascalize(fieldName);
-      var partyVersionAlias = "pv_" + pascalize(fieldName);
-      joinLines.push("LEFT JOIN [dbo].[DocumentFieldPartyVersion] AS " + partyJoinAlias +
-        " ON d.DocumentID = " + partyJoinAlias + ".DocumentID AND " + partyJoinAlias + ".FieldID = " + fieldID);
-      joinLines.push("LEFT JOIN [dbo].[PartyVersion] AS " + partyVersionAlias +
-        " ON " + partyJoinAlias + ".PartyVersionID = " + partyVersionAlias + ".PartyVersionID");
-      selectLines.push("  " + partyVersionAlias + ".name AS [" + fieldName + "Lookup],");
-      var partyTextAlias = "ivParty" + pascalize(fieldName);
-      joinLines.push("LEFT JOIN [dbo].[ivPartyTextFieldValue] AS " + partyTextAlias +
-        " ON " + partyJoinAlias + ".PartyVersionID = " + partyTextAlias + ".PartyVersionID AND " + partyTextAlias + ".FieldID = " + fieldID);
-      selectLines.push("  " + partyTextAlias + ".text AS [" + fieldName + "],");
+      var fObj2 = allPartyFields.find(f => (f.FieldName||f.Name) === fn);
+      var fid   = fObj2 ? fObj2.FieldID : null;
+      var pj    = 'pf_'+pascalize(fn);
+      var pv    = 'pv_'+pascalize(fn);
+      joinLines.push('LEFT JOIN [dbo].[DocumentFieldPartyVersion] AS '+pj+' ON d.DocumentID = '+pj+'.DocumentID AND '+pj+'.FieldID = '+fid);
+      joinLines.push('LEFT JOIN [dbo].[PartyVersion] AS '+pv+' ON '+pj+'.PartyVersionID = '+pv+'.PartyVersionID');
+      selectLines.push('  '+pv+'.name AS ['+fn+'Lookup],');
+      var pt = 'ivParty'+pascalize(fn);
+      joinLines.push('LEFT JOIN [dbo].[ivPartyTextFieldValue] AS '+pt+' ON '+pj+'.PartyVersionID = '+pt+'.PartyVersionID AND '+pt+'.FieldID = '+fid);
+      selectLines.push('  '+pt+'.text AS ['+fn+'],');
     }
   });
 
-  // ---- Key fields ----
-selectedKeyFields.forEach(function(kf) {
-  var alias = "ivDocField" + pascalize(kf.FieldName);
-  var fieldIdInt = parseInt(kf.FieldID, 10);
-  if (!addedFieldAliases[alias]) {
-    if (!isNaN(fieldIdInt)) {
-      if (kf.FieldType === 'date') {
-        joinLines.push("LEFT JOIN [dbo].[ivDocumentDateFieldValue] AS " + alias +
-          " ON d.DocumentID = " + alias + ".DocumentID AND " + alias + ".FieldID = " + fieldIdInt);
-        selectLines.push("  " + alias + ".Date AS [" + kf.FieldName + "],");
-      } else {
-        joinLines.push("LEFT JOIN [dbo].[ivDocumentTextFieldValue] AS " + alias +
-          " ON d.DocumentID = " + alias + ".DocumentID AND " + alias + ".FieldID = " + fieldIdInt);
-        selectLines.push("  " + alias + ".text AS [" + kf.FieldName + "],");
-      }
+  // Keyfields (text/date/numeric variants)
+  selectedKeyFields.forEach(function (kf) {
+    var alias = 'ivDocField'+pascalize(kf.FieldName);
+    var fieldIdInt = parseInt(kf.FieldID, 10);
+    if (addedAlias[alias] || isNaN(fieldIdInt)) return;
+
+    if (kf.FieldType === 'date') {
+      joinLines.push('LEFT JOIN [dbo].[ivDocumentDateFieldValue] AS '+alias+' ON d.DocumentID = '+alias+'.DocumentID AND '+alias+'.FieldID = '+fieldIdInt);
+      selectLines.push('  '+alias+'.Date AS ['+kf.FieldName+'],');
+    } else if (kf.FieldType === 'money' || kf.FieldType === 'decimal' || kf.FieldType === 'number') {
+      joinLines.push('LEFT JOIN '+NUMERIC_VIEW+' AS '+alias+' ON d.DocumentID = '+alias+'.DocumentID AND '+alias+'.FieldID = '+fieldIdInt);
+      selectLines.push('  CAST('+alias+'.'+NUMERIC_COL+' AS DECIMAL(19,4)) AS ['+kf.FieldName+'],');
+    } else { // text/lookup/default
+      joinLines.push('LEFT JOIN [dbo].[ivDocumentTextFieldValue] AS '+alias+' ON d.DocumentID = '+alias+'.DocumentID AND '+alias+'.FieldID = '+fieldIdInt);
+      selectLines.push('  '+alias+'.text AS ['+kf.FieldName+'],');
     }
-    addedFieldAliases[alias] = true;
-  }
-});
+    addedAlias[alias] = true;
+  });
 
+  // Document Date (FieldID = 10 in many envs — adjust if different)
+  joinLines.push('LEFT JOIN [dbo].[ivDocumentDateFieldValue] AS ivd ON d.DocumentID = ivd.DocumentID AND ivd.FieldID = 10');
+  selectLines.push('  ivd.Date AS DocumentDate,');
 
-
-  // ---- Document date ----
-  joinLines.push("LEFT JOIN [dbo].[ivDocumentDateFieldValue] AS ivd ON d.DocumentID = ivd.DocumentID AND ivd.FieldID = 10");
-  selectLines.push("  ivd.Date AS DocumentDate,");
-
-  // ---- Standard IDs, URL ----
-  selectLines.push("  d.DocumentID AS DocumentID,");
-  selectLines.push("  n.NodeID AS NodeID,");
-  selectLines.push("  n.CatalogID AS AreaID,");
+  // Standard IDs + URL
+  selectLines.push('  d.DocumentID AS DocumentID,');
+  selectLines.push('  n.NodeID AS NodeID,');
+  selectLines.push('  n.CatalogID AS AreaID,');
   selectLines.push("  '/#areaId=' + CAST(n.CatalogID AS VARCHAR) + '&NodeId=' + CAST(n.NodeID AS VARCHAR(11)) + '&DocumentId=' + CAST(d.DocumentID AS VARCHAR(11)) AS url");
 
-  // ---- FROM and base joins ----
-  joinLines.unshift("INNER JOIN [dbo].[Node] n ON d.DocumentID = n.DocumentID");
-  joinLines.unshift("INNER JOIN [dbo].[Document] d ON dt.DocumentTypeID = d.DocumentTypeID");
-  joinLines.unshift("FROM [dbo].[DocumentType] dt");
+  // Base FROM/JOINs
+  joinLines.unshift('INNER JOIN [dbo].[Node] n ON d.DocumentID = n.DocumentID');
+  joinLines.unshift('INNER JOIN [dbo].[Document] d ON dt.DocumentTypeID = d.DocumentTypeID');
+  joinLines.unshift('FROM [dbo].[DocumentType] dt');
 
-  // ---- WHERE ----
-  var areaListSql = selectedAreaIds.map(id => "'" + id + "'").join(', ');
-  var docTypeListSql = selectedDocumentTypeIds.map(id => "'" + id + "'").join(', ');
-  whereLines.push("WHERE n.CatalogID IN (" + areaListSql + ")");
-  whereLines.push("  AND dt.DocumentTypeID IN (" + docTypeListSql + ")");
-  whereLines.push("  AND d.DocumentID NOT IN (SELECT DocumentID FROM [dbo].[RecycleBin])");
+  // WHERE
+  var areasSql = selectedAreaIds.map(id => "'"+id.replace(/'/g,"''")+"'").join(', ');
+  var docsSql  = selectedDocumentTypeIds.map(id => "'"+id.replace(/'/g,"''")+"'").join(', ');
+  var whereLines = [
+    'WHERE n.CatalogID IN ('+areasSql+')',
+    '  AND dt.DocumentTypeID IN ('+docsSql+')',
+    '  AND d.DocumentID NOT IN (SELECT DocumentID FROM [dbo].[RecycleBin])'
+  ];
 
-  // Date filter
   if (documentStartDate) {
-    whereLines.push("  AND ivd.Date >= '" + documentStartDate + "'");
+    whereLines.push("  AND ivd.Date >= '"+documentStartDate+"'");
   } else if (relativeMonthRange) {
-    var now = new Date();
-    now.setMonth(now.getMonth() - relativeMonthRange);
-    var y = now.getFullYear(), m = ('0' + (now.getMonth() + 1)).slice(-2), d = ('0' + now.getDate()).slice(-2);
-    whereLines.push("  AND ivd.Date >= '" + y + '-' + m + '-' + d + "'");
+    var now = new Date(); now.setMonth(now.getMonth()-relativeMonthRange);
+    var y = now.getFullYear(), m = ('0'+(now.getMonth()+1)).slice(-2), d = ('0'+now.getDate()).slice(-2);
+    whereLines.push("  AND ivd.Date >= '"+y+'-'+m+'-'+d+"'");
   }
 
-  // Exit status filter
   if (exitStatusField && exitStatusValue) {
-    var exitAlias = "ivDocField" + pascalize(exitStatusField);
-    if (addedFieldAliases[exitAlias]) {
-      whereLines.push("  AND " + exitAlias + ".text <> '" + exitStatusValue.replace(/'/g, "''") + "'");
+    var exitAlias = 'ivDocField'+pascalize(exitStatusField);
+    // Only add predicate if the alias exists (i.e., that field is in selectedKeyFields or party selection)
+    if (joinLines.some(function(l){ return l.indexOf(' '+exitAlias+' ')>=0; })) {
+      whereLines.push("  AND "+exitAlias+".text <> '"+exitStatusValue.replace(/'/g,"''")+"'");
     }
   }
 
-  // ---- Assemble ----
-  var cleanedSelect = selectLines.join('\n');
-  var sql = cleanedSelect + '\n' +
-            joinLines.join('\n') + '\n' +
-            whereLines.join('\n');
+  var sql = selectLines.join('\n') + '\n' + joinLines.join('\n') + '\n' + whereLines.join('\n');
   $('#sqlOutput').text(sql);
 }
 
-// --- GENERATE OUTPUT FILES --- //
-function generateDashboardFiles() {
-  const contentURL = window.location.origin;
-  const integrationName = $('#integrationNameInput').val().trim() || 'myDashboardIntegration';
-  const partyFields = allPartyFields.filter(f => selectedPartyFieldNames.includes(f.FieldName));
-  const keyFields = selectedKeyFields;
-// --- EXPAND COLUMNS FOR PARTY FIELD MAPPINGS --- //
-let expandedColumns = [];
-selectedColumnNames.forEach(function(col) {
-  var expanded = expandPartyFieldToColumns(col);
-  if (expanded.length > 1 || col.endsWith(' Info')) {
-    expandedColumns = expandedColumns.concat(expanded);
-  } else {
-    expandedColumns.push(col);
-  }
-});
-expandedColumns = [...new Set(expandedColumns)];
-const columnDefs = expandedColumns.map(col => {
-  if (col === 'Document Link') {
-    return `{
-      name: 'Document Link',
-      formatOutput: function(document) {
-        var btn = $('<button>').addClass('btn btn-sm btn-success').text('View Document');
-        btn.click(function() { window.open('${contentURL}' + document.url); });
-        return $('<div>').append(btn);
-      }
-    }`;
-  }
-  if (col === 'DocumentType') {
-    return `{ name: 'DocumentType', formatOutput: function(document) { return document.DocumentType || ''; } }`;
-  }
-  if (col === 'DocumentDate') {
-    return `{ name: 'DocumentDate', formatOutput: function(document) { return document.DocumentDate ? new Date(document.DocumentDate).toLocaleDateString() : ''; } }`;
-  }
-  return `{ name: '${col}', formatOutput: function(document) { return document['${col}'] || ''; } }`;
-});
-
-  const swimlanes = swimlaneDefinitions.map(sl => `  {
-    title: '${sl.name}',
-    docTypeArray: [${sl.documentTypeIds.map(id => `'${id}'`).join(', ')}],
-    documents: [],
-    exportable: true,
-    columns: firstOpColumns
-  }`).join(',\n');
-  const configJs = `// configuration.js (generated)\n` +
-    `var contentURL = '${contentURL}';\n` +
-    `var integrationName = '${integrationName}';\n\n` +
-    `var firstOpColumns = [\n${columnDefs.join(',\n')}\n];\n\n` +
-    `var documentConfig = [\n${swimlanes}\n];`;
-  const viewmodelJs = `define(['jquery','knockout','vmBase','user','integration','notify','template/configuration','jquery-ui','jquery.tablesorter.min.js'],function($,ko,vm,user,integration,notify){$('#refreshBtn').click(function(){integration.all('${integrationName}').then(splitAndDraw);});});`;
-  downloadFile('configuration.js', configJs);
-  downloadFile('viewmodel.js', viewmodelJs);
-}
-
-// --- LIST/SELECTION HELPERS --- //
-function renderList(containerSelector, items, idKey, textKey, clickHandler){
+// ---------- SMALL UTILS ---------- //
+function renderList(container, items, idKey, textKey, click) {
   var $ul = $('<ul class="list-group"></ul>');
-  items.forEach(item => {
+  (items||[]).forEach(function (it) {
     var $li = $('<li>').addClass('list-group-item list-group-item-action')
-      .text(item[textKey])
-      .data('id', item[idKey])
-      .on('click', clickHandler);
-    if (
-      (containerSelector === '#availableAreas' && selectedAreaIds.includes(String(item[idKey]))) ||
-      (containerSelector === '#availableDocTypes' && selectedDocumentTypeIds.includes(String(item[idKey])))
-    ) {
+      .text(it[textKey]).data('id', it[idKey]).on('click', click);
+    if ((container === '#availableAreas'    && selectedAreaIds.includes(String(it[idKey]))) ||
+        (container === '#availableDocTypes' && selectedDocumentTypeIds.includes(String(it[idKey])))) {
       $li.addClass('active');
     }
     $ul.append($li);
   });
-  $(containerSelector).empty().append($ul);
-}
-function updateSelectedList(containerSelector, selectedArray, idKey, textKey, nameLookupFn, removeHandler){
-  var $ul = $('<ul class="list-group"></ul>');
-  selectedArray.forEach(id => {
-    var item = {};
-    item[idKey] = id;
-    item[textKey] = nameLookupFn(id);
-    var $li = $('<li>')
-      .addClass('list-group-item list-group-item-action')
-      .text(item[textKey])
-      .data('id', item[idKey])
-      .on('click', removeHandler);
-    $ul.append($li);
-  });
-  $(containerSelector).empty().append($ul);
+  $(container).empty().append($ul);
 }
 
-// --- RESET ALL --- //
+function updateSelectedList(container, selectedArray, idKey, textKey, lookupFn, removeHandler) {
+  var $ul = $('<ul class="list-group"></ul>');
+  selectedArray.forEach(function (id) {
+    var item = {}; item[idKey]=id; item[textKey]=lookupFn(id);
+    var $li = $('<li>').addClass('list-group-item list-group-item-action')
+      .text(item[textKey]).data('id', item[idKey]).on('click', removeHandler);
+    $ul.append($li);
+  });
+  $(container).empty().append($ul);
+}
+
 function resetAllSelections() {
-  [
-    '#availableAreas', '#selectedAreas',
-    '#availableDocTypes', '#selectedDocTypes',
-    '#discoveredPartyFields', '#selectedSwimlanes',
-    '#availableColumns', '#selectedColumns',
-    '#selectedKeyfields'
-  ].forEach(selector => $(selector).empty());
+  ['#availableAreas','#selectedAreas','#availableDocTypes','#selectedDocTypes',
+   '#discoveredPartyFields','#selectedSwimlanes','#availableColumns','#selectedColumns','#selectedKeyfields']
+    .forEach(function (s) { $(s).empty(); });
   selectedAreaIds = [];
   selectedDocumentTypeIds = [];
   allPartyFields = [];
@@ -821,613 +999,18 @@ function resetAllSelections() {
   selectedColumnNames = [];
   exitStatusField = null;
   exitStatusValue = null;
+
   updateSwimlaneDocTypesSelect();
   updateSwimlaneFieldOptions();
   updateExitStatusFieldOptions();
   renderKeyFieldList();
   updateDashboardPreview();
 }
-// --- DASHBOARD FILE GENERATORS --- //
 
-function generateDashboardIndexFile() {
-  var dashboardTitle = $('#dashboardTitleInput').val().trim() || "My Dashboard";
-  var dashboardSubtitle = $('#dashboardSubtitleInput').val().trim() || "";
-
-  // 1. Main HTML file, linking to external css.css
-var html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>${dashboardTitle}</title>
-  <link href="jquery-ui.min.css" rel="stylesheet" />
-  <link href="bootstrap.min.css" rel="stylesheet"/>
-  <link href="theme.default.css" rel="stylesheet" />
-  <link href="css.css" rel="stylesheet" />
-  <link href="loading.css" rel="stylesheet" />
-</head>
-<body class="container-fluid">
-  <div class="page">
-    <div id="loading" class="loading"></div>
-    <div class="row header">
-      <h3 class="col-xs-4 col-xs-offset-4 text-center">
-        <b>${dashboardTitle}</b>
-        <br/>
-        <small>${dashboardSubtitle}</small>
-      </h3>
-      <button type="button" id="refreshBtn" class="col-xs-2 col-xs-offset-2 btn btn-success btn-lg">
-        Refresh <strong>&#10227;</strong>
-      </button>
-    </div>
-    <div class="row">
-      <div id="tableCanvas"></div>
-    </div>
-    <div id="fullStats"></div>
-    <div class="loading"></div>
-  </div>
-  <!-- ONLY include your custom scripts, nothing from a CDN -->
-  <script src="configuration.js"></script>
-  <script src="viewmodel.js"></script>
-</body>
-</html>
-`;
-
-
-  // 2. CSS content - copy/paste your full CSS string here:
-  var css = `
-.container-fluid{
-    background-color: white;
-}
-.page {
-    margin: 10px auto;
-    /*border: 1px solid #ddd; box-shadow: 0 0 30px grey;*/
-    padding: 10px 40px;
-    background-color: white;
-}
-.section{
-    cursor: pointer;
-}
-.header{
-    margin: 20px; /* space out the header row */
-}
-.required {
-    color: red;
-    padding-left: 2px;
-}
-.note {
-    font-weight: bold;
-    font-size: 18px;
-}
-img.logo {
-    margin: -10px auto;
-    width: 250px;
-}
-#fullStats {
-    margin-top: 36px;
-}
-#refreshBtn {
-    margin-top: 30px;
-}
-h3 {
-    padding: 12px;
-}
-.stats {
-    text-align: right;
-}
-/*customize colorscheme of table */
-.tablesorter-headerRow>th {
-    background-color: #00477F;
-    color: gainsboro;
-}
-.tablesorter-default .tablesorter-filter-row td{
-    background-color: #dee2e6;
-}
-.tablesorter-default td {
-   background-color: #dee2e6;
-}
-/* end color customizations */
-.priorityDocRow>td {
-    font-weight: bold;
-    background-color: #ADAFB2;
-}
-.img-fluid {
-    max-width: 100%;
-    height: auto;
-}
-/* Absolute Center Spinner */
-.loading, .processing {
-    position: fixed;
-    z-index: 999;
-    height: 2em;
-    width: 2em;
-    overflow: show;
-    margin: auto;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-}
-.processingText, .successText {
-    position: fixed;
-    z-index: 900;
-    height: 4em;
-    width: 20em;
-    border-radius: 10px;
-    overflow: show;
-    margin: auto;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    font-size: 30px;
-    color: white;
-    text-align: center;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-/* Transparent Overlay */
-.loading:before, .processing:before {
-    content: '';
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.3);
-}
-/* :not(:required) hides these rules from IE9 and below */
-.loading:not(:required), .processing:not(:required) {
-    font: 0/0 a;
-    color: transparent;
-    text-shadow: none;
-    background-color: transparent;
-    border: 0;
-}
-.loading:not(:required):after, .processing:not(:required):after {
-    content: '';
-    display: block;
-    font-size: 10px;
-    width: 1em;
-    height: 1em;
-    margin-top: -2.5em;
-    -webkit-animation: spinner 1500ms infinite linear;
-    -moz-animation: spinner 1500ms infinite linear;
-    -ms-animation: spinner 1500ms infinite linear;
-    -o-animation: spinner 1500ms infinite linear;
-    animation: spinner 1500ms infinite linear;
-    border-radius: 0.5em;
-    -webkit-box-shadow: rgba(0, 0, 0, 0.75) 1.5em 0 0 0, rgba(0, 0, 0, 0.75) 1.1em 1.1em 0 0, rgba(0, 0, 0, 0.75) 0 1.5em 0 0, rgba(0, 0, 0, 0.75) -1.1em 1.1em 0 0, rgba(0, 0, 0, 0.5) -1.5em 0 0 0, rgba(0, 0, 0, 0.5) -1.1em -1.1em 0 0, rgba(0, 0, 0, 0.75) 0 -1.5em 0 0, rgba(0, 0, 0, 0.75) 1.1em -1.1em 0 0;
-    box-shadow: rgba(0, 0, 0, 0.75) 1.5em 0 0 0, rgba(0, 0, 0, 0.75) 1.1em 1.1em 0 0, rgba(0, 0, 0, 0.75) 0 1.5em 0 0, rgba(0, 0, 0, 0.75) -1.1em 1.1em 0 0, rgba(0, 0, 0, 0.75) -1.5em 0 0 0, rgba(0, 0, 0, 0.75) -1.1em -1.1em 0 0, rgba(0, 0, 0, 0.75) 0 -1.5em 0 0, rgba(0, 0, 0, 0.75) 1.1em -1.1em 0 0;
-}
-/* Animation */
-@-webkit-keyframes spinner {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-@-moz-keyframes spinner {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-@-o-keyframes spinner {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-@keyframes spinner {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-/* Absolute Center Spinner */
-.successOverlay {
-    position: fixed;
-    z-index: 999;
-    height: 2em;
-    width: 2em;
-    overflow: show;
-    margin: auto;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-}
-/* Transparent Overlay */
-.successOverlay:before {
-    content: '';
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.3);
-}
-.successOverlay:not(:required) {
-    font: 0/0 a;
-    color: transparent;
-    text-shadow: none;
-    background-color: transparent;
-    border: 0;
-}
-.successOverlay:not(:required):after {
-    content: '';
-    display: block;
-    font-size: 10px;
-    width: 1em;
-    height: 1em;
-    border-radius: 0.5em;
-}
-.ui-autocomplete-loading {
-    background: white url('data:image/gif;base64,R0lGODlhKAAoAPcWAP////f39+/v7+bm5t7e3tbW1szMzMXFxb29vbW1ta2traWlpZmZmZmZmYyMjISEhHNzc2ZmZlJSUkpKSkJCQjo6Ov8AADMzMwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQFBwAWACwAAAAAKAAoAAAI+AABCBxIsKDBgwgTKlzIsKHDhxAjSpxIsaLFixgzOkyQQKPBAAUIPnhAMIBHAhAQDIwQYaAAAiY1PoBAQCBLgQEI1PSIAEIDgSMFDiAg4GJOgg4gFOUokMCAkhMJOHBwAOeCpwMDYAXwEubEA1MbxEw4lGjFAQscKFA4dMDYigKKepwb0YCCBg0UGGAooOwAuQ7t4tXL1y9gunQDvEUsFIGCqmSdLoZYQIECBJMLlj38cIDlkAINHNbqUmfmhaQHHsAMYABWp1AvEkCwF0AB0EM5X0SAQK6B2jl3ZhSAQPjv0qcnbrUNGidjocufS59Ovbr169izLwwIACH5BAUHABYALAgACAATABgAAAiiAC0IHEjQAgIEBRNaIEDQgQOCBgIUHODgwEAIEAYmiFAgocOLGS0UiBCy4AEHCwR+tOAgQoKBAwg2eGgQoYAID2QuMDBQwcQGEgcaaNDAp8KjFhI0QIhUYYCgTaMeLYBAgQIEHaVStYpVqtevYAUYQMDTK4GDBwB8PchQIAGoCgEIIFigrIC5UQcYyDogZlQDZRe2bWrAr2CpeAX2BSvwbsKAACH5BAUHABYALAgACAAXABcAAAinAC0IHEjQwoEDBRMqHNigAcECCxkaGOjAwUAEEAhEtLCgwQCBFQUSgPBgowUDDRIIbLgSAgKTFhQ4NIjQAgSLAwsEsDBAgQKIAhEIKLhgYAIIESZaKODz5cYADyJEUEkQgYKaCxtEcAAUZkEBQ716JXAAAYIDGsWKLHs2rdq3cOEWMOBW7QADBrqqFYD3o0C/cXkSABBYAAHAcAkQ2Bk3AIGwgRmLDQgAIfkEBQcAFgAsCAAIABgAEwAACJwALQgcSNCCAQMFEyYcQFCBAoIEFBZUUGBggwYDDzhgKFGgQ4sYBTpw0HFgAQUIPD60sMDBAYUABBBEoCCAQYQWHIQUGHEgAgQ9Lbyc6PMBhIo8fx4AUDInBAgpCQowgACnxAUQGgRtyrUr1wEFDhbgWDLBgwgRHiQAK5ZsR7No1XqdC4DpXIIBBhBwO1cAgb13Bwb4KzOwYMMDAwIAIfkEBQcAFgAsCAAIABgAEwAACJ4ALQgcSNBCgQIFExYEUBABAoUQLQhAQGCgAgUDDTSIONChAIEXBQ5osICjQAIIDAh0KDBBA5UmLRx4aBChhQYYFQowYGCAQAAwB04ceMCBg4oiedrk2MDogYQFDCCFqMDBAp8xs2o1KWAAAQIDPppE4AACBAcIun4NG5OsWbRb43IUIFbuwAYRHCyVG+BBhAgJ7A5MACFCUMEFAlgICAAh+QQFBwAWACwJAAgAFwAXAAAIrgAtCBxIkAABgggTWhBA8MABggMUEjQQUSACBAMLKJA40ICBgRcHKtjI0cIAAwUEOrSoIGXCAAQLfLRg0EIABRgHVgxgkKFAAjAbdlzQYKAAgxVLKmjQYKbAAAMIJFWIoEECiQAAlAwQtKTXryUPNHDgoMFDsAPFkjWLtq3btwsgNDj4VqADCBBygh3QICiCBxBcfhUQ4UFBtw4iXK1roUAECIwFJogguK6BrgIDAgAh+QQFBwAWACwNAAgAEwAYAAAInwAtCBw4YMDAgwgDHCxQACGAhAQEDDRgYCABBBIREiCg0AJFgQIQIEAIkoBBCwwFGkBAgKTAAQQeFhSI4IBLgiQNPESpQMHJmwcR9GwI9OABBSOLKl3K9KYBBQ0aKKi49GnUqU2zakWowMGCrQ0cOLCp9KvAA2JbkkyQQCAEBwd/InzwQGADCEmLRoggkACEukr3DkQAQS1QuguXslUaEAAh+QQFBwAWACwNAAgAEwAYAAAIpAAtCBwoQMDAgwgRDhhw0GBChAQIDBxg4CFEiQINVLQ4kaGFAgY8crRQMGOBhgBGBsBogQACBCMPAjjwkmVMAwgMOIzJs6dPgQUQKFCA4CTPoEOL/lzKVCCCBglE9lTQoMFGgQEaSLWgYKCBBQ0OPohg8KVAB2EfJojg4GxbCwscHHgIIYJRCBAEDnDw9mCBCAkG4h14wMHWAFct8D1o06LZkQEBACH5BAUHABYALAkACQAXABcAAAioAC0IHEiwoIUABhMqFEAAocKHBwkQgAhxAAEBFBUCIDAg48OOAgcYMIDRI8ECI0GaFEjAQIGVMGPKtEDgAAIEBybCrHkz58yFJRUGcFiwgIMIDSAeUICgYIIIER4QVYhAgYKXFgxEgJBg4IKCApoKLGC1YwCsAh1AEHjgwMEGCjIigJDUQoO6CRoYoPgAgk4HDgY2+PqQAASxFgAPNFD3IVq7jWW2pRgQACH5BAUHABYALAgADQAYABMAAAibAC0IHEiwoMEABhMqFECAAEKFEC0MaCggIsSJAx5aTAgAwMaPBBM8iBDhQYKNAwoYMFBggEiSJlGqZDkApM2bBgk0gLAgogEEBioSRAABggOLAA4gQEBgYAEIDxAMVGDwwEACSwk2HdjgqIWVAhVIHSjAY1UHPS0ooGoBgYICGx04qGmhQYOpbC86sCrQrtO8ELeGBUzXJtiIAQEAIfkEBQcAFgAsCAANABgAEwAACJsALQQoYKGgwYMIE1owEAFCAoUQEyaIEOFBgIgYLRRwEKFBxowCBHwcSbIgAgcQIDhA8FHAAAIEBgg4mXJly5cxRZbcydPgAgcKMBIwQBDhAQcOPGYsYMDAAIMEkB4wiECnQQMACg5oavWpQQUNLhYoimDqRwMNHlpAwHIhAgIfFyi1oCCohZltMTYw8NWuBQJVd7JFmLXk2IwBAQAh+QQJBwAWACwIAAkAFwAXAAAIqAAtCBQYwMDAgwgTDiwQIYHChwkhRCgAsaKFBBEcWERI4OCDCAI2CiwA4QECgg0GiBSIAAIEjSs5NoCwIKbNmysPNHDgoMGBmzp5+sRJtCgAAAoHJGhwEuIAAgMCHDTQoIGCjU8JhBTYYIFBgT8PBugoUAABAlITIrhq4axAAxQHpkVYQEHTA2ELGFBZUQFbCwiaWjDwFaKCuIAFDyj8kC/YsGVtuoUYEAA7') right center no-repeat;
-}
-`;
-
-  // 3. Download both files
-  downloadFile('index.html', html);
-  downloadFile('css.css', css);
-}
-// STEP 11: Generate config.js
-function generateDashboardConfigFile() {
-  // Get config values
-  var contentURL = $('#contentUrlInput').val().trim();
-  var integrationName = areaIntegrationName || $('#integrationNameInput').val().trim() || 'myDashboardIntegration';
-
-  // 1. Expand columns for all selected columns (includes mapping for party fields)
-  let expandedColumns = [];
-  selectedColumnNames.forEach(function(col) {
-    var expanded = expandPartyFieldToColumns(col);
-    if (expanded.length > 1 || col.endsWith(' Info')) {
-      expandedColumns = expandedColumns.concat(expanded);
-    } else {
-      expandedColumns.push(col);
-    }
+function escapeHtml(str){
+  return String(str).replace(/[&<>"'`=\/]/g, function(s){
+    return ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#47;','`':'&#96;','=':'&#61;'
+    })[s];
   });
-  expandedColumns = [...new Set(expandedColumns)];
-
-  // 2. Build columnDefs array with correct formatters (text vs date vs default)
-  const columnDefs = expandedColumns.map(col => {
-    if (col === 'Document Link') {
-      return `{
-        name: 'Document Link',
-        formatOutput: function(document) {
-          var btn = $('<button>').addClass('btn btn-sm btn-success').text('View Document');
-          btn.click(function() { window.open('${contentURL}' + document.url); });
-          return $('<div>').append(btn);
-        }
-      }`;
-    }
-    if (col === 'DocumentType') {
-      return `{ name: 'DocumentType', formatOutput: function(document) { return document.DocumentType || ''; } }`;
-    }
-    if (col === 'DocumentDate') {
-      // Always format the built-in document date as a JS date
-      return `{ name: 'DocumentDate', formatOutput: function(document) { return document.DocumentDate ? new Date(document.DocumentDate).toLocaleDateString() : ''; } }`;
-    }
-    // Handle user-added keyfields with date type
-    var kf = selectedKeyFields.find(k => k.FieldName === col);
-    if (kf && kf.FieldType === 'date') {
-      return `{ name: '${col}', formatOutput: function(document) { return document['${col}'] ? new Date(document['${col}']).toLocaleDateString() : ''; } }`;
-    }
-    // Fallback: default text render
-    return `{ name: '${col}', formatOutput: function(document) { return document['${col}'] || ''; } }`;
-  });
-
-  // 3. Build swimlane configs
-  const swimlanes = swimlaneDefinitions.map(sl => `  {
-    title: '${sl.name.replace(/'/g, "\\'")}',
-    docTypeArray: [${sl.documentTypeIds.map(id => `'${lookupDocumentTypeName(id)}'`).join(', ')}],
-    documents: [],
-    exportable: true,
-    columns: firstOpColumns
-  }`).join(',\n');
-
-  // 4. Compose AMD config file
-  const configJs =
-`// configuration.js (generated)
-define([], function() {
-  var contentURL = '${contentURL}';
-  var integrationName = '${integrationName}';
-  var firstOpColumns = [
-${columnDefs.join(',\n')}
-  ];
-  var documentConfig = [
-${swimlanes}
-  ];
-  return {
-    contentURL: contentURL,
-    integrationName: integrationName,
-    documentConfig: documentConfig
-  };
-});
-`;
-
-  // 5. Download the file
-  downloadFile('configuration.js', configJs);
 }
-
-// STEP 12: Generate viewmodel.js
-// STEP 12: Generate viewmodel.js
-function generateDashboardViewModelFile() {
-  // Just generate a standard, fully functional file. This works even if you change columns, swimlanes, etc.
-  var viewmodelJs = `
-/* Autogenerated by dashboard builder */
-define([
-  'jquery',
-  'knockout',
-  'vmBase',
-  'user',
-  'integration',
-  'template/dynamicSort',
-  'template/configuration',
-  'jquery-ui',
-  'jquery.tablesorter.min.js'
-], function($, ko, vm, user, integration, dynamicSort, configuration) {
-  require(['jquery.tablesorter.widgets.js']);
-  window.parent.$('.hsplitter, .bottom_panel').hide();
-  window.parent.$('.top_panel').height('100%');
-
-  var swimlaneConfig = configuration.documentConfig;
-  var tableShow = [];
-
-  // Refresh Button - fetch and redraw
-  $('#refreshBtn').click(function () {
-    clearTable();
-    $('.loading').show();
-    integration.all(configuration.integrationName).then(function(contentData) {
-      splitAndDraw(contentData);
-    });
-  });
-
-  function clearTable() {
-    $('#tableCanvas').empty();
-    $('#fullStats').empty();
-    swimlaneConfig.forEach(function(cfg){ cfg.documents = []; });
-  }
-
-  function pushDocument(config, doc) {
-    config.documents = config.documents || [];
-    config.documents.push(doc);
-  }
-
-  function splitAndDraw(documents) {
-    clearTable();
-    // For each document, assign to swimlane if docTypeArray matches
-    documents.forEach(function (doc) {
-      swimlaneConfig.forEach(function(configObj) {
-        if(configObj.docTypeArray.includes(doc.DocumentType)) {
-          pushDocument(configObj, doc);
-        }
-      });
-    });
-
-    swimlaneConfig.forEach(function (configObj, index) {
-      drawTable(configObj, index);
-    });
-    buildFullStats(documents);
-    $('.loading').hide();
-  }
-
-  function drawTable(config, index) {
-    var note = config.title || '';
-    var $table = $('#tableCanvas');
-    var stats = {
-      tableName: note.replace(/ /g, ''),
-      rowCount: config.documents.length
-    };
-
-    // Stat row
-    var $statRow = $('<div class="row">')
-      .data('statNote', note)
-      .addClass('section');
-    $statRow.append(
-      $('<div class="col-xs-8 note">')
-        .text(note)
-        .click(function () {
-          $(this).parent().next('table').toggle(0, function () {
-            if (tableShow.indexOf(note) >= 0) {
-              tableShow = $.grep(tableShow, function (value) { return value != note; });
-            } else {
-              tableShow.push(note);
-            }
-          });
-        })
-    );
-    $statRow.append(
-      $('<div class="col-xs-4 stats">')
-        .html('Documents: <strong>' + stats.rowCount + '</strong>')
-        .click(function () {
-          $(this).parent().next('table').toggle(0, function () {
-            if (tableShow.indexOf(note) >= 0) {
-              tableShow = $.grep(tableShow, function (value) { return value != note; });
-            } else {
-              tableShow.push(note);
-            }
-          });
-        })
-    );
-    $table.append($statRow);
-
-    // Table header
-    var $theader = $('<thead>');
-    var $theaderRow = $('<tr>');
-    config.columns.forEach(function (col) {
-      $theaderRow.append($('<th>').text(col.name));
-    });
-    $theader.append($theaderRow);
-
-    // Table body
-    var $tbody = $('<tbody>');
-    config.documents.forEach(function (doc) {
-      var $tbodyRow = $('<tr>');
-      config.columns.forEach(function (column) {
-        $tbodyRow.append(
-          $('<td>').html(
-            typeof column.formatOutput === 'function'
-              ? column.formatOutput(doc)
-              : doc[column.name] || ''
-          )
-        );
-      });
-      $tbody.append($tbodyRow);
-    });
-
-    // Build table
-    var showTable = ((tableShow.indexOf(note) >= 0) ? true : false);
-    $table.append($('<table>', {
-      id: 'dataTable_' + index,
-      style: 'margin-bottom:30px;',
-      'data-note': note,
-      class: 'tablesorter'
-    }).append($theader).append($tbody));
-
-    // Enable tablesorter
-    $('#dataTable_' + index).tablesorter({
-      widgets: ['filter', 'stickyHeaders'],
-      widgetOptions: { filter_childRows: true },
-      theme: 'default'
-    });
-
-    // Show/hide according to tableShow
-    $('[data-note="' + note + '"]').toggle(showTable);
-
-    // Export button
-    if (config.exportable) {
-      generateCSVButton($statRow, note, index);
-    }
-  }
-
-  function generateCSVButton(parent, note, index) {
-    var filename = note.replace(/ /g, '');
-    parent.append(
-      $('<div class="col-xs-1">').html(
-        '<a id="' + filename + 'TBL">' +
-        '<button type="button" class="btn btn-sm btn-warning">Export</button>' +
-        '</a>'
-      )
-    );
-    $('#' + filename + 'TBL').hover(function () {
-      var dataString = '';
-      $('#dataTable_' + index + ' tr').not('.filtered, .tablesorter-headerRow, .tablesorter-ignoreRow').each(function () {
-        $(this).find('td').each(function () {
-          dataString += $(this).text() + '\\t';
-        });
-        dataString += '\\r\\n';
-      });
-      $(this).attr('href', 'data:application/octet-stream,' + encodeURIComponent(dataString))
-             .attr('download', filename + 'TXT.txt');
-    });
-  }
-
-  function buildFullStats(data) {
-    var stats = {
-      rowCount: data.length
-    };
-    $('#fullStats').css('font-weight', 'bold').text(
-      'Total: Documents: ' + stats.rowCount
-    );
-  }
-
-  // ViewModel API hooks (optional)
-  vm.onLoad = function onLoad(source, inputValues) { $('#refreshBtn').click(); };
-  vm.setDefaults = function setDefaults(source, inputValues) {};
-  vm.afterLoad = function afterLoad() {};
-
-  return vm;
-});
-`;
-
-  // Download the viewmodel.js file
-  downloadFile('viewmodel.js', viewmodelJs);
-}
-
-function downloadFile(filename, content) {
-  const blob = new Blob([content], { type: 'text/plain' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
-
-
-// --- INIT ON READY --- //
-$(document).ready(function(){
-  resetAllSelections();
-  updateDashboardPreview();  // <-- force the dock to appear on load
-});
-
-
-function ensureDockedDashboardPreview() {
-  if ($('#dashboardPreviewDock').length === 0) {
-    // Add CSS if not already present
-    if ($('#dashboardPreviewDockCSS').length === 0) {
-      $('head').append(`
-        <style id="dashboardPreviewDockCSS">
-        #dashboardPreviewDock {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          z-index: 9999;
-          background: #fff;
-          border-top: 2px solid #007bff;
-          box-shadow: 0 -2px 14px rgba(0,0,0,0.18);
-          max-height: 50vh;
-          overflow-y: auto;
-          transition: max-height 0.3s;
-        }
-        #dashboardPreviewDock.minimized {
-          max-height: 36px;
-          overflow: hidden;
-        }
-        #dashboardPreviewDock .dock-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 4px 16px;
-          background: #f8f9fa;
-          border-bottom: 1px solid #dee2e6;
-          cursor: pointer;
-          user-select: none;
-        }
-        #dashboardPreviewDock .dock-header strong {
-          font-size: 1.15em;
-        }
-        #dashboardPreviewDock .dock-content {
-          padding: 12px 16px;
-        }
-        #dashboardPreviewDock .min-btn {
-          background: none;
-          border: none;
-          font-size: 1.4em;
-          color: #555;
-          outline: none;
-          cursor: pointer;
-        }
-        </style>
-      `);
-    }
-
-    // Add the docked preview HTML
-    $('body').append(`
-      <div id="dashboardPreviewDock">
-        <div class="dock-header">
-          <strong>Dashboard Preview</strong>
-          <button class="min-btn" title="Minimize Preview">&#x2212;</button>
-        </div>
-        <div class="dock-content">
-          <div id="dashboardPreviewSection"></div>
-        </div>
-      </div>
-    `);
-
-    // Minimize/restore logic
-    $('#dashboardPreviewDock .min-btn').on('click', function(e){
-      $('#dashboardPreviewDock').toggleClass('minimized');
-      $(this).html($('#dashboardPreviewDock').hasClass('minimized') ? '&#x25B2;' : '&#x2212;');
-    });
-
-    // Double click header to minimize/restore
-    $('#dashboardPreviewDock .dock-header').on('dblclick', function(){
-      $('#dashboardPreviewDock .min-btn').click();
-    });
-  }
-  return $('#dashboardPreviewDock');
-}
-
