@@ -65,10 +65,9 @@ INNER JOIN
     [dbo].[DocumentFieldPartyVersion] dfpv ON d.DocumentID = dfpv.DocumentID
 INNER JOIN
     [dbo].[Field] f ON dfpv.FieldID = f.FieldID
-WHERE 
-    dt.[Name] = 'REC - High School Transcripts'
 ORDER BY
-    f.[Name]
+    f.[Name];
+
 
 2. **Connect Your Sources to Your Dashboard Form**
 
