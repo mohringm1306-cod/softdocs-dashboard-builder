@@ -1,10 +1,11 @@
-/* builder viewmodel.js (v2.0) — COD Softdocs Dashboard
+/* builder viewmodel.js (v2.0) — COD Softdocs Dashboard - FIXED
    - Field Catalog with search (fieldListIntegration)
    - Autopopulate keyfields by ID or Name
    - Preserves areas, doc types, party discovery, SQL builder, preview
+   - FIXES: scroll, duplicates, typing, clearing, field catalog
 */
 
-console.log('builder viewmodel.js loaded (v2.0)');
+console.log('builder viewmodel.js loaded (v2.0 - FIXED)');
 
 // ---------- GLOBAL STATE / SOURCE NAMES ---------- //
 var integration;
@@ -33,6 +34,9 @@ var exitStatusValue = null;
 var allFieldsCatalog = []; // [{FieldID, Name, Code, DataTypeName}]
 var fieldCatalogLoaded = false;
 
+// FIXED: Request sequencing to prevent stale resolves
+var _resolveToken = 0;
+
 // ---------- AMD ENTRYPOINT ---------- //
 require(['integration'], function (integrationModule) {
   integration = integrationModule;
@@ -46,6 +50,11 @@ function initializeUserInterface() {
   $('#buildSqlBtn').click(buildSqlQuery);
   $('#addSwimlaneBtn').click(addSwimlaneDefinition);
   $('#addKeyfieldBtn').click(addKeyFieldManually);
+  
+  // File generation buttons
+  $('#generateIndexBtn').click(generateDashboardIndexFile);
+  $('#generateConfigBtn').click(generateDashboardConfigFile);
+  $('#generateViewModelBtn').click(generateDashboardViewModelFile);
 
   // Date filters
   $('#startDateInput').change(function(){ documentStartDate = $(this).val() || null; updateDashboardPreview(); });
@@ -61,9 +70,9 @@ function initializeUserInterface() {
     renderAllFieldsNested(($(this).val() || '').toLowerCase());
   });
 
-  // Autopopulate events — ID or Name
-  const debouncedId = debounce(autoResolveIdOrName, 200);
-  const debouncedName = debounce(onKeyfieldNameTyping, 200);
+  // FIXED: Improved debouncing for autopopulate
+  const debouncedId = debounce(autoResolveIdOrName, 400);
+  const debouncedName = debounce(onKeyfieldNameTyping, 300);
 
   $('#keyfieldIdInput').on('input', debouncedId).on('blur', autoResolveIdOrName);
   $('#keyfieldNameInput').on('input', debouncedName).on('blur', function(){
@@ -74,24 +83,46 @@ function initializeUserInterface() {
     if ($(this).val() === '') autoResolveIdOrName(); // back to Auto
   });
 
-  // Dock controls
+  // FIXED: Clear button handler
+  $('#clearKeyfieldInputsBtn').on('click', function(){
+    $('#keyfieldIdInput').val('');
+    $('#keyfieldNameInput').val('');
+    $('#keyfieldTypeInput').val(''); // Auto
+    hideNameSuggestions();
+  });
+
+  // FIXED: Enhanced suggestion hiding
+  $('#keyfieldNameInput').on('keydown', function(e){
+    if (e.key === 'Escape') hideNameSuggestions();
+  });
+  $(document).on('click', function(ev){
+    if (!$(ev.target).closest('#keyfieldNameInput,#keyfieldNameSuggest').length) hideNameSuggestions();
+  });
+
+  // FIXED: Dock controls with padding adjustment
   $('#dashboardPreviewDock .min-btn').on('click', function(){
     $('#dashboardPreviewDock').toggleClass('minimized');
     $(this).html($('#dashboardPreviewDock').hasClass('minimized') ? '&#x25B2;' : '&#x2212;');
+    adjustBodyPaddingForDock();
   });
   $('#dashboardPreviewDock .dock-header').on('dblclick', function(){
     $('#dashboardPreviewDock .min-btn').click();
   });
 
+  // FIXED: Window resize handler for dock
+  $(window).on('resize', adjustBodyPaddingForDock);
+
   // Initial render
   updateDashboardPreview();
   renderKeyFieldList();
+  adjustBodyPaddingForDock();
 }
 
 // ---------- HELPERS ---------- //
 function debounce(fn, ms) {
   var t; return function(){ var ctx=this, args=arguments; clearTimeout(t); t=setTimeout(function(){ fn.apply(ctx,args); }, ms); };
 }
+
 function toArray(res) {
   if (!res) return [];
   if (Array.isArray(res)) return res;
@@ -101,6 +132,7 @@ function toArray(res) {
   if (Array.isArray(res.data)) return res.data;
   return [];
 }
+
 function mapSoftdocsType(t) {
   if (t == null) return 'text';
   var lower = String(t).trim().toLowerCase();
@@ -120,9 +152,29 @@ function mapSoftdocsType(t) {
   console.log('Unknown DataType:', t, '- defaulting to text');
   return 'text';
 }
+
 function firstRow(res) {
   var arr = toArray(res);
   return arr.length ? arr[0] : null;
+}
+
+// FIXED: Deduplication helper
+function uniqueBy(arr, keyFn) {
+  var seen = new Set(); var out = [];
+  arr.forEach(function (x) {
+    var k = keyFn(x);
+    if (!seen.has(k)) { seen.add(k); out.push(x); }
+  });
+  return out;
+}
+
+// FIXED: Body padding adjustment for dock
+function adjustBodyPaddingForDock() {
+  var $dock = $('#dashboardPreviewDock');
+  if (!$dock.length) return;
+  var h = $dock.outerHeight();
+  // add a little cushion so last section isn't hidden under the dock
+  $('body').css('padding-bottom', (h + 24) + 'px');
 }
 
 // ---------- FIELD CATALOG (full list) ---------- //
@@ -152,6 +204,7 @@ function loadAllFieldsCatalog(showLoader) {
     .finally(function(){ if (showLoader) $('.loading').hide(); });
 }
 
+// FIXED: Auto-expand groups by default
 function renderAllFieldsNested(queryText) {
   var q = (queryText || '').toLowerCase();
   var rows = (q
@@ -183,7 +236,10 @@ function renderAllFieldsNested(queryText) {
       .css({ cursor: 'pointer' })
       .text(letter + ' (' + list.length + ')');
 
-    var $ul = $('<ul>').addClass('list-group mb-2').hide();
+    var $ul = $('<ul>').addClass('list-group mb-2');
+    
+    // FIXED: Auto-expand by default (show instead of hide)
+    $ul.show();
 
     list.forEach(function (r) {
       var type = mapSoftdocsType(r.DataTypeName);
@@ -284,13 +340,26 @@ function showNameSuggestions() {
   var off = $inp.position();
   $box.css({ display:'block', top: (off.top + $inp.outerHeight())+'px', left: off.left+'px', width: $inp.outerWidth()+'px' });
 }
+
 function hideNameSuggestions(){ $('#keyfieldNameSuggest').hide().empty(); }
 
+// FIXED: Improved autoResolveIdOrName with request sequencing and better logic
 function autoResolveIdOrName() {
+  var currentToken = ++_resolveToken;
+
   var idRaw = ($('#keyfieldIdInput').val() || '').trim();
   var nameRaw = ($('#keyfieldNameInput').val() || '').trim();
 
+  // If both are empty, clear type & suggestions and stop
+  if (!idRaw && !nameRaw) {
+    hideNameSuggestions();
+    // Do NOT repopulate on empty—allow fields to stay blank
+    return Promise.resolve();
+  }
+
   function setIfEmpty(meta) {
+    // Ignore stale results
+    if (currentToken !== _resolveToken) return;
     if (!meta) return;
     if (!$('#keyfieldNameInput').val().trim() && meta.name) $('#keyfieldNameInput').val(meta.name);
     if ($('#keyfieldTypeInput').val() === '' && meta.type) $('#keyfieldTypeInput').val(meta.type);
@@ -302,40 +371,25 @@ function autoResolveIdOrName() {
     : loadAllFieldsCatalog(false);
 
   return ensureCatalog.then(function () {
-    // 1) If ID given, try by ID
+    // If user supplied a full numeric ID, prefer exact ID match only
     var idNum = Number(idRaw);
     if (idRaw && !Number.isNaN(idNum)) {
-      var hit = allFieldsCatalog.find(function(x){ return x.FieldID === idNum; });
-      if (hit) {
-        setIfEmpty({
-          name: hit.Name,
-          type: mapSoftdocsType(hit.DataTypeName)
-        });
-        return;
+      var hit = allFieldsCatalog.find(function(x){ return Number(x.FieldID) === idNum; });
+      if (hit) { 
+        setIfEmpty({ name: hit.Name, type: mapSoftdocsType(hit.DataTypeName) }); 
+        return; 
       }
       // Fallback to single-ID integration (if allowed)
       return resolveFieldMetaById(idNum).then(setIfEmpty);
     }
 
-    // 2) If Name given, try exact | startsWith | contains over Name or Code
+    // If a name is being typed, do NOT apply partial mismatched IDs
     if (nameRaw) {
       var lower = nameRaw.toLowerCase();
-      var byNameExact = allFieldsCatalog.filter(function(x){ return (x.Name||'').toLowerCase() === lower; });
-      var byCodeExact = allFieldsCatalog.filter(function(x){ return (x.Code||'').toLowerCase() === lower; });
-      var pick = (byNameExact[0] || byCodeExact[0]);
-
-      if (!pick) {
-        var starts = allFieldsCatalog.filter(function(x){
-          return (x.Name||'').toLowerCase().startsWith(lower) || (x.Code||'').toLowerCase().startsWith(lower);
-        });
-        pick = starts[0];
-      }
-      if (!pick) {
-        var contains = allFieldsCatalog.filter(function(x){
-          return (x.Name||'').toLowerCase().includes(lower) || (x.Code||'').toLowerCase().includes(lower);
-        });
-        pick = contains[0];
-      }
+      var pick =
+        allFieldsCatalog.find(function(x){ return (x.Name||'').toLowerCase() === lower || (x.Code||'').toLowerCase() === lower; }) ||
+        allFieldsCatalog.find(function(x){ return (x.Name||'').toLowerCase().startsWith(lower) || (x.Code||'').toLowerCase().startsWith(lower); }) ||
+        allFieldsCatalog.find(function(x){ return (x.Name||'').toLowerCase().includes(lower) || (x.Code||'').toLowerCase().includes(lower); });
 
       if (pick) {
         if (!$('#keyfieldIdInput').val().trim()) $('#keyfieldIdInput').val(pick.FieldID);
@@ -344,6 +398,7 @@ function autoResolveIdOrName() {
       }
     }
   }).catch(function(e){
+    // swallow; user may still be typing
     console.warn('autoResolveIdOrName error:', e);
   });
 }
@@ -414,12 +469,15 @@ function handleRemoveArea() {
   updateDashboardPreview();
 }
 
+// FIXED: De-duplicate document types by DocumentTypeID
 function loadDocumentTypesForAreas(areaIds) {
   $('.loading').show();
   integration.all(docTypesIntegrationName)
     .then(function (docTypes) {
       $('.loading').hide();
-      allDocumentTypes = toArray(docTypes).filter(dt => areaIds.includes(String(dt.CatalogID)));
+      var filtered = toArray(docTypes).filter(dt => areaIds.includes(String(dt.CatalogID)));
+      // FIXED: de-dupe by DocumentTypeID
+      allDocumentTypes = uniqueBy(filtered, x => String(x.DocumentTypeID));
       allDocumentTypes.sort((a,b)=>String(a.DocumentTypeName).localeCompare(String(b.DocumentTypeName)));
       renderList('#availableDocTypes', allDocumentTypes, 'DocumentTypeID', 'DocumentTypeName', handleSelectDocumentType);
       updateSwimlaneDocTypesSelect();
@@ -1013,4 +1071,288 @@ function escapeHtml(str){
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#47;','`':'&#96;','=':'&#61;'
     })[s];
   });
+}
+
+// ---------- FILE GENERATION FUNCTIONS ---------- //
+
+function downloadFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/plain' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function generateDashboardIndexFile() {
+  var dashboardTitle = $('#dashboardTitleInput').val().trim() || "My Dashboard";
+  var dashboardSubtitle = $('#dashboardSubtitleInput').val().trim() || "";
+
+  var html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>${dashboardTitle}</title>
+  <link href="jquery-ui.min.css" rel="stylesheet" />
+  <link href="bootstrap.min.css" rel="stylesheet"/>
+  <link href="theme.default.css" rel="stylesheet" />
+  <link href="css.css" rel="stylesheet" />
+  <link href="loading.css" rel="stylesheet" />
+</head>
+<body class="container-fluid">
+  <div class="page">
+    <div id="loading" class="loading"></div>
+    <div class="row header">
+      <h3 class="col-xs-4 col-xs-offset-4 text-center">
+        <b>${dashboardTitle}</b>
+        <br/>
+        <small>${dashboardSubtitle}</small>
+      </h3>
+      <button type="button" id="refreshBtn" class="col-xs-2 col-xs-offset-2 btn btn-success btn-lg">
+        Refresh <strong>&#10227;</strong>
+      </button>
+    </div>
+    <div class="row">
+      <div id="tableCanvas"></div>
+    </div>
+    <div id="fullStats"></div>
+    <div class="loading"></div>
+  </div>
+  <script src="configuration.js"></script>
+  <script src="viewmodel.js"></script>
+</body>
+</html>`;
+
+  var css = `.container-fluid { background-color: white; }
+.page { margin: 10px auto; padding: 10px 40px; background-color: white; }
+.section { cursor: pointer; }
+.header { margin: 20px; }
+.required { color: red; padding-left: 2px; }
+.note { font-weight: bold; font-size: 18px; }
+img.logo { margin: -10px auto; width: 250px; }
+#fullStats { margin-top: 36px; }
+#refreshBtn { margin-top: 30px; }
+h3 { padding: 12px; }
+.stats { text-align: right; }
+.tablesorter-headerRow>th { background-color: #00477F; color: gainsboro; }
+.tablesorter-default .tablesorter-filter-row td { background-color: #dee2e6; }
+.tablesorter-default td { background-color: #dee2e6; }
+.priorityDocRow>td { font-weight: bold; background-color: #ADAFB2; }
+.img-fluid { max-width: 100%; height: auto; }
+.loading, .processing { position: fixed; z-index: 999; height: 2em; width: 2em; overflow: show; margin: auto; top: 0; left: 0; bottom: 0; right: 0; }
+.loading:before, .processing:before { content: ''; display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.3); }
+.loading:not(:required), .processing:not(:required) { font: 0/0 a; color: transparent; text-shadow: none; background-color: transparent; border: 0; }
+.loading:not(:required):after, .processing:not(:required):after { content: ''; display: block; font-size: 10px; width: 1em; height: 1em; margin-top: -2.5em; animation: spinner 1500ms infinite linear; border-radius: 0.5em; box-shadow: rgba(0, 0, 0, 0.75) 1.5em 0 0 0, rgba(0, 0, 0, 0.75) 1.1em 1.1em 0 0, rgba(0, 0, 0, 0.75) 0 1.5em 0 0, rgba(0, 0, 0, 0.75) -1.1em 1.1em 0 0, rgba(0, 0, 0, 0.75) -1.5em 0 0 0, rgba(0, 0, 0, 0.75) -1.1em -1.1em 0 0, rgba(0, 0, 0, 0.75) 0 -1.5em 0 0, rgba(0, 0, 0, 0.75) 1.1em -1.1em 0 0; }
+@keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
+
+  downloadFile('index.html', html);
+  downloadFile('css.css', css);
+}
+
+function generateDashboardConfigFile() {
+  var contentURL = $('#contentUrlInput').val().trim();
+  if (!contentURL) {
+    contentURL = prompt('Enter the base URL where the dashboard will be hosted:', 'https://your-institution.content.etrieve.cloud');
+    if (!contentURL) return;
+    $('#contentUrlInput').val(contentURL);
+  }
+  
+  var integrationName = areaIntegrationName || $('#integrationNameInput').val().trim() || 'myDashboardIntegration';
+
+  let expandedColumns = [];
+  selectedColumnNames.forEach(function(col) {
+    var expanded = expandPartyFieldToColumns(col);
+    if (expanded.length > 1 || col.endsWith(' Info')) {
+      expandedColumns = expandedColumns.concat(expanded);
+    } else {
+      expandedColumns.push(col);
+    }
+  });
+  expandedColumns = [...new Set(expandedColumns)];
+
+  const columnDefs = expandedColumns.map(col => {
+    if (col === 'Document Link') {
+      return `{
+        name: 'Document Link',
+        formatOutput: function(document) {
+          var btn = $('<button>').addClass('btn btn-sm btn-success').text('View Document');
+          btn.click(function() { window.open('${contentURL}' + document.url); });
+          return $('<div>').append(btn);
+        }
+      }`;
+    }
+    if (col === 'DocumentType') {
+      return `{ name: 'DocumentType', formatOutput: function(document) { return document.DocumentType || ''; } }`;
+    }
+    if (col === 'DocumentDate') {
+      return `{ name: 'DocumentDate', formatOutput: function(document) { return document.DocumentDate ? new Date(document.DocumentDate).toLocaleDateString() : ''; } }`;
+    }
+    var kf = selectedKeyFields.find(k => k.FieldName === col);
+    if (kf && kf.FieldType === 'date') {
+      return `{ name: '${col}', formatOutput: function(document) { return document['${col}'] ? new Date(document['${col}']).toLocaleDateString() : ''; } }`;
+    }
+    return `{ name: '${col}', formatOutput: function(document) { return document['${col}'] || ''; } }`;
+  });
+
+  const swimlanes = swimlaneDefinitions.map(sl => `  {
+    title: '${sl.name.replace(/'/g, "\\'")}',
+    docTypeArray: [${sl.documentTypeIds.map(id => `'${lookupDocumentTypeName(id)}'`).join(', ')}],
+    documents: [],
+    exportable: true,
+    columns: firstOpColumns
+  }`).join(',\n');
+
+  const configJs = `define([], function() {
+  var contentURL = '${contentURL}';
+  var integrationName = '${integrationName}';
+  var firstOpColumns = [
+${columnDefs.join(',\n')}
+  ];
+  var documentConfig = [
+${swimlanes}
+  ];
+  return {
+    contentURL: contentURL,
+    integrationName: integrationName,
+    documentConfig: documentConfig
+  };
+});`;
+
+  downloadFile('configuration.js', configJs);
+}
+
+function generateDashboardViewModelFile() {
+  var viewmodelJs = `define([
+  'jquery', 'knockout', 'vmBase', 'user', 'integration',
+  'template/dynamicSort', 'template/configuration',
+  'jquery-ui', 'jquery.tablesorter.min.js'
+], function($, ko, vm, user, integration, dynamicSort, configuration) {
+  require(['jquery.tablesorter.widgets.js']);
+  window.parent.$('.hsplitter, .bottom_panel').hide();
+  window.parent.$('.top_panel').height('100%');
+
+  var swimlaneConfig = configuration.documentConfig;
+  var tableShow = [];
+
+  $('#refreshBtn').click(function () {
+    clearTable();
+    $('.loading').show();
+    integration.all(configuration.integrationName).then(function(contentData) {
+      splitAndDraw(contentData);
+    });
+  });
+
+  function clearTable() {
+    $('#tableCanvas').empty();
+    $('#fullStats').empty();
+    swimlaneConfig.forEach(function(cfg){ cfg.documents = []; });
+  }
+
+  function pushDocument(config, doc) {
+    config.documents = config.documents || [];
+    config.documents.push(doc);
+  }
+
+  function splitAndDraw(documents) {
+    clearTable();
+    documents.forEach(function (doc) {
+      swimlaneConfig.forEach(function(configObj) {
+        if(configObj.docTypeArray.includes(doc.DocumentType)) {
+          pushDocument(configObj, doc);
+        }
+      });
+    });
+    swimlaneConfig.forEach(function (configObj, index) {
+      drawTable(configObj, index);
+    });
+    buildFullStats(documents);
+    $('.loading').hide();
+  }
+
+  function drawTable(config, index) {
+    var note = config.title || '';
+    var $table = $('#tableCanvas');
+    var stats = { tableName: note.replace(/ /g, ''), rowCount: config.documents.length };
+
+    var $statRow = $('<div class="row">').data('statNote', note).addClass('section');
+    $statRow.append($('<div class="col-xs-8 note">').text(note).click(function () {
+      $(this).parent().next('table').toggle(0, function () {
+        if (tableShow.indexOf(note) >= 0) {
+          tableShow = $.grep(tableShow, function (value) { return value != note; });
+        } else { tableShow.push(note); }
+      });
+    }));
+    $statRow.append($('<div class="col-xs-4 stats">').html('Documents: <strong>' + stats.rowCount + '</strong>').click(function () {
+      $(this).parent().next('table').toggle(0, function () {
+        if (tableShow.indexOf(note) >= 0) {
+          tableShow = $.grep(tableShow, function (value) { return value != note; });
+        } else { tableShow.push(note); }
+      });
+    }));
+    $table.append($statRow);
+
+    var $theader = $('<thead>');
+    var $theaderRow = $('<tr>');
+    config.columns.forEach(function (col) {
+      $theaderRow.append($('<th>').text(col.name));
+    });
+    $theader.append($theaderRow);
+
+    var $tbody = $('<tbody>');
+    config.documents.forEach(function (doc) {
+      var $tbodyRow = $('<tr>');
+      config.columns.forEach(function (column) {
+        $tbodyRow.append($('<td>').html(
+          typeof column.formatOutput === 'function' ? column.formatOutput(doc) : doc[column.name] || ''
+        ));
+      });
+      $tbody.append($tbodyRow);
+    });
+
+    var showTable = ((tableShow.indexOf(note) >= 0) ? true : false);
+    $table.append($('<table>', {
+      id: 'dataTable_' + index, style: 'margin-bottom:30px;',
+      'data-note': note, class: 'tablesorter'
+    }).append($theader).append($tbody));
+
+    $('#dataTable_' + index).tablesorter({
+      widgets: ['filter', 'stickyHeaders'],
+      widgetOptions: { filter_childRows: true }, theme: 'default'
+    });
+    $('[data-note="' + note + '"]').toggle(showTable);
+
+    if (config.exportable) {
+      generateCSVButton($statRow, note, index);
+    }
+  }
+
+  function generateCSVButton(parent, note, index) {
+    var filename = note.replace(/ /g, '');
+    parent.append($('<div class="col-xs-1">').html(
+      '<a id="' + filename + 'TBL"><button type="button" class="btn btn-sm btn-warning">Export</button></a>'
+    ));
+    $('#' + filename + 'TBL').hover(function () {
+      var dataString = '';
+      $('#dataTable_' + index + ' tr').not('.filtered, .tablesorter-headerRow, .tablesorter-ignoreRow').each(function () {
+        $(this).find('td').each(function () {
+          dataString += $(this).text() + '\\t';
+        });
+        dataString += '\\r\\n';
+      });
+      $(this).attr('href', 'data:application/octet-stream,' + encodeURIComponent(dataString))
+             .attr('download', filename + 'TXT.txt');
+    });
+  }
+
+  function buildFullStats(data) {
+    var stats = { rowCount: data.length };
+    $('#fullStats').css('font-weight', 'bold').text('Total: Documents: ' + stats.rowCount);
+  }
+
+  vm.onLoad = function onLoad(source, inputValues) { $('#refreshBtn').click(); };
+  vm.setDefaults = function setDefaults(source, inputValues) {};
+  vm.afterLoad = function afterLoad() {};
+  return vm;
+});`;
+
+  downloadFile('viewmodel.js', viewmodelJs);
 }
