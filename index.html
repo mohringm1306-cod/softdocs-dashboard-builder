@@ -9,7 +9,7 @@
   <script src="viewmodel.js"></script>
 
   <style>
-    body { padding-top: 1rem; }
+    body { padding-top: 1rem; padding-bottom: 64px; } /* FIXED: default fallback for dock */
     h2 { margin-top: 2rem; }
     .instruction-box {
       background: #f1f7ff;
@@ -79,7 +79,7 @@
   <!-- STEP 1 -->
   <h2>Step 1: Name Your Softdocs Integration Source</h2>
   <div class="instruction-box">
-    Use the exact Source name created in Softdocs (Central → Admin Settings → Sources).
+    Use the exact Source name created in Softdocs (Central -> Admin Settings -> Sources).
   </div>
   <input id="integrationNameInput" class="form-control mb-3" placeholder="e.g. myDashboardIntegration">
 
@@ -147,7 +147,10 @@
         <option value="decimal">Decimal</option>
         <option value="lookup">Lookup</option>
       </select>
-      <button id="addKeyfieldBtn" class="btn btn-info mb-2">Add Keyfield</button>
+      <div class="d-flex gap-2">
+        <button id="addKeyfieldBtn" class="btn btn-info mb-2">Add Keyfield</button>
+        <button id="clearKeyfieldInputsBtn" class="btn btn-light mb-2">Clear</button>
+      </div>
       <small class="text-muted d-block">
         Autopopulate looks in the Field Catalog first; if needed it calls <code>fieldMetaIntegration</code>.
       </small>
@@ -172,7 +175,7 @@
   <!-- STEP 5 -->
   <h2>Step 5: Define Completion/Exit Status</h2>
   <div class="instruction-box">
-    Choose a field and value that mark a document as “complete”; such rows will be hidden.
+    Choose a field and value that mark a document as "complete"; such rows will be hidden.
   </div>
   <div class="row mb-5">
     <div class="col-md-4">
@@ -250,10 +253,61 @@
   <!-- STEP 9 -->
   <h2>Step 9: Build SQL</h2>
   <div class="instruction-box">
-    Click “Build SQL” to generate your query for the Softdocs data source.
+    Click "Build SQL" to generate your dynamic SQL for Softdocs. You can share this query with your Softdocs admin!
+    <ul>
+      <li>Review which document types and discovered fields are included</li>
+      <li>Dynamic queries update as new values are added to your Content system</li>
+      <li>If unsure, copy and share the SQL with your Softdocs technical lead</li>
+    </ul>
   </div>
   <button id="buildSqlBtn" class="btn btn-secondary mb-3">Build SQL</button>
   <pre id="sqlOutput" class="bg-light p-2 mb-4" style="min-height:4em"></pre>
+
+<!-- STEP 10: Generate Dashboard Index File -->
+<h2>Step 10: Generate Dashboard Index File</h2>
+<div class="instruction-box">
+  Enter your dashboard title and subtitle, then generate <code>index.html</code> for your dashboard.
+</div>
+<div class="form-group mb-2">
+  <input id="dashboardTitleInput" class="form-control mb-2" placeholder="Dashboard Title">
+  <input id="dashboardSubtitleInput" class="form-control mb-2" placeholder="Dashboard Subtitle">
+</div>
+<button id="generateIndexBtn" class="btn btn-primary mb-4">Generate index.html</button>
+
+<!-- STEP 11: Generate Config -->
+<h2>Step 11: Generate Config File</h2>
+<div class="instruction-box mb-2">
+  Click to generate <code>config.js</code> reflecting your dashboard selections.
+</div>
+<div class="form-group mb-3">
+  <label for="contentUrlInput" class="font-weight-bold">Content URL</label>
+  <input type="text" id="contentUrlInput" class="form-control" placeholder="e.g. https://<your-institution>content.etrieve.cloud" />
+  <small class="form-text text-muted">
+    Enter the base URL where the dashboard will be hosted.<br>
+    If left blank, you will be prompted before generation.
+  </small>
+</div>
+<button id="generateConfigBtn" class="btn btn-info mb-4">Generate config.js</button>
+
+<!-- STEP 12: Generate ViewModel -->
+<h2>Step 12: Generate ViewModel File</h2>
+<div class="instruction-box mb-2">
+  Click to generate <code>viewmodel.js</code> for dashboard operation.
+</div>
+<button id="generateViewModelBtn" class="btn btn-success mb-5">Generate viewmodel.js</button>
+
+  <!-- Tips and Live Preview -->
+  <h2>Tips for Effective Dashboards</h2>
+  <div class="instruction-box">
+    <ul>
+      <li><b>Start with a flexible baseline:</b> Always include core fields like link, names, and status</li>
+      <li><b>Never hardcode values if you can avoid it</b></li>
+      <li><b>Use clear, descriptive labels for columns</b></li>
+      <li><b>Share your dashboard early and gather user feedback</b></li>
+      <li><b>Use AI to brainstorm SQL, logic, or field labels!</b></li>
+    </ul>
+    <b>For more details, see the in-file help and comments in config.js.</b>
+  </div>
 
   <!-- Docked preview -->
   <div id="dashboardPreviewDock">
