@@ -1,179 +1,218 @@
 # Dashboard Builder Wizard 3.0 — Installation Guide
 
+---
+
 ## Prerequisites
 
 - Etrieve Central (on-prem or cloud) with admin access
 - Hybrid Server configured and connected to your SQL Server
 - The `reporting` schema must exist (Etrieve creates this automatically)
 
-## Database Notes
+---
 
-Sources 1-3 query Content DB tables (`[dbo].*`):
-- `dbo.Catalog`, `dbo.CatalogDocumentType`, `dbo.DocumentType`
-- `dbo.Field`, `dbo.DataType`, `dbo.DocumentTypeField`
+## Step 1: Create Integration Sources in Etrieve
 
-Sources 4-6 query Central/Reporting DB tables (`reporting.*`):
-- `reporting.central_forms_Template`, `reporting.central_forms_TemplateVersion`
-- `reporting.central_forms_Form`, `reporting.central_forms_InputValue`
-- `reporting.central_flow_Process`, `reporting.central_flow_ProcessStep`, `reporting.central_flow_TaskQueue`
+Go to **Etrieve Central > Admin > Integration Sources** (or Admin Settings > Sources, depending on your version).
 
-**If Content and Central are separate databases**, you may need **two different Hybrid Server connections** — one for Sources 1-3 (Content) and one for Sources 4-6 (Central/Reporting).
+Create **6 database sources** using the SQL below. All queries are **SELECT-only** (read-only). For each source, set:
+- **Type:** Database
+- **Connection:** Your Hybrid Server SQL connection
+- **Method:** GET
+
+> **Database note:** Sources 1-3 query Content DB tables (`[dbo].*`). Sources 4-6 query Central/Reporting DB tables (`reporting.*`). If your Content and Central are **separate databases**, you may need two different Hybrid Server connections.
 
 ---
 
-## Package Contents
+### Source 1: `WizardBuilder_GetAreas`
 
-```
-EtrieveDeploy/
-    index.html              ← Form page (upload to Etrieve)
-    wizard.css              ← Stylesheet (upload to Etrieve)
-    viewmodel.js            ← Etrieve integration layer (upload to Etrieve)
-    configuration.js        ← Source name mappings (upload to Etrieve)
-    wizard-demo.js          ← Copy from parent folder (upload to Etrieve)
-    wizard-generators.js    ← Copy from parent folder (upload to Etrieve)
-    Sources/
-        1_WizardBuilder_GetAreas.sql
-        2_WizardBuilder_GetDocTypes.sql
-        3_WizardBuilder_GetKeyFields.sql
-        4_WizardBuilder_GetFormTemplates.sql
-        5_WizardBuilder_GetFormInputs.sql
-        6_WizardBuilder_GetWorkflowSteps.sql
-```
+**Parameters:** (none)
 
----
-
-## Step 1: Validate SQL Queries
-
-Before creating anything in Etrieve, run each SQL file in SSMS against your Etrieve database to confirm they return data. Start with the two that have no parameters:
-
-```
--- Open in SSMS, connected to your Etrieve DB:
-
--- Source 1 (no params - run as-is):
--- Should return your catalog/area list
-1_WizardBuilder_GetAreas.sql
-
--- Source 4 (no params - run as-is):
--- Should return your form templates
-4_WizardBuilder_GetFormTemplates.sql
-```
-
-For the parameterized queries, substitute a real value:
+Returns all content areas (catalogs) — populates the area picker in Step 1.
 
 ```sql
--- Source 2: Replace @CatalogID with an actual CatalogID from Source 1
--- e.g. if Source 1 returned CatalogID = 5 for "Financial Aid":
-DECLARE @CatalogID INT = 5
--- Then run 2_WizardBuilder_GetDocTypes.sql
+SELECT
+    CatalogID       AS id,
+    [Name]          AS name
+FROM [dbo].[Catalog]
+ORDER BY [Name]
+```
 
--- Source 3: Same @CatalogID
-DECLARE @CatalogID INT = 5
--- Then run 3_WizardBuilder_GetKeyFields.sql
+---
 
--- Source 5: Replace @TemplateVersionID with an actual ID from Source 4
-DECLARE @TemplateVersionID INT = 12
--- Then run 5_WizardBuilder_GetFormInputs.sql
+### Source 2: `WizardBuilder_GetDocTypes`
 
--- Source 6: Replace @TemplateID with the templateId column from Source 4
-DECLARE @TemplateID INT = 8
--- Then run 6_WizardBuilder_GetWorkflowSteps.sql
+**Parameters:** `@CatalogID` (Integer)
+
+Returns document types for the selected area — populates the doc type checkboxes.
+
+```sql
+SELECT
+    dt.DocumentTypeID   AS id,
+    dt.[Name]           AS name,
+    dt.[Name]           AS code
+FROM [dbo].[DocumentType] dt
+INNER JOIN [dbo].[CatalogDocumentType] cdt
+    ON dt.DocumentTypeID = cdt.DocumentTypeID
+WHERE cdt.CatalogID = @CatalogID
+ORDER BY dt.[Name]
+```
+
+---
+
+### Source 3: `WizardBuilder_GetKeyFields`
+
+**Parameters:** `@CatalogID` (Integer)
+
+Returns all unique fields across all doc types in the selected area, with data types. The `type` column is critical — the wizard uses it to decide between `ivDocumentTextFieldValue` and `ivDocumentDateFieldValue` JOINs in the generated dashboard SQL.
+
+```sql
+SELECT DISTINCT
+    f.FieldID           AS id,
+    f.[Name]            AS name,
+    CASE
+        WHEN dt.[Name] = 'Date' THEN 'date'
+        ELSE 'text'
+    END                 AS type,
+    f.[Name]            AS alias
+FROM [dbo].[Field] f
+INNER JOIN [dbo].[DataType] dt
+    ON f.DataTypeID = dt.DataTypeID
+INNER JOIN [dbo].[DocumentTypeField] dtf
+    ON f.FieldID = dtf.FieldID
+INNER JOIN [dbo].[CatalogDocumentType] cdt
+    ON dtf.DocumentTypeID = cdt.DocumentTypeID
+WHERE cdt.CatalogID = @CatalogID
+ORDER BY f.[Name]
+```
+
+---
+
+### Source 4: `WizardBuilder_GetFormTemplates`
+
+**Parameters:** (none)
+
+Returns all published form templates. Returns **both** `id` (TemplateVersionID, for input field queries) and `templateId` (TemplateID, for workflow step queries) — both are needed because forms reference TemplateVersion but workflows reference the parent Template.
+
+```sql
+SELECT
+    tv.TemplateVersionID    AS id,
+    t.[Name]                AS name,
+    t.TemplateID            AS templateId
+FROM reporting.central_forms_Template t
+INNER JOIN reporting.central_forms_TemplateVersion tv
+    ON t.TemplateID = tv.TemplateID
+WHERE tv.IsPublished = 1
+ORDER BY t.[Name]
+```
+
+> **Schema note:** The column is `IsPublished`, not `IsActive`.
+
+---
+
+### Source 5: `WizardBuilder_GetFormInputs`
+
+**Parameters:** `@TemplateVersionID` (Integer) — from the selected template's `id` column
+
+Returns the actual input field IDs from submitted form data. Each InputID becomes a CASE/MAX pivot column in the generated dashboard SQL.
+
+```sql
+SELECT DISTINCT
+    iv.InputID  AS id,
+    iv.InputID  AS label
+FROM reporting.central_forms_InputValue iv
+INNER JOIN reporting.central_forms_Form f
+    ON iv.FormID = f.FormID
+WHERE f.TemplateVersionID = @TemplateVersionID
+    AND f.IsDraft = 0
+ORDER BY iv.InputID
+```
+
+---
+
+### Source 6: `WizardBuilder_GetWorkflowSteps`
+
+**Parameters:** `@TemplateID` (Integer) — from the selected template's `templateId` column (not `id`)
+
+Returns workflow steps for the selected template's process.
+
+```sql
+SELECT DISTINCT
+    ps.ProcessStepId                AS id,
+    ps.[Name]                       AS name,
+    REPLACE(ps.[Name], '_', ' ')    AS displayName
+FROM reporting.central_flow_ProcessStep ps
+INNER JOIN reporting.central_flow_TaskQueue tq
+    ON tq.ProcessStepID = ps.ProcessStepId
+INNER JOIN reporting.central_flow_PackageDocument pd
+    ON tq.PackageId = pd.PackageID
+INNER JOIN reporting.central_forms_TemplateVersion tv
+    ON pd.SourceTypeCode = tv.Code
+WHERE tv.TemplateID = @TemplateID
+    AND ps.IsDeleted = 0
+ORDER BY ps.[Name]
+```
+
+> **Schema notes:** Process has NO TemplateID column — the link goes through `TemplateVersion.Code` > `PackageDocument.SourceTypeCode`. ProcessStep uses lowercase `ProcessStepId` (not `ProcessStepID`). ProcessStep has NO StepOrder column.
+
+---
+
+### Permissions
+
+For **each** of the 6 sources, click into **Permissions** and grant your user group **Get** access. If you skip this, dashboard calls will return **403 Forbidden**.
+
+---
+
+## Step 2: Validate Queries in SSMS (Recommended)
+
+Before wiring everything up, run each query in SSMS to confirm they return data.
+
+Start with the two that have **no parameters** — just copy/paste and run:
+- Source 1 should return your catalog/area list
+- Source 4 should return your form templates
+
+For the **parameterized queries**, plug in a real value:
+
+```sql
+-- Source 2 & 3: Use a CatalogID from Source 1's results
+DECLARE @CatalogID INT = 5  -- replace with an actual CatalogID
+-- Then paste and run the Source 2 query, then Source 3
+
+-- Source 5: Use a TemplateVersionID (the 'id' column from Source 4)
+DECLARE @TemplateVersionID INT = 12  -- replace with a real id
+-- Then paste and run the Source 5 query
+
+-- Source 6: Use a TemplateID (the 'templateId' column from Source 4, NOT 'id')
+DECLARE @TemplateID INT = 8  -- replace with a real templateId
+-- Then paste and run the Source 6 query
 ```
 
 If any query returns 0 rows, that's OK — it just means that area/template has no data yet. But at least one of each should return rows.
 
 ---
 
-## Step 2: Create Integration Sources in Etrieve
+## Step 3: Upload Wizard Files
 
-Go to **Etrieve Central → Admin → Integration Sources** (or Admin Settings → Sources, depending on your version).
+1. Go to **Admin > Forms > Create New Form**
+2. Name it `Dashboard Builder Wizard` (or whatever you prefer)
+3. Upload these **6 files** to the form:
 
-Create each source using the settings below. All queries are **SELECT-only** (read-only).
-
-### Source 1: WizardBuilder_GetAreas
-
-| Setting | Value |
-|---------|-------|
-| **Name** | `WizardBuilder_GetAreas` |
-| **Connection** | Your Hybrid Server SQL connection |
-| **Method** | GET |
-| **Parameters** | (none) |
-| **SQL** | Contents of `Sources/1_WizardBuilder_GetAreas.sql` |
-
-### Source 2: WizardBuilder_GetDocTypes
-
-| Setting | Value |
-|---------|-------|
-| **Name** | `WizardBuilder_GetDocTypes` |
-| **Connection** | Your Hybrid Server SQL connection |
-| **Method** | GET |
-| **Parameters** | `@CatalogID` (Integer) |
-| **SQL** | Contents of `Sources/2_WizardBuilder_GetDocTypes.sql` |
-
-### Source 3: WizardBuilder_GetKeyFields
-
-| Setting | Value |
-|---------|-------|
-| **Name** | `WizardBuilder_GetKeyFields` |
-| **Connection** | Your Hybrid Server SQL connection |
-| **Method** | GET |
-| **Parameters** | `@CatalogID` (Integer) |
-| **SQL** | Contents of `Sources/3_WizardBuilder_GetKeyFields.sql` |
-
-### Source 4: WizardBuilder_GetFormTemplates
-
-| Setting | Value |
-|---------|-------|
-| **Name** | `WizardBuilder_GetFormTemplates` |
-| **Connection** | Your Hybrid Server SQL connection |
-| **Method** | GET |
-| **Parameters** | (none) |
-| **SQL** | Contents of `Sources/4_WizardBuilder_GetFormTemplates.sql` |
-
-### Source 5: WizardBuilder_GetFormInputs
-
-| Setting | Value |
-|---------|-------|
-| **Name** | `WizardBuilder_GetFormInputs` |
-| **Connection** | Your Hybrid Server SQL connection |
-| **Method** | GET |
-| **Parameters** | `@TemplateVersionID` (Integer) |
-| **SQL** | Contents of `Sources/5_WizardBuilder_GetFormInputs.sql` |
-
-### Source 6: WizardBuilder_GetWorkflowSteps
-
-| Setting | Value |
-|---------|-------|
-| **Name** | `WizardBuilder_GetWorkflowSteps` |
-| **Connection** | Your Hybrid Server SQL connection |
-| **Method** | GET |
-| **Parameters** | `@TemplateID` (Integer) |
-| **SQL** | Contents of `Sources/6_WizardBuilder_GetWorkflowSteps.sql` |
-
----
-
-## Step 3: Create the Wizard Form
-
-1. Go to **Admin → Forms → Create New Form**
-2. **Name**: `Dashboard Builder Wizard` (or whatever you prefer)
-3. **Upload these 6 files** to the form:
-
-| File | Where to get it |
-|------|----------------|
-| `index.html` | `EtrieveDeploy/index.html` |
-| `wizard.css` | `EtrieveDeploy/wizard.css` |
-| `viewmodel.js` | `EtrieveDeploy/viewmodel.js` |
-| `configuration.js` | `EtrieveDeploy/configuration.js` |
-| `wizard-demo.js` | `WebinarDemo/wizard-demo.js` (parent folder) |
-| `wizard-generators.js` | `WebinarDemo/wizard-generators.js` (parent folder) |
+| File | Description |
+|------|-------------|
+| `index.html` | Wizard page layout |
+| `wizard.css` | Wizard stylesheet |
+| `viewmodel.js` | Etrieve integration bridge — connects real data to the wizard |
+| `configuration.js` | Integration source name mappings |
+| `wizard-demo.js` | Wizard core logic (state management, UI, SQL generation) |
+| `wizard-generators.js` | Dashboard style generators (12 styles) |
 
 ---
 
 ## Step 4: Connect Sources to the Form
 
 1. Open the form you just created
-2. Go to **Connect** (or **Settings → Integration Sources**)
+2. Go to **Connect** (or **Settings > Integration Sources**)
 3. For each of the 6 sources:
-   - Search for the source name (e.g. `WizardBuilder_GetAreas`)
+   - Search for the source name (e.g., `WizardBuilder_GetAreas`)
    - Add it to the form
    - Check **"Get"** (read permission)
 
@@ -183,28 +222,25 @@ All 6 sources must be connected with GET enabled.
 
 ## Step 5: Test
 
-1. Open the form in Etrieve
-2. You should see the wizard with three mode cards: **Document Lookup**, **Form Tracker**, **Combined View**
-3. The demo banner should NOT appear (it's hidden in Etrieve mode)
+Open the form in Etrieve. You should see the wizard with three mode cards: **Document Lookup**, **Form Tracker**, **Combined View**.
 
 ### Document Lookup test:
-- Click **Document Lookup**
-- Step 1: Your real catalog areas should appear
-- Select an area → doc types should load
-- Select doc types → key fields should load
-- Continue through styles, swimlanes, and generate
-- The generated SQL should reference your real table/field IDs
+1. Click **Document Lookup**
+2. Step 1: Your real catalog areas should appear (from Source 1)
+3. Select an area — doc types load (Source 2), key fields load (Source 3)
+4. Continue through styles, swimlanes, and generate
+5. The generated SQL should reference your real table/field IDs
 
 ### Form Tracker test:
-- Click **Form Tracker**
-- Step 1: Your real form templates should appear
-- Select a template → input fields and workflow steps should load
-- Continue through to generate
+1. Click **Form Tracker**
+2. Step 1: Your real form templates should appear (from Source 4)
+3. Select a template — input fields load (Source 5), workflow steps load (Source 6)
+4. Continue through to generate
 
 ### Download test:
-- On the final step, click **Download**
-- A file viewer should appear with 5 tabs: SQL, configuration.js, viewmodel.js, index.html, README.md
-- Copy each file — these are the generated dashboard files ready to deploy as a new form
+1. On the final step, click **Download**
+2. A file viewer appears with tabs: SQL, configuration.js, viewmodel.js, index.html, README.md
+3. Copy each file — these are the generated dashboard files ready to deploy as a new form
 
 ---
 
@@ -212,35 +248,40 @@ All 6 sources must be connected with GET enabled.
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Wizard loads but no areas appear | Source 1 not connected or "Get" not checked | Check form connections |
+| Wizard loads but no areas appear | Source 1 not connected or "Get" not checked | Check form connections and permissions |
 | Selecting an area does nothing | Sources 2 and 3 not connected | Add and enable both |
 | No form templates in Form Tracker | Source 4 not connected | Add and enable it |
-| No workflow steps after selecting a template | Source 6 not connected, or no Process row for that TemplateID | Check `reporting.central_flow_Process` for the TemplateID |
-| Loading spinner never goes away | Integration call failing | Press F12, check Console tab for error |
+| No workflow steps after selecting template | Source 6 not connected, or no process for that template | Check `reporting.central_flow_PackageDocument` for matching SourceTypeCode |
+| Loading spinner never goes away | Integration call failing | Press F12, check Console tab for errors |
 | "Failed to load data" toast | Hybrid Server connection issue or SQL error | Check Hybrid Server logs |
 | Blank page / nothing renders | File upload issue | Verify all 6 files are uploaded to the form |
-| Console shows "integration is not defined" | viewmodel.js not loading as RequireJS module | Verify index.html is the form's main page |
+| Console shows "integration is not defined" | viewmodel.js not loading | Verify index.html is the form's main page |
+| 403 Forbidden on source calls | Missing permissions | Go to each source > Permissions > grant Get access |
 
 ---
 
 ## How It Works
 
-The wizard runs entirely in the browser. The `viewmodel.js` acts as a bridge between Etrieve's integration API and the wizard's data layer:
+The wizard runs entirely in the browser. `viewmodel.js` acts as a bridge between Etrieve's integration API and the wizard:
 
-1. **On form load**: Fetches areas (Source 1) and form templates (Source 4) in parallel
-2. **Replaces SimulatedData**: Builds the same data structure the wizard expects, but with real data
-3. **On-demand loading**: When you select an area, it fetches doc types (Source 2) and key fields (Source 3). When you select a template, it fetches input fields (Source 5) and workflow steps (Source 6)
-4. **No modifications to core wizard**: `wizard-demo.js` and `wizard-generators.js` run unchanged — the viewmodel just feeds them real data
+1. **On form load** — fetches areas (Source 1) and form templates (Source 4) in parallel
+2. **Replaces simulated data** — builds the same data structure the wizard expects, but with real data
+3. **On-demand loading** — selecting an area fetches doc types (Source 2) and key fields (Source 3); selecting a template fetches input fields (Source 5) and workflow steps (Source 6)
+4. **No modifications to core wizard** — `wizard-demo.js` and `wizard-generators.js` run unchanged; the viewmodel just feeds them real data
+
+---
 
 ## Source Name Customization
 
-If you need different source names, edit `configuration.js` — the variable names at the bottom of each section:
+If you need different source names, edit `configuration.js`:
 
 ```javascript
-var areasIntegrationName = 'WizardBuilder_GetAreas';          // Change this
-var docTypesIntegrationName = 'WizardBuilder_GetDocTypes';    // Change this
-var keyFieldsIntegrationName = 'WizardBuilder_GetKeyFields';  // Change this
-// ... etc
+var areasIntegrationName = 'WizardBuilder_GetAreas';
+var docTypesIntegrationName = 'WizardBuilder_GetDocTypes';
+var keyFieldsIntegrationName = 'WizardBuilder_GetKeyFields';
+var formTemplatesIntegrationName = 'WizardBuilder_GetFormTemplates';
+var formInputsIntegrationName = 'WizardBuilder_GetFormInputs';
+var workflowStepsIntegrationName = 'WizardBuilder_GetWorkflowSteps';
 ```
 
-The `viewmodel.js` reads these variable names at runtime, so changing them in `configuration.js` is all you need.
+The `viewmodel.js` reads these at runtime, so changing them in `configuration.js` is all you need.
