@@ -1,26 +1,20 @@
-# Installation Guide
+# How to Set Up the Dashboard Builder
 
-This guide walks you through setting up the Dashboard Builder Wizard in Etrieve. You'll create some data sources, upload the wizard files, and connect them together.
-
----
-
-## Step 1: Create the Data Sources
-
-Go to **Etrieve Central > Admin > Sources** and create 6 new database sources. For each one:
-
-- Set the **Type** to Database
-- Set the **Method** to GET
-- Pick your **Hybrid Server connection**
-- Paste in the SQL from below
-- Add any **parameters** listed
-
-After creating each source, go to its **Permissions** tab and give your users **Get** access. (If you skip this, the wizard will get "403 Forbidden" errors.)
+Three things to do: create the data sources, upload the files, and connect them. Takes about 15 minutes.
 
 ---
 
-### Source 1: `WizardBuilder_GetAreas`
+## Step 1: Create 6 Data Sources
 
-No parameters needed. This pulls in your list of content areas.
+Open **Etrieve Central**, go to **Admin > Sources**, and click **Add New Source**. You'll create 6 sources — one at a time. For each one, copy the name exactly, paste the SQL, and add any parameters listed.
+
+> **Important:** After you create each source, click on its **Permissions** tab and give your users **Get** access. If you forget this step, the wizard won't be able to pull in any data.
+
+---
+
+**Source 1 — `WizardBuilder_GetAreas`**
+
+No parameters. Just paste this SQL:
 
 ```sql
 SELECT
@@ -32,11 +26,9 @@ ORDER BY [Name]
 
 ---
 
-### Source 2: `WizardBuilder_GetDocTypes`
+**Source 2 — `WizardBuilder_GetDocTypes`**
 
-**Add parameter:** `@CatalogID` (Integer)
-
-When someone picks an area, this loads the document types for that area.
+Add one parameter: **@CatalogID** (Integer)
 
 ```sql
 SELECT
@@ -52,11 +44,9 @@ ORDER BY dt.[Name]
 
 ---
 
-### Source 3: `WizardBuilder_GetKeyFields`
+**Source 3 — `WizardBuilder_GetKeyFields`**
 
-**Add parameter:** `@CatalogID` (Integer)
-
-Loads the available fields (columns) for the selected area.
+Add one parameter: **@CatalogID** (Integer)
 
 ```sql
 SELECT DISTINCT
@@ -80,9 +70,9 @@ ORDER BY f.[Name]
 
 ---
 
-### Source 4: `WizardBuilder_GetFormTemplates`
+**Source 4 — `WizardBuilder_GetFormTemplates`**
 
-No parameters needed. This pulls in your list of published form templates.
+No parameters. Just paste this SQL:
 
 ```sql
 SELECT
@@ -98,11 +88,9 @@ ORDER BY t.[Name]
 
 ---
 
-### Source 5: `WizardBuilder_GetFormInputs`
+**Source 5 — `WizardBuilder_GetFormInputs`**
 
-**Add parameter:** `@TemplateVersionID` (Integer)
-
-When someone picks a form template, this loads the input fields from that form.
+Add one parameter: **@TemplateVersionID** (Integer)
 
 ```sql
 SELECT DISTINCT
@@ -118,11 +106,9 @@ ORDER BY iv.InputID
 
 ---
 
-### Source 6: `WizardBuilder_GetWorkflowSteps`
+**Source 6 — `WizardBuilder_GetWorkflowSteps`**
 
-**Add parameter:** `@TemplateID` (Integer)
-
-Loads the workflow steps for the selected form's process.
+Add one parameter: **@TemplateID** (Integer)
 
 ```sql
 SELECT DISTINCT
@@ -145,9 +131,9 @@ ORDER BY ps.[Name]
 
 ## Step 2: Upload the Wizard Files
 
-1. Go to **Admin > Forms > Create New Form**
-2. Name it whatever you like (e.g., "Dashboard Builder")
-3. Upload these 6 files:
+1. Go to **Admin > Forms** and create a new form
+2. Name it anything you want (e.g., "Dashboard Builder")
+3. Upload all 6 of these files:
    - `index.html`
    - `wizard.css`
    - `wizard-demo.js`
@@ -157,38 +143,38 @@ ORDER BY ps.[Name]
 
 ---
 
-## Step 3: Connect the Sources
+## Step 3: Connect the Sources to the Form
 
 1. Open the form you just created
-2. Go to **Connect** (or Settings > Integration Sources)
-3. Add each of the 6 sources you created in Step 1
-4. Make sure **Get** is checked for each one
+2. Go to **Connect**
+3. Search for and add each of the 6 sources you created in Step 1
+4. Make sure **Get** is checked for all of them
 
 ---
 
-## Step 4: Open and Use
+## That's It!
 
-Open the form in Etrieve. You'll see three options:
+Open the form in Etrieve and you'll see three options:
 
-- **Document Lookup** — build a dashboard for scanned documents
-- **Form Tracker** — build a dashboard for form submissions
-- **Combined View** — both in one dashboard
+- **Document Lookup** — dashboards for scanned documents
+- **Form Tracker** — dashboards for form submissions
+- **Combined View** — both together
 
-Pick one, choose your data, pick a style, configure it how you want, and download the finished dashboard. Upload those generated files as a new Etrieve form and you're done.
-
----
-
-## Troubleshooting
-
-| Problem | What to Do |
-|---------|-----------|
-| No areas or templates show up | Make sure all 6 sources are connected to the form with **Get** checked |
-| 403 Forbidden errors | Go to each source's **Permissions** tab and grant Get access to your user group |
-| Loading spinner won't stop | Press F12 in your browser and check the Console tab for error messages |
-| Blank page | Make sure all 6 files were uploaded to the form |
+Pick one, walk through the wizard, and download your finished dashboard. Upload those files as a new form and you're live.
 
 ---
 
-## Changing Source Names
+## Something Not Working?
 
-If you named your sources something different than `WizardBuilder_GetAreas`, etc., just update the names in `configuration.js` to match what you used in Etrieve.
+| What's Happening | How to Fix It |
+|-----------------|---------------|
+| No areas or templates show up | Check that all 6 sources are connected and **Get** is checked |
+| "Forbidden" errors | Open each source, go to **Permissions**, and grant **Get** access to your users |
+| Spinner won't stop | Open your browser's developer tools (F12) and look for red errors in the Console tab |
+| Blank page | Make sure all 6 files got uploaded to the form |
+
+---
+
+## Using Different Source Names?
+
+If you named your sources something other than `WizardBuilder_GetAreas`, `WizardBuilder_GetDocTypes`, etc., open `configuration.js` and change the names to match what you used.
