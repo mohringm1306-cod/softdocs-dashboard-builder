@@ -1,0 +1,18 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Temp files
+_temp_*
+*.tmp
+
+# Verification scripts (internal)
+Sources/_verify_sources.ps1

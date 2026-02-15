@@ -1,325 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" xmlns="https://www.w3.org/1999/xhtml">
 <head>
-  <meta charset="UTF-8">
-  <title>SQL Builder Dashboard</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
-  <script src="viewmodel.js"></script>
-
-  <style>
-    body { padding-top: 1rem; padding-bottom: 64px; } /* FIXED: default fallback for dock */
-    h2 { margin-top: 2rem; }
-    .instruction-box {
-      background: #f1f7ff;
-      border-left: 4px solid #007bff;
-      padding: .75rem;
-      margin-bottom: 1rem;
-    }
-    .list-container {
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      height: 200px;
-      overflow-y: auto;
-      margin-top: .5rem;
-      margin-bottom: 1rem;
-      padding: 0;
-      background: #fff;
-    }
-    .list-group-item-action { cursor: pointer; }
-    .list-group-item.active { background-color: #007bff; color: #fff; }
-    .mb-5 { margin-bottom: 3rem!important; }
-    .mb-4 { margin-bottom: 1.5rem!important; }
-    .mb-3 { margin-bottom: 1rem!important; }
-    .mb-2 { margin-bottom: .5rem!important; }
-
-    /* Docked Preview Styles */
-    #dashboardPreviewDock {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      z-index: 9999; background: #fff;
-      border-top: 2px solid #007bff; box-shadow: 0 -2px 14px rgba(0,0,0,0.18);
-      max-height: 50vh; overflow-y: auto; transition: max-height 0.3s;
-    }
-    #dashboardPreviewDock.minimized { max-height: 36px; overflow: hidden; }
-    #dashboardPreviewDock .dock-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 4px 16px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;
-      cursor: pointer; user-select: none;
-    }
-    #dashboardPreviewDock .dock-header strong { font-size: 1.15em; }
-    #dashboardPreviewDock .dock-content { padding: 12px 16px; }
-    #dashboardPreviewDock .min-btn {
-      background: none; border: none; font-size: 1.4em; color: #555; outline: none; cursor: pointer;
-    }
-
-    /* Autocomplete suggestions */
-    .autocomplete-menu {
-      position: absolute; z-index: 10000; background: #fff; border: 1px solid #ddd; border-radius: 4px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.15); max-height: 240px; overflow-y: auto; min-width: 280px;
-    }
-    .autocomplete-item { padding: 6px 10px; cursor: pointer; }
-    .autocomplete-item:hover, .autocomplete-item.active { background: #f5f9ff; }
-    .pos-rel { position: relative; }
-  </style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Builder Wizard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="wizard.css" rel="stylesheet" />
 </head>
-<body class="container">
-
-  <h1>SQL Builder Dashboard v2.0</h1>
-  <div class="instruction-box mb-4">
-    <b>Welcome!</b> This builder creates dynamic, self-maintaining dashboards for Softdocs Content.
-    <ul class="mt-2">
-      <li>Auto-discovers party/person/entity fields from your Document Types</li>
-      <li>New: Full <b>Field Catalog</b> with search + click-to-add</li>
-      <li>New: <b>Autopopulate</b> keyfields by typing an <i>ID</i> or <i>Name</i></li>
-      <li>Works from Content metadata (not in-flight forms)</li>
-    </ul>
-  </div>
-
-  <!-- STEP 1 -->
-  <h2>Step 1: Name Your Softdocs Integration Source</h2>
-  <div class="instruction-box">
-    Use the exact Source name created in Softdocs (Central -> Admin Settings -> Sources).
-  </div>
-  <input id="integrationNameInput" class="form-control mb-3" placeholder="e.g. myDashboardIntegration">
-
-  <!-- STEP 2 -->
-  <h2>Step 2: Choose Content Areas</h2>
-  <div class="instruction-box">
-    Click "Load Areas" to fetch available Content Areas.
-  </div>
-  <button id="loadAreasBtn" class="btn btn-primary mb-3">Load Areas</button>
-  <div class="row mb-5">
-    <div class="col-md-6">
-      <h5>Available Areas</h5>
-      <div class="list-container"><ul id="availableAreas" class="list-group"></ul></div>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading" id="loadingOverlay" style="display:none;">
+        <div class="loading-spinner">
+            <i class="bi bi-arrow-repeat spin"></i>
+            <span>Loading...</span>
+        </div>
     </div>
-    <div class="col-md-6">
-      <h5>Selected Areas</h5>
-      <div class="list-container"><ul id="selectedAreas" class="list-group"></ul></div>
-    </div>
-  </div>
 
-  <!-- STEP 3 -->
-  <h2>Step 3: Choose Document Types</h2>
-  <div class="instruction-box">
-    Select one or more Document Types for your dashboard.
-  </div>
-  <div class="row mb-5">
-    <div class="col-md-6">
-      <h5>Available Document Types</h5>
-      <div class="list-container"><ul id="availableDocTypes" class="list-group"></ul></div>
+    <!-- Header Bar -->
+    <div class="header-bar">
+        <div style="display:flex;align-items:center;gap:15px;">
+            <button class="reset-btn" onclick="resetWizard()" title="Start Over" aria-label="Start over from the beginning">
+                <i class="bi bi-house-door"></i> <span>Start Over</span>
+            </button>
+            <h1><i class="bi bi-grid-3x3-gap"></i> Dashboard Builder</h1>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span id="modeIndicator"></span>
+            <span class="badge">v3.0</span>
+        </div>
     </div>
-    <div class="col-md-6">
-      <h5>Selected Document Types</h5>
-      <div class="list-container"><ul id="selectedDocTypes" class="list-group"></ul></div>
+
+    <!-- Main Container (matches wizard-demo.html structure) -->
+    <div class="main-container">
+        <!-- Progress Section -->
+        <div class="progress-section" id="progressSection" style="display: none;">
+            <div class="progress-header">
+                <span id="progressTitle">Building Dashboard</span>
+                <span id="stepCounter">Step 1 of 6</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressFill" style="width: 16.6%"></div>
+            </div>
+            <div class="progress-steps" id="progressSteps"></div>
+        </div>
+
+        <div class="wizard-card">
+            <div class="card-header" id="cardHeader">
+                <h2><i class="bi bi-magic"></i> Welcome to Dashboard Builder</h2>
+                <p>Build powerful Softdocs dashboards without writing SQL from scratch</p>
+            </div>
+            <div class="card-body" id="cardBody">
+                <!-- Progress Steps (legacy, used by renderProgress) -->
+                <div id="progressBar" style="display: none;"></div>
+
+                <!-- Mode Selection Screen -->
+                <div id="modeSelection">
+                    <h3 style="margin-bottom: 20px;">What type of dashboard do you want to build?</h3>
+                    <div class="mode-cards">
+                        <div class="mode-card content-card" role="button" onclick="selectMode('content', event)" tabindex="0" onkeydown="handleModeKeydown(event, 'content')">
+                            <div class="mode-icon"><i class="bi bi-file-earmark-text"></i></div>
+                            <h4>Document Lookup</h4>
+                            <p>Find and view scanned documents by student or employee</p>
+                        </div>
+                        <div class="mode-card forms-card" role="button" onclick="selectMode('forms', event)" tabindex="0" onkeydown="handleModeKeydown(event, 'forms')">
+                            <div class="mode-icon"><i class="bi bi-ui-checks-grid"></i></div>
+                            <h4>Form Tracker</h4>
+                            <p>Track form submissions and their approval status</p>
+                        </div>
+                        <div class="mode-card combined-card" role="button" onclick="selectMode('combined', event)" tabindex="0" onkeydown="handleModeKeydown(event, 'combined')">
+                            <div class="mode-icon"><i class="bi bi-layers"></i></div>
+                            <h4>Combined View</h4>
+                            <p>Documents and forms together in one dashboard</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step Content with Preview (populated by JS) -->
+                <div id="stepContent" style="display: none;">
+                    <div class="wizard-layout">
+                        <div class="wizard-main" id="wizardMain"></div>
+                        <div class="preview-panel" id="previewPanel">
+                            <div class="preview-header">
+                                <div class="dots">
+                                    <span class="dot red"></span>
+                                    <span class="dot yellow"></span>
+                                    <span class="dot green" onclick="expandPreview()" title="Expand preview"></span>
+                                </div>
+                                <span class="title">Live Preview</span>
+                                <button class="expand-btn" onclick="expandPreview()" title="Expand preview">
+                                    <i class="bi bi-arrows-fullscreen"></i> Expand
+                                </button>
+                            </div>
+                            <div class="preview-content" id="previewContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer" id="cardFooter" style="display: none;">
+                <button class="btn btn-secondary" onclick="prevStep()">
+                    <i class="bi bi-arrow-left"></i> Back
+                </button>
+                <button class="btn btn-primary" onclick="nextStep()">
+                    Next <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- STEP 4 -->
-  <h2>Step 4: Choose Person/Entity Fields</h2>
-  <div class="instruction-box">
-    Auto-discovered from your Document Types. Click any to include as columns.
-  </div>
-  <div class="list-container mb-3"><ul id="discoveredPartyFields" class="list-group"></ul></div>
+    <!-- Draft Save Indicator -->
+    <div id="draftIndicator" class="draft-indicator"></div>
 
-  <!-- STEP 4b -->
-  <h2>Step 4b: Add Additional Keyfields</h2>
-  <div class="instruction-box">
-    Type a <b>Field ID</b> or start typing a <b>Field Name</b> and we will autopopulate the rest.
-  </div>
-  <div class="row mb-5">
-    <div class="col-md-5">
-      <h5 class="mb-2">Add New Keyfield</h5>
-      <div class="pos-rel mb-2">
-        <input id="keyfieldIdInput" class="form-control" placeholder="Field ID (e.g. 15)">
-      </div>
-      <div class="pos-rel mb-2">
-        <input id="keyfieldNameInput" class="form-control" placeholder="Field Name (type to search)">
-        <div id="keyfieldNameSuggest" class="autocomplete-menu" style="display:none;"></div>
-      </div>
-      <select id="keyfieldTypeInput" class="form-control mb-2">
-        <option value="" selected>Auto (from Softdocs)</option>
-        <option value="text">Text</option>
-        <option value="number">Number</option>
-        <option value="date">Date</option>
-        <option value="money">Money</option>
-        <option value="decimal">Decimal</option>
-        <option value="lookup">Lookup</option>
-      </select>
-      <div class="d-flex gap-2">
-        <button id="addKeyfieldBtn" class="btn btn-info mb-2">Add Keyfield</button>
-        <button id="clearKeyfieldInputsBtn" class="btn btn-light mb-2">Clear</button>
-      </div>
-      <small class="text-muted d-block">
-        Autopopulate looks in the Field Catalog first; if needed it calls <code>fieldMetaIntegration</code>.
-      </small>
-    </div>
-    <div class="col-md-7">
-      <h5 class="mb-2">Selected Keyfields</h5>
-      <div class="list-container"><ul id="selectedKeyfields" class="list-group"></ul></div>
-    </div>
-  </div>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
-  <!-- STEP 4c -->
-  <h2>Step 4c: Browse & Search All Fields</h2>
-  <div class="instruction-box">
-    Load the full catalog, then filter with the search box. Click a field to add it.
-  </div>
-  <div class="mb-3">
-    <button id="loadAllFieldsBtn" class="btn btn-outline-primary btn-sm">Load Field Catalog</button>
-    <input id="fieldSearchInput" class="form-control mt-2" placeholder="Search by name, code, type, or ID...">
-  </div>
-  <div id="allFieldsNestedList" class="list-container"></div>
-
-  <!-- STEP 5 -->
-  <h2>Step 5: Define Completion/Exit Status</h2>
-  <div class="instruction-box">
-    Choose a field and value that mark a document as "complete"; such rows will be hidden.
-  </div>
-  <div class="row mb-5">
-    <div class="col-md-4">
-      <select id="exitStatusFieldSelect" class="form-control mb-2">
-        <option disabled selected>Choose Field</option>
-      </select>
-      <input id="exitStatusValueInput" class="form-control mb-2" placeholder="Exit/Completion Value (e.g. Complete)">
-    </div>
-    <div class="col-md-8">
-      <div class="alert alert-secondary mb-0">
-        Any document where this field equals this value will be hidden from all swimlanes.
-      </div>
-    </div>
-  </div>
-
-  <!-- STEP 6 -->
-  <h2>Step 6: Define Swimlanes</h2>
-  <div class="instruction-box">
-    Group your dashboard by status/type/field to make it easier to use.
-  </div>
-  <div class="row mb-5">
-    <div class="col-md-4">
-      <input id="swimlaneNameInput" class="form-control mb-2" placeholder="Swimlane Name">
-      <select id="swimlaneDocTypesSelect" class="form-control mb-2" multiple size="6"></select>
-      <select id="swimlaneFieldSelect" class="form-control mb-2">
-        <option value="">(Optional) Field</option>
-      </select>
-      <input id="swimlaneValueInput" class="form-control mb-2" placeholder="(Optional) Value to match">
-      <button id="addSwimlaneBtn" class="btn btn-info mb-2">Add Swimlane</button>
-    </div>
-    <div class="col-md-8">
-      <h5>Defined Swimlanes</h5>
-      <div class="list-container"><ul id="selectedSwimlanes" class="list-group"></ul></div>
-    </div>
-  </div>
-
-  <!-- STEP 7 -->
-  <h2>Step 7: Choose Columns</h2>
-  <div class="instruction-box">
-    Click to add/remove. Reorder later for convenience.
-  </div>
-  <div class="row mb-5">
-    <div class="col-md-6">
-      <h5>Available Columns</h5>
-      <div class="list-container"><ul id="availableColumns" class="list-group"></ul></div>
-    </div>
-    <div class="col-md-6">
-      <h5>Selected Columns</h5>
-      <div class="list-container"><ul id="selectedColumns" class="list-group"></ul></div>
-    </div>
-  </div>
-
-  <!-- STEP 8 -->
-  <h2>Step 8: Filter by Document Date</h2>
-  <div class="instruction-box">
-    Optionally limit results by creation date—explicit start date or relative window.
-  </div>
-  <div class="row mb-5">
-    <div class="col-md-6">
-      <label for="startDateInput">Start Date (optional):</label>
-      <input id="startDateInput" class="form-control mb-3" type="date">
-    </div>
-    <div class="col-md-6">
-      <label for="dateRangeSelect">Or select a relative range:</label>
-      <select id="dateRangeSelect" class="form-control mb-3">
-        <option value="">-- None --</option>
-        <option value="3">Last 3 months</option>
-        <option value="6">Last 6 months</option>
-        <option value="12">Last 12 months</option>
-        <option value="24">Last 24 months</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- STEP 9 -->
-  <h2>Step 9: Build SQL</h2>
-  <div class="instruction-box">
-    Click "Build SQL" to generate your dynamic SQL for Softdocs. You can share this query with your Softdocs admin!
-    <ul>
-      <li>Review which document types and discovered fields are included</li>
-      <li>Dynamic queries update as new values are added to your Content system</li>
-      <li>If unsure, copy and share the SQL with your Softdocs technical lead</li>
-    </ul>
-  </div>
-  <button id="buildSqlBtn" class="btn btn-secondary mb-3">Build SQL</button>
-  <pre id="sqlOutput" class="bg-light p-2 mb-4" style="min-height:4em"></pre>
-
-<!-- STEP 10: Generate Dashboard Index File -->
-<h2>Step 10: Generate Dashboard Index File</h2>
-<div class="instruction-box">
-  Enter your dashboard title and subtitle, then generate <code>index.html</code> for your dashboard.
-</div>
-<div class="form-group mb-2">
-  <input id="dashboardTitleInput" class="form-control mb-2" placeholder="Dashboard Title">
-  <input id="dashboardSubtitleInput" class="form-control mb-2" placeholder="Dashboard Subtitle">
-</div>
-<button id="generateIndexBtn" class="btn btn-primary mb-4">Generate index.html</button>
-
-<!-- STEP 11: Generate Config -->
-<h2>Step 11: Generate Config File</h2>
-<div class="instruction-box mb-2">
-  Click to generate <code>config.js</code> reflecting your dashboard selections.
-</div>
-<div class="form-group mb-3">
-  <label for="contentUrlInput" class="font-weight-bold">Content URL</label>
-  <input type="text" id="contentUrlInput" class="form-control" placeholder="e.g. https://<your-institution>content.etrieve.cloud" />
-  <small class="form-text text-muted">
-    Enter the base URL where the dashboard will be hosted.<br>
-    If left blank, you will be prompted before generation.
-  </small>
-</div>
-<button id="generateConfigBtn" class="btn btn-info mb-4">Generate config.js</button>
-
-<!-- STEP 12: Generate ViewModel -->
-<h2>Step 12: Generate ViewModel File</h2>
-<div class="instruction-box mb-2">
-  Click to generate <code>viewmodel.js</code> for dashboard operation.
-</div>
-<button id="generateViewModelBtn" class="btn btn-success mb-5">Generate viewmodel.js</button>
-
-  <!-- Tips and Live Preview -->
-  <h2>Tips for Effective Dashboards</h2>
-  <div class="instruction-box">
-    <ul>
-      <li><b>Start with a flexible baseline:</b> Always include core fields like link, names, and status</li>
-      <li><b>Never hardcode values if you can avoid it</b></li>
-      <li><b>Use clear, descriptive labels for columns</b></li>
-      <li><b>Share your dashboard early and gather user feedback</b></li>
-      <li><b>Use AI to brainstorm SQL, logic, or field labels!</b></li>
-    </ul>
-    <b>For more details, see the in-file help and comments in config.js.</b>
-  </div>
-
-  <!-- Docked preview -->
-  <div id="dashboardPreviewDock">
-    <div class="dock-header">
-      <strong>Dashboard Preview</strong>
-      <button class="min-btn" title="Minimize Preview">&#x2212;</button>
-    </div>
-    <div class="dock-content">
-      <div id="dashboardPreviewSection"></div>
-      <div class="loading" style="display:none;"></div>
-    </div>
-  </div>
-
+    <!-- Wizard scripts (wizard-demo.js, wizard-generators.js) loaded by RequireJS -->
+    <!-- via 'template/wizard-demo' and 'template/wizard-generators' in viewmodel.js -->
+    <!-- Do NOT add <script> tags here — Etrieve loads all JS via RequireJS -->
 </body>
 </html>
