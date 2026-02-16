@@ -276,7 +276,7 @@ ${styleNotes[style] || styleDef.description}
 
 Ensure users have access to:
 - The dashboard itself
-- The underlying data (Area/Catalog: ${State.selectedArea?.name || 'N/A'})
+- The underlying data (Area/Catalog: ${(State.selectedArea && State.selectedArea.name) || 'N/A'})
 ${State.selectedTemplate ? `- Form template: ${State.selectedTemplate.name}` : ''}
 
 ## Files Included
@@ -1279,16 +1279,16 @@ function renderPreview() {
     // Get columns
     let columns = [];
     if (State.mode === 'content') {
-        const fields = SimulatedData.keyFields[State.selectedArea?.id] || [];
+        const fields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
         columns = fields.filter(f => State.selectedFields.includes(f.id)).map(f => f.name);
     } else if (State.mode === 'forms') {
-        const inputs = SimulatedData.formInputIds[State.selectedTemplate?.id] || [];
+        const inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
         columns = inputs.filter(i => State.selectedInputIds.includes(i.id)).map(i => i.label);
     } else if (State.mode === 'combined') {
-        const docFields = SimulatedData.keyFields[State.selectedArea?.id] || [];
-        const formInputs = SimulatedData.formInputIds[State.selectedTemplate?.id] || [];
-        columns = [...docFields.filter(f => State.selectedFields.includes(f.id)).map(f => f.name),
-                   ...formInputs.filter(i => State.selectedInputIds.includes(i.id)).map(i => i.label)];
+        const docFields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
+        const formInputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
+        columns = docFields.filter(f => State.selectedFields.includes(f.id)).map(f => f.name)
+                   .concat(formInputs.filter(i => State.selectedInputIds.includes(i.id)).map(i => i.label));
     }
     if (columns.length === 0) columns = ['Name', 'Date', 'Status'];
     columns = columns.slice(0, 3);

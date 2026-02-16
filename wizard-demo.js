@@ -170,6 +170,44 @@ var SimulatedData = {
 };
 
 // ============================================================================
+// THEME COOKIE HELPERS
+// ============================================================================
+
+function setThemeCookie(mode) {
+    var expires = '';
+    if (mode) {
+        var d = new Date();
+        d.setTime(d.getTime() + (365 * 24 * 60 * 60 * 1000)); // 1 year
+        expires = '; expires=' + d.toUTCString();
+    } else {
+        // Clear cookie
+        expires = '; expires=Thu, 01 Jan 1970 00:00:00 UTC';
+    }
+    document.cookie = 'wizardTheme=' + (mode || '') + expires + '; path=/; SameSite=Lax';
+}
+
+function getThemeCookie() {
+    var name = 'wizardTheme=';
+    var parts = document.cookie.split(';');
+    for (var i = 0; i < parts.length; i++) {
+        var c = parts[i].trim();
+        if (c.indexOf(name) === 0) {
+            var val = c.substring(name.length);
+            if (val === 'content' || val === 'forms' || val === 'combined') return val;
+        }
+    }
+    return null;
+}
+
+// Apply saved theme on page load (before any rendering)
+(function initThemeFromCookie() {
+    var saved = getThemeCookie();
+    if (saved) {
+        document.body.classList.add('mode-' + saved);
+    }
+})();
+
+// ============================================================================
 // STATE
 // ============================================================================
 
@@ -224,7 +262,7 @@ const State = {
             { name: 'Member B', color: '#e3f2fd' },
             { name: 'Member C', color: '#fff3e0' }
         ],
-        // SLRP Cards (style 11): card field mappings
+        // Cards Dashboard (style 11): card field mappings
         cardTitleField: null,
         cardStatusField: null,
         cardLeadField: null,
@@ -257,15 +295,15 @@ const DashboardStyles = [
         category: 'Basic',
         description: 'Groups items by request type or category instead of status.',
         bestFor: 'Multi-purpose forms with different request categories',
-        examples: 'ATAC Requests, Cosme Program Applications'
+        examples: 'Travel Requests, Program Applications'
     },
     {
         id: 'expandable',
         num: 3,
-        name: 'SLRP + Expandable',
+        name: 'Expandable Detail',
         icon: 'bi-bullseye',
         category: 'Advanced',
-        description: 'Toggle rows with detail grids, separator bars, and currency fields.',
+        description: 'Click any row to expand and see additional detail fields below it.',
         bestFor: 'Budget requests, capital projects, detailed records',
         examples: 'Budget Office Positions, Capital Requests, Facilities'
     },
@@ -285,7 +323,7 @@ const DashboardStyles = [
         name: 'Claims System',
         icon: 'bi-file-earmark-text',
         category: 'Advanced',
-        description: 'Personal stats, claim/unclaim, filter chips, age badges, and bulk selection.',
+        description: 'Staff can claim items, see their personal stats, and filter by category. Color-coded badges show how long items have been waiting.',
         bestFor: 'Document processing queues with multiple staff',
         examples: 'Transcript Dashboard, NIS Transcripts'
     },
@@ -295,8 +333,8 @@ const DashboardStyles = [
         name: 'Workflow Actions',
         icon: 'bi-gear',
         category: 'Advanced',
-        description: 'Step-colored swimlanes with context-sensitive action buttons and confirmation modals.',
-        bestFor: 'Multi-step processes needing user actions at each stage',
+        description: 'Each workflow step gets its own color and action buttons (approve, deny, etc.) with confirmation dialogs.',
+        bestFor: 'Multi-step approval processes where staff take action at each stage',
         examples: 'Student Name Changes, Approval Workflows'
     },
     {
@@ -305,8 +343,8 @@ const DashboardStyles = [
         name: 'PDF + Signatures',
         icon: 'bi-file-pdf',
         category: 'Advanced',
-        description: 'Expandable rows with signature display, lost-time indicators, and PDF generation.',
-        bestFor: 'Legal/compliance forms requiring official documents',
+        description: 'Expandable rows showing signature status and document details. Built for compliance and incident tracking.',
+        bestFor: 'Forms with signatures, compliance documents, incident reports',
         examples: 'EHSR Form 45, Incident Reports'
     },
     {
@@ -315,7 +353,7 @@ const DashboardStyles = [
         name: 'Survey Analytics',
         icon: 'bi-bar-chart',
         category: 'Specialized',
-        description: 'Stats cards, word cloud, theme analysis, and table/cards/question view modes.',
+        description: 'Visual analytics with rating distributions, common themes from comments, and multiple view modes.',
         bestFor: 'Survey response analysis and reporting',
         examples: 'SGC HR Feedback, Assessment Surveys'
     },
@@ -327,7 +365,7 @@ const DashboardStyles = [
         category: 'Specialized',
         description: 'Expandable nomination details with category badges and voting.',
         bestFor: 'Employee recognition and award programs',
-        examples: 'I am COD Award, Faculty Awards'
+        examples: 'Staff Awards, Faculty Recognition'
     },
     {
         id: 'committee-voting',
@@ -342,12 +380,12 @@ const DashboardStyles = [
     {
         id: 'cards-dashboard',
         num: 11,
-        name: 'SLRP Modern Cards',
+        name: 'Executive Cards',
         icon: 'bi-grid-1x2-fill',
         category: 'Specialized',
         description: 'Donut chart, progress bars, alert panel, and responsive card grid layout.',
         bestFor: 'Executive-level tracking with visual metrics',
-        examples: 'SLRP Subcommittee Tracking, Strategic Planning'
+        examples: 'Strategic Plan Tracking, Project Portfolio, Initiative Dashboard'
     },
     {
         id: 'bulk-actions',
@@ -373,10 +411,9 @@ function saveDraft() {
     // Debounce saves
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => {
-        const draft = {
-            ...State,
+        const draft = Object.assign({}, State, {
             savedAt: new Date().toISOString()
-        };
+        });
         try {
             localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
             showDraftIndicator('saved');
@@ -478,10 +515,10 @@ function showDraftModal(draft) {
                 <i class="bi bi-file-earmark-text"></i>
             </div>
             <h3>Continue where you left off?</h3>
-            <p>You have an unsaved draft from <strong>${timeAgo}</strong></p>
+            <p>You have an unsaved draft from <strong>${escapeHtml(timeAgo)}</strong></p>
             <div class="draft-preview">
-                <div><strong>Name:</strong> ${title}</div>
-                <div><strong>Type:</strong> ${modeLabel} Dashboard</div>
+                <div><strong>Name:</strong> ${escapeHtml(title)}</div>
+                <div><strong>Type:</strong> ${escapeHtml(modeLabel)} Dashboard</div>
                 <div><strong>Step:</strong> ${draft.currentStep + 1} of 6</div>
             </div>
             <div class="draft-modal-buttons">
@@ -626,8 +663,11 @@ function applyModeTheme(mode) {
 
     // Add the appropriate mode class
     if (mode) {
-        document.body.classList.add(`mode-${mode}`);
+        document.body.classList.add('mode-' + mode);
     }
+
+    // Persist theme choice in cookie
+    setThemeCookie(mode);
 }
 
 // Handle keyboard activation for mode cards (accessibility)
@@ -712,7 +752,7 @@ function updateModeIndicator() {
     };
 
     const mode = modeLabels[State.mode] || modeLabels['content'];
-    indicator.innerHTML = `<span class="mode-indicator ${mode.class}"><i class="bi ${mode.icon}"></i> ${mode.label}</span>`;
+    indicator.innerHTML = `<span class="mode-indicator ${escapeHtml(mode.class)}"><i class="bi ${escapeHtml(mode.icon)}"></i> ${escapeHtml(mode.label)}</span>`;
 }
 
 // ============================================================================
@@ -727,7 +767,7 @@ function getSteps() {
     else base = ContentStepsBase;
 
     // Clone the base array
-    let steps = base.map(s => ({...s}));
+    let steps = base.map(s => Object.assign({}, s));
 
     // Insert style step after setup (index 1)
     const styleStep = { id: 'style', title: 'Style', icon: 'bi-palette' };
@@ -739,7 +779,8 @@ function getSteps() {
         if (extra.length > 0) {
             const swimIdx = steps.findIndex(s => s.id === 'swimlanes');
             if (swimIdx >= 0) {
-                steps.splice(swimIdx, 0, ...extra.map(s => ({...s})));
+                var extraCloned = extra.map(s => Object.assign({}, s));
+                steps.splice.apply(steps, [swimIdx, 0].concat(extraCloned));
             }
         }
     }
@@ -749,8 +790,38 @@ function getSteps() {
 
 function nextStep() {
     const steps = getSteps();
+
+    // Validate current step before advancing
+    const step = steps[State.currentStep];
+    if (step) {
+        if (step.id === 'area' && !State.selectedArea) {
+            showToast('Please select a folder before continuing.', 'warning');
+            return;
+        }
+        if (step.id === 'docTypes' && State.selectedDocTypes.length === 0) {
+            showToast('Please select at least one document type.', 'warning');
+            return;
+        }
+        if (step.id === 'template' && !State.selectedTemplate) {
+            showToast('Please select a form template before continuing.', 'warning');
+            return;
+        }
+        if (step.id === 'fields' && State.selectedFields.length === 0) {
+            showToast('Please select at least one field.', 'warning');
+            return;
+        }
+        if (step.id === 'formFields' && State.selectedInputIds.length === 0) {
+            showToast('Please select at least one form field.', 'warning');
+            return;
+        }
+    }
+
     if (State.currentStep < steps.length - 1) {
         State.currentStep++;
+        // Clamp to array bounds (safety for style-change step count shifts)
+        if (State.currentStep >= steps.length) {
+            State.currentStep = steps.length - 1;
+        }
         renderProgress();
         renderStep();
         saveDraft();
@@ -784,7 +855,7 @@ function renderProgress() {
             <div class="step-dot">
                 ${i < State.currentStep ? '<i class="bi bi-check"></i>' : (i + 1)}
             </div>
-            <span class="step-label">${s.title}</span>
+            <span class="step-label">${escapeHtml(s.title)}</span>
         </div>
     `).join('');
     document.getElementById('progressSteps').innerHTML = dotsHtml;
@@ -825,8 +896,8 @@ function renderStep() {
 
     const header = headers[step.id] || { title: step.title, desc: '' };
     document.getElementById('cardHeader').innerHTML = `
-        <h2><i class="${step.icon}"></i> ${header.title}</h2>
-        <p>${header.desc}</p>
+        <h2><i class="${escapeHtml(step.icon)}"></i> ${escapeHtml(header.title)}</h2>
+        <p>${escapeHtml(header.desc)}</p>
     `;
 
     // Render step content
@@ -896,14 +967,14 @@ function renderSetupStep() {
             <label><i class="bi bi-card-heading" style="margin-right:8px;color:var(--primary);"></i>Dashboard Name</label>
             <input type="text" class="form-control" id="dashboardTitle"
                    placeholder="Example: Financial Aid Documents"
-                   value="${State.dashboardTitle}"
+                   value="${escapeHtml(State.dashboardTitle)}"
                    oninput="updateDashboardTitle(this.value)">
         </div>
 
         <div id="techNameDisplay" style="background:#f0f7f4;border-radius:10px;padding:15px 20px;border:1px solid #c3e6cb;display:${State.dashboardTitle && !State.advancedMode ? 'block' : 'none'};">
             <div style="display:flex;align-items:center;gap:10px;">
                 <i class="bi bi-check-circle-fill" style="color:var(--success);"></i>
-                <span style="color:#155724;">Technical name auto-generated: <code style="background:#d4edda;padding:3px 8px;border-radius:4px;">${State.sourceName || autoTechnicalName}</code></span>
+                <span style="color:#155724;">Technical name auto-generated: <code style="background:#d4edda;padding:3px 8px;border-radius:4px;">${escapeHtml(State.sourceName || autoTechnicalName)}</code></span>
             </div>
         </div>
 
@@ -914,9 +985,9 @@ function renderSetupStep() {
                     <label style="font-size:0.9rem;">Integration Source Name</label>
                     <input type="text" class="advanced-input" id="sourceName"
                            placeholder="e.g., FinAid_Dashboard"
-                           value="${State.sourceName}"
-                           oninput="State.sourceName = this.value">
-                    <small style="color:#666;">Must match exactly what you create in Etrieve Central > Admin > Sources</small>
+                           value="${escapeHtml(State.sourceName)}"
+                           oninput="State.sourceName = this.value.replace(/[^a-zA-Z0-9_]/g, '_')">
+                    <small style="color:#666;">Technical name for Etrieve Central. Letters, numbers, and underscores only. This must match the source name you create in Admin &gt; Sources.</small>
                 </div>
             </div>
         ` : ''}
@@ -987,12 +1058,12 @@ function renderStyleStep() {
         styles.forEach(s => {
             const selected = State.selectedStyle === s.id;
             html += `
-                <div class="style-select-card ${selected ? 'selected' : ''}" onclick="selectStyle('${s.id}')">
-                    <div class="style-select-icon"><i class="bi ${s.icon}"></i></div>
+                <div class="style-select-card ${selected ? 'selected' : ''}" onclick="selectStyle('${escapeJS(s.id)}')">
+                    <div class="style-select-icon"><i class="bi ${escapeHtml(s.icon)}"></i></div>
                     <div class="style-select-info">
-                        <div class="style-select-name">${s.name}</div>
-                        <div class="style-select-desc">${s.description}</div>
-                        <div class="style-select-best"><strong>Best for:</strong> ${s.bestFor}</div>
+                        <div class="style-select-name">${escapeHtml(s.name)}</div>
+                        <div class="style-select-desc">${escapeHtml(s.description)}</div>
+                        <div class="style-select-best"><strong>Best for:</strong> ${escapeHtml(s.bestFor)}</div>
                     </div>
                     ${selected ? '<div class="style-select-check"><i class="bi bi-check-circle-fill"></i></div>' : ''}
                 </div>
@@ -1019,10 +1090,10 @@ function selectStyle(styleId) {
 function getAvailableFields() {
     // Returns fields available for style-specific configuration
     if (State.mode === 'content' || State.mode === 'combined') {
-        return (SimulatedData.keyFields[State.selectedArea?.id] || [])
+        return (SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [])
             .filter(f => State.selectedFields.includes(f.id));
     } else if (State.mode === 'forms') {
-        const inputs = SimulatedData.formInputIds[State.selectedTemplate?.id] || [];
+        const inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
         return inputs.filter(i => State.selectedInputIds.includes(i.id))
             .map(i => ({ id: i.id, name: i.label, alias: i.id, type: 'text' }));
     }
@@ -1032,9 +1103,9 @@ function getAvailableFields() {
 function getAllFields() {
     // Returns ALL fields for current selection (not just selected ones)
     if (State.mode === 'content' || State.mode === 'combined') {
-        return SimulatedData.keyFields[State.selectedArea?.id] || [];
+        return SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
     } else if (State.mode === 'forms') {
-        return (SimulatedData.formInputIds[State.selectedTemplate?.id] || [])
+        return (SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [])
             .map(i => ({ id: i.id, name: i.label, alias: i.id, type: 'text' }));
     }
     return [];
@@ -1047,7 +1118,7 @@ function renderDetailFieldsStep() {
     // Detail fields = all fields minus the ones already selected as main columns
     const detailCandidates = fields.filter(f => !mainFields.find(m => m.id === f.id));
     // Also include main fields so user can pick those too
-    const allCandidates = [...detailCandidates, ...mainFields];
+    const allCandidates = detailCandidates.concat(mainFields);
 
     return `
         <div class="step-description">
@@ -1057,9 +1128,9 @@ function renderDetailFieldsStep() {
         <div class="field-selection-grid">
             ${allCandidates.map(f => `
                 <div class="field-item ${State.styleConfig.detailFields.includes(f.id) ? 'selected' : ''}"
-                     onclick="toggleDetailField('${f.id}')">
+                     onclick="toggleDetailField('${escapeJS(f.id)}')">
                     <input type="checkbox" ${State.styleConfig.detailFields.includes(f.id) ? 'checked' : ''}>
-                    <span>${f.name}</span>
+                    <span>${escapeHtml(f.name)}</span>
                 </div>
             `).join('')}
         </div>
@@ -1068,6 +1139,7 @@ function renderDetailFieldsStep() {
 }
 
 function toggleDetailField(fieldId) {
+    fieldId = Number(fieldId);
     const idx = State.styleConfig.detailFields.indexOf(fieldId);
     if (idx >= 0) State.styleConfig.detailFields.splice(idx, 1);
     else State.styleConfig.detailFields.push(fieldId);
@@ -1091,9 +1163,9 @@ function renderAlphaConfigStep() {
             <div class="field-selection-grid">
                 ${fields.map(f => `
                     <div class="field-item ${State.styleConfig.nameField === f.id ? 'selected' : ''}"
-                         onclick="selectAlphaNameField('${f.id}')">
+                         onclick="selectAlphaNameField('${escapeJS(f.id)}')">
                         <input type="radio" name="nameField" ${State.styleConfig.nameField === f.id ? 'checked' : ''}>
-                        <span>${f.name}</span>
+                        <span>${escapeHtml(f.name)}</span>
                     </div>
                 `).join('')}
             </div>
@@ -1104,10 +1176,10 @@ function renderAlphaConfigStep() {
             <div class="alpha-ranges-config">
                 ${ranges.map((r, i) => `
                     <div class="alpha-range-row">
-                        <input type="text" class="alpha-range-input" value="${r[0]}" maxlength="1"
+                        <input type="text" class="alpha-range-input" value="${escapeHtml(r[0])}" maxlength="1"
                                oninput="updateAlphaRange(${i}, 0, this.value.toUpperCase())">
                         <span>—</span>
-                        <input type="text" class="alpha-range-input" value="${r[1]}" maxlength="1"
+                        <input type="text" class="alpha-range-input" value="${escapeHtml(r[1])}" maxlength="1"
                                oninput="updateAlphaRange(${i}, 1, this.value.toUpperCase())">
                         ${ranges.length > 1 ? `<button class="btn-remove-range" onclick="removeAlphaRange(${i})"><i class="bi bi-x"></i></button>` : ''}
                     </div>
@@ -1121,7 +1193,7 @@ function renderAlphaConfigStep() {
 }
 
 function selectAlphaNameField(fieldId) {
-    State.styleConfig.nameField = fieldId;
+    State.styleConfig.nameField = Number(fieldId);
     renderStep();
     saveDraft();
 }
@@ -1159,7 +1231,7 @@ function renderClaimsConfigStep() {
             <div class="chips-config">
                 ${chips.map((c, i) => `
                     <div class="chip-config-row">
-                        <input type="text" class="form-control" value="${c}"
+                        <input type="text" class="form-control" value="${escapeHtml(c)}"
                                oninput="updateFilterChip(${i}, this.value)" style="flex:1;">
                         ${i > 0 ? `<button class="btn-remove-range" onclick="removeFilterChip(${i})"><i class="bi bi-x"></i></button>` : ''}
                     </div>
@@ -1175,12 +1247,12 @@ function renderClaimsConfigStep() {
             <div style="display:flex;gap:20px;align-items:center;">
                 <div>
                     <small style="color:#666;">Warning (yellow)</small>
-                    <input type="number" class="form-control" value="${State.styleConfig.ageBadgeWarning}"
+                    <input type="number" class="form-control" value="${escapeHtml(String(State.styleConfig.ageBadgeWarning))}"
                            oninput="State.styleConfig.ageBadgeWarning = parseInt(this.value) || 30; saveDraft();" style="width:80px;">
                 </div>
                 <div>
                     <small style="color:#666;">Critical (red)</small>
-                    <input type="number" class="form-control" value="${State.styleConfig.ageBadgeCritical}"
+                    <input type="number" class="form-control" value="${escapeHtml(String(State.styleConfig.ageBadgeCritical))}"
                            oninput="State.styleConfig.ageBadgeCritical = parseInt(this.value) || 60; saveDraft();" style="width:80px;">
                 </div>
             </div>
@@ -1217,14 +1289,14 @@ function renderActionsConfigStep() {
             const slActions = actions[sl.name] || [];
             return `
             <div class="action-config-section">
-                <h6 style="margin-bottom:10px;color:var(--primary);"><i class="bi bi-layout-three-columns me-1"></i>${sl.name}</h6>
+                <h6 style="margin-bottom:10px;color:var(--primary);"><i class="bi bi-layout-three-columns me-1"></i>${escapeHtml(sl.name)}</h6>
                 <div class="action-presets-grid">
                     ${actionPresets.map(ap => {
                         const isActive = slActions.some(a => a.label === ap.label);
                         return `
                             <div class="action-preset ${isActive ? 'active' : ''}"
-                                 onclick="toggleWorkflowAction('${escapeJS(sl.name)}', '${escapeJS(ap.label)}', '${ap.icon}', '${ap.btnStyle}')">
-                                <i class="bi ${ap.icon}"></i> ${ap.label}
+                                 onclick="toggleWorkflowAction('${escapeJS(sl.name)}', '${escapeJS(ap.label)}', '${escapeJS(ap.icon)}', '${escapeJS(ap.btnStyle)}')">
+                                <i class="bi ${escapeHtml(ap.icon)}"></i> ${escapeHtml(ap.label)}
                             </div>
                         `;
                     }).join('')}
@@ -1262,9 +1334,9 @@ function renderSurveyConfigStep() {
             <div class="field-selection-grid">
                 ${fields.map(f => `
                     <div class="field-item ${State.styleConfig.ratingField === f.id ? 'selected' : ''}"
-                         onclick="State.styleConfig.ratingField = '${f.id}'; renderStep(); saveDraft();">
+                         onclick="State.styleConfig.ratingField = Number('${escapeJS(f.id)}'); renderStep(); saveDraft();">
                         <input type="radio" name="ratingField" ${State.styleConfig.ratingField === f.id ? 'checked' : ''}>
-                        <span>${f.name}</span>
+                        <span>${escapeHtml(f.name)}</span>
                     </div>
                 `).join('')}
             </div>
@@ -1275,9 +1347,9 @@ function renderSurveyConfigStep() {
             <div class="field-selection-grid">
                 ${fields.map(f => `
                     <div class="field-item ${State.styleConfig.commentField === f.id ? 'selected' : ''}"
-                         onclick="State.styleConfig.commentField = '${f.id}'; renderStep(); saveDraft();">
+                         onclick="State.styleConfig.commentField = Number('${escapeJS(f.id)}'); renderStep(); saveDraft();">
                         <input type="radio" name="commentField" ${State.styleConfig.commentField === f.id ? 'checked' : ''}>
-                        <span>${f.name}</span>
+                        <span>${escapeHtml(f.name)}</span>
                     </div>
                 `).join('')}
             </div>
@@ -1288,9 +1360,9 @@ function renderSurveyConfigStep() {
             <div class="field-selection-grid">
                 ${fields.map(f => `
                     <div class="field-item ${State.styleConfig.departmentField === f.id ? 'selected' : ''}"
-                         onclick="State.styleConfig.departmentField = '${f.id}'; renderStep(); saveDraft();">
+                         onclick="State.styleConfig.departmentField = Number('${escapeJS(f.id)}'); renderStep(); saveDraft();">
                         <input type="radio" name="deptField" ${State.styleConfig.departmentField === f.id ? 'checked' : ''}>
-                        <span>${f.name}</span>
+                        <span>${escapeHtml(f.name)}</span>
                     </div>
                 `).join('')}
             </div>
@@ -1313,13 +1385,13 @@ function renderCommitteeConfigStep() {
             ${members.map((m, i) => `
                 <div class="committee-member-row">
                     <span class="member-number">${i + 1}</span>
-                    <input type="text" class="form-control" value="${m.name}" placeholder="Member name"
+                    <input type="text" class="form-control" value="${escapeHtml(m.name)}" placeholder="Member name"
                            oninput="updateCommitteeMember(${i}, 'name', this.value)" style="flex:1;">
                     <div class="color-picker-row">
                         ${colorOptions.map(c => `
                             <div class="color-swatch ${m.color === c ? 'selected' : ''}"
-                                 style="background:${c};"
-                                 onclick="updateCommitteeMember(${i}, 'color', '${c}')"></div>
+                                 style="background:${escapeHtml(c)};"
+                                 onclick="updateCommitteeMember(${i}, 'color', '${escapeJS(c)}')"></div>
                         `).join('')}
                     </div>
                     ${members.length > 2 ? `<button class="btn-remove-range" onclick="removeCommitteeMember(${i})"><i class="bi bi-x"></i></button>` : ''}
@@ -1334,7 +1406,11 @@ function renderCommitteeConfigStep() {
 
 function updateCommitteeMember(idx, prop, value) {
     State.styleConfig.committeeMembers[idx][prop] = value;
-    renderStep();
+    // Only re-render for color changes (clicks). Name changes via oninput
+    // should NOT re-render because it rebuilds the DOM and loses focus/cursor.
+    if (prop !== 'name') {
+        renderStep();
+    }
     saveDraft();
 }
 
@@ -1372,19 +1448,19 @@ function renderCardsConfigStep() {
             const info = labels[configKey];
             return `
                 <div class="form-group" style="margin-top:15px;">
-                    <label><i class="bi ${info.icon}" style="margin-right:8px;color:var(--primary);"></i>${info.label}
-                        <small style="color:#888;margin-left:8px;">${info.desc}</small></label>
+                    <label><i class="bi ${escapeHtml(info.icon)}" style="margin-right:8px;color:var(--primary);"></i>${escapeHtml(info.label)}
+                        <small style="color:#888;margin-left:8px;">${escapeHtml(info.desc)}</small></label>
                     <div class="field-selection-grid">
                         <div class="field-item ${!State.styleConfig[configKey] ? 'selected' : ''}"
-                             onclick="State.styleConfig['${configKey}'] = null; renderStep(); saveDraft();">
-                            <input type="radio" name="${configKey}" ${!State.styleConfig[configKey] ? 'checked' : ''}>
+                             onclick="State.styleConfig['${escapeJS(configKey)}'] = null; renderStep(); saveDraft();">
+                            <input type="radio" name="${escapeHtml(configKey)}" ${!State.styleConfig[configKey] ? 'checked' : ''}>
                             <span style="color:#999;">None</span>
                         </div>
                         ${fields.map(f => `
                             <div class="field-item ${State.styleConfig[configKey] === f.id ? 'selected' : ''}"
-                                 onclick="State.styleConfig['${configKey}'] = '${f.id}'; renderStep(); saveDraft();">
-                                <input type="radio" name="${configKey}" ${State.styleConfig[configKey] === f.id ? 'checked' : ''}>
-                                <span>${f.name}</span>
+                                 onclick="State.styleConfig['${escapeJS(configKey)}'] = Number('${escapeJS(f.id)}'); renderStep(); saveDraft();">
+                                <input type="radio" name="${escapeHtml(configKey)}" ${State.styleConfig[configKey] === f.id ? 'checked' : ''}>
+                                <span>${escapeHtml(f.name)}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -1408,7 +1484,7 @@ function renderBulkConfigStep() {
             <div class="chips-config">
                 ${targets.map((t, i) => `
                     <div class="chip-config-row">
-                        <input type="text" class="form-control" value="${t}"
+                        <input type="text" class="form-control" value="${escapeHtml(t)}"
                                oninput="updateReassignTarget(${i}, this.value)" style="flex:1;">
                         ${targets.length > 1 ? `<button class="btn-remove-range" onclick="removeReassignTarget(${i})"><i class="bi bi-x"></i></button>` : ''}
                     </div>
@@ -1432,10 +1508,10 @@ function removeReassignTarget(idx) { State.styleConfig.reassignTargets.splice(id
 
 function renderAreaStep() {
     const areasHtml = SimulatedData.areas.map(area => `
-        <div class="field-item ${State.selectedArea?.id === area.id ? 'selected' : ''}"
+        <div class="field-item ${(State.selectedArea && State.selectedArea.id) === area.id ? 'selected' : ''}"
              onclick="selectArea(${area.id})">
-            <input type="radio" name="area" ${State.selectedArea?.id === area.id ? 'checked' : ''}>
-            <span class="field-name">${area.name}</span>
+            <input type="radio" name="area" ${(State.selectedArea && State.selectedArea.id) === area.id ? 'checked' : ''}>
+            <span class="field-name">${escapeHtml(area.name)}</span>
         </div>
     `).join('');
 
@@ -1446,13 +1522,13 @@ function renderAreaStep() {
         </div>
 
         <div class="field-grid" style="grid-template-columns: repeat(2, 1fr);">
-            ${areasHtml}
+            ${areasHtml || '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:#666;"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:10px;"></i>No document folders found. Contact your Etrieve administrator to set up areas.</div>'}
         </div>
 
         ${State.selectedArea ? `
-            <div style="margin-top:20px;padding:15px 20px;background:rgba(0,99,65,0.08);border-radius:10px;display:flex;align-items:center;gap:10px;">
+            <div style="margin-top:20px;padding:15px 20px;background:rgba(var(--primary-rgb),0.08);border-radius:10px;display:flex;align-items:center;gap:10px;">
                 <i class="bi bi-check-circle-fill" style="color:var(--success);font-size:1.2rem;"></i>
-                <span>You selected: <strong>${State.selectedArea.name}</strong></span>
+                <span>You selected: <strong>${escapeHtml(State.selectedArea.name)}</strong></span>
             </div>
         ` : ''}
     `;
@@ -1478,7 +1554,7 @@ function renderDocTypesStep() {
         <div class="field-item ${State.selectedDocTypes.includes(dt.id) ? 'selected' : ''}"
              onclick="toggleDocType(${dt.id})">
             <input type="checkbox" ${State.selectedDocTypes.includes(dt.id) ? 'checked' : ''}>
-            <span class="field-name">${dt.name}</span>
+            <span class="field-name">${escapeHtml(dt.name)}</span>
         </div>
     `).join('');
 
@@ -1498,7 +1574,7 @@ function renderDocTypesStep() {
         </div>
 
         <div class="field-grid">
-            ${docTypesHtml}
+            ${docTypesHtml || '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:#666;"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:10px;"></i>No document types found in this folder. Try selecting a different folder.</div>'}
         </div>
     `;
 }
@@ -1527,10 +1603,10 @@ function selectAllDocTypes() {
 
 function renderTemplateStep() {
     const templatesHtml = SimulatedData.formTemplates.map(t => `
-        <div class="field-item ${State.selectedTemplate?.id === t.id ? 'selected' : ''}"
+        <div class="field-item ${(State.selectedTemplate && State.selectedTemplate.id) === t.id ? 'selected' : ''}"
              onclick="selectTemplate(${t.id})">
-            <input type="radio" name="template" ${State.selectedTemplate?.id === t.id ? 'checked' : ''}>
-            <span class="field-name">${t.name}</span>
+            <input type="radio" name="template" ${(State.selectedTemplate && State.selectedTemplate.id) === t.id ? 'checked' : ''}>
+            <span class="field-name">${escapeHtml(t.name)}</span>
         </div>
     `).join('');
 
@@ -1541,13 +1617,13 @@ function renderTemplateStep() {
         </div>
 
         <div class="field-grid" style="grid-template-columns: 1fr;">
-            ${templatesHtml}
+            ${templatesHtml || '<div style="text-align:center;padding:40px 20px;color:#666;"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:10px;"></i>No form templates available. Make sure forms are published in Etrieve Central.</div>'}
         </div>
 
         ${State.selectedTemplate ? `
-            <div style="margin-top:20px;padding:15px 20px;background:rgba(0,99,65,0.08);border-radius:10px;display:flex;align-items:center;gap:10px;">
+            <div style="margin-top:20px;padding:15px 20px;background:rgba(var(--primary-rgb),0.08);border-radius:10px;display:flex;align-items:center;gap:10px;">
                 <i class="bi bi-check-circle-fill" style="color:var(--success);font-size:1.2rem;"></i>
-                <span>You selected: <strong>${State.selectedTemplate.name}</strong></span>
+                <span>You selected: <strong>${escapeHtml(State.selectedTemplate.name)}</strong></span>
             </div>
         ` : ''}
     `;
@@ -1580,7 +1656,7 @@ function renderContentFieldsStep() {
         <div class="field-item ${State.selectedFields.includes(f.id) ? 'selected' : ''}"
              onclick="toggleField(${f.id})">
             <input type="checkbox" ${State.selectedFields.includes(f.id) ? 'checked' : ''}>
-            <span class="field-name">${f.name}</span>
+            <span class="field-name">${escapeHtml(f.name)}</span>
         </div>
     `).join('');
 
@@ -1589,7 +1665,7 @@ function renderContentFieldsStep() {
         const field = fields.find(f => f.id === id);
         return field ? `
             <span class="selected-tag">
-                ${field.name}
+                ${escapeHtml(field.name)}
                 <span class="remove" onclick="event.stopPropagation(); toggleField(${id})">
                     <i class="bi bi-x"></i>
                 </span>
@@ -1632,9 +1708,9 @@ function renderFormFieldsStep() {
 
     const inputsHtml = inputs.map(inp => `
         <div class="field-item ${State.selectedInputIds.includes(inp.id) ? 'selected' : ''}"
-             onclick="toggleInputId('${inp.id}')">
+             onclick="toggleInputId('${escapeJS(inp.id)}')">
             <input type="checkbox" ${State.selectedInputIds.includes(inp.id) ? 'checked' : ''}>
-            <span class="field-name">${inp.label}</span>
+            <span class="field-name">${escapeHtml(inp.label)}</span>
         </div>
     `).join('');
 
@@ -1682,7 +1758,7 @@ function toggleInputId(id) {
 }
 
 function selectAllFormFields() {
-    const inputs = SimulatedData.formInputIds[State.selectedTemplate?.id] || [];
+    const inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
     if (State.selectedInputIds.length === inputs.length) {
         State.selectedInputIds = [];
     } else {
@@ -1695,13 +1771,13 @@ function selectAllFormFields() {
 // Resolve workflow steps from SimulatedData — works in both standalone (string keys) and Etrieve (numeric keys) mode
 function getWorkflowSteps() {
     let workflowKey = 'service';
-    if (State.selectedTemplate?.id === 692) workflowKey = 'incident';
-    if (State.selectedTemplate?.id === 665) workflowKey = 'budget';
+    if ((State.selectedTemplate && State.selectedTemplate.id) === 692) workflowKey = 'incident';
+    if ((State.selectedTemplate && State.selectedTemplate.id) === 665) workflowKey = 'budget';
     let steps = SimulatedData.workflowSteps[workflowKey] || [];
-    if (steps.length === 0 && State.selectedTemplate?.templateId) {
+    if (steps.length === 0 && (State.selectedTemplate && State.selectedTemplate.templateId)) {
         steps = SimulatedData.workflowSteps[State.selectedTemplate.templateId] || [];
     }
-    if (steps.length === 0 && State.selectedTemplate?.id) {
+    if (steps.length === 0 && (State.selectedTemplate && State.selectedTemplate.id)) {
         steps = SimulatedData.workflowSteps[State.selectedTemplate.id] || [];
     }
     return steps;
@@ -1713,10 +1789,10 @@ function renderWorkflowStep() {
 
     const stepsHtml = steps.map((s, idx) => `
         <div class="field-item ${State.selectedWorkflowSteps.includes(s.id) ? 'selected' : ''}"
-             onclick="toggleWorkflowStep('${s.id}')" style="position:relative;">
+             onclick="toggleWorkflowStep('${escapeJS(s.id)}')" style="position:relative;">
             <input type="checkbox" ${State.selectedWorkflowSteps.includes(s.id) ? 'checked' : ''}>
             <span style="background:var(--primary);color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;margin-right:10px;">${idx + 1}</span>
-            <span class="field-name">${s.displayName}</span>
+            <span class="field-name">${escapeHtml(s.displayName)}</span>
         </div>
     `).join('');
 
@@ -1788,7 +1864,7 @@ function renderSwimlanesStep() {
                 <div class="swimlane-header" draggable="true"
                      ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="drop(event)" ondragend="dragEnd(event)">
                     <span class="drag-handle"><i class="bi bi-grip-vertical"></i></span>
-                    <input type="text" class="swimlane-name" value="${sl.name}"
+                    <input type="text" class="swimlane-name" value="${escapeHtml(sl.name)}"
                            onchange="updateSwimlaneName(${idx}, this.value)" onclick="event.stopPropagation()">
                     <span class="delete-btn" onclick="deleteSwimlane(${idx})" title="Delete group">
                         <i class="bi bi-trash"></i>
@@ -1854,12 +1930,12 @@ function renderSwimlanesStep() {
                         <select id="filterFieldSelect" onchange="updateFilterValues()">
                             <option value="">Select a field...</option>
                             ${filterableFields.map(f => `
-                                <option value="${f.id}" data-values='${JSON.stringify(f.values)}'>${f.name}</option>
+                                <option value="${escapeHtml(f.id)}" data-values="${escapeHtml(JSON.stringify(f.values))}">${escapeHtml(f.name)}</option>
                             `).join('')}
                         </select>
                     </div>
                     <div class="form-group" id="filterValuesGroup" style="display:none;">
-                        <label>Include items with these values:</label>
+                        <label>Include items matching ANY of these values:</label>
                         <div id="filterValuesContainer" class="filter-values-grid"></div>
                     </div>
                 </div>
@@ -1877,7 +1953,7 @@ function renderSwimlanesStep() {
 // Get fields that have predefined values for filtering
 function getFilterableFields() {
     if (State.mode === 'content') {
-        const fields = SimulatedData.keyFields[State.selectedArea?.id] || [];
+        const fields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
         return fields.filter(f => f.values && f.values.length > 0 && State.selectedFields.includes(f.id));
     } else if (State.mode === 'forms') {
         // For forms, use workflow steps as filterable
@@ -1895,9 +1971,9 @@ function getFilterableFields() {
         const filterableFields = [];
 
         // Add document fields with predefined values
-        const docFields = SimulatedData.keyFields[State.selectedArea?.id] || [];
+        const docFields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
         const docFilterable = docFields.filter(f => f.values && f.values.length > 0 && State.selectedFields.includes(f.id));
-        filterableFields.push(...docFilterable);
+        filterableFields.push.apply(filterableFields, docFilterable);
 
         // Add workflow steps if selected
         const steps = getWorkflowSteps();
@@ -1927,10 +2003,27 @@ function openFilterModal(swimlaneIdx) {
 }
 
 function closeFilterModal() {
-    document.getElementById('filterModal').style.display = 'none';
+    var el = document.getElementById('filterModal');
+    if (el) el.style.display = 'none';
     currentFilterSwimlaneIdx = null;
     selectedFilterValues = [];
 }
+
+// Global Escape key handler — closes any open modal
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        var filterModal = document.getElementById('filterModal');
+        if (filterModal && filterModal.style.display !== 'none') {
+            closeFilterModal();
+            return;
+        }
+        var downloadModal = document.getElementById('downloadModal');
+        if (downloadModal) {
+            closeDownloadModal();
+            return;
+        }
+    }
+});
 
 function updateFilterValues() {
     const select = document.getElementById('filterFieldSelect');
@@ -1948,8 +2041,8 @@ function updateFilterValues() {
 
     valuesContainer.innerHTML = values.map(v => `
         <label class="filter-value-item">
-            <input type="checkbox" value="${v}" onchange="toggleFilterValue('${v}')">
-            <span>${v}</span>
+            <input type="checkbox" value="${escapeHtml(v)}" onchange="toggleFilterValue('${escapeJS(v)}')">
+            <span>${escapeHtml(v)}</span>
         </label>
     `).join('');
 
@@ -1979,7 +2072,7 @@ function applyFilter() {
     State.swimlanes[currentFilterSwimlaneIdx].filters.push({
         fieldId: fieldId,
         fieldName: fieldName,
-        values: [...selectedFilterValues]
+        values: selectedFilterValues.slice(0)
     });
 
     closeFilterModal();
@@ -2006,7 +2099,7 @@ function updateSwimlaneName(idx, value) {
 
 function deleteSwimlane(idx) {
     if (State.swimlanes.length <= 1) {
-        alert('You need at least one group.');
+        showToast('You need at least one group.', 'warning');
         return;
     }
     State.swimlanes.splice(idx, 1);
@@ -2081,33 +2174,33 @@ function renderGenerateStep() {
 
     // Summary of what was built
     const summary = [];
-    summary.push(`<strong>Dashboard Name:</strong> ${State.dashboardTitle || 'Untitled Dashboard'}`);
+    summary.push(`<strong>Dashboard Name:</strong> ${escapeHtml(State.dashboardTitle || 'Untitled Dashboard')}`);
     if (State.advancedMode) {
-        summary.push(`<strong>Source Name:</strong> <code>${State.sourceName}</code>`);
+        summary.push(`<strong>Source Name:</strong> <code>${escapeHtml(State.sourceName)}</code>`);
     }
     if (State.mode === 'content' && State.selectedArea) {
-        summary.push(`<strong>Folder:</strong> ${State.selectedArea.name}`);
+        summary.push(`<strong>Folder:</strong> ${escapeHtml(State.selectedArea.name)}`);
         summary.push(`<strong>Document Types:</strong> ${State.selectedDocTypes.length} selected`);
         summary.push(`<strong>Columns:</strong> ${State.selectedFields.length} fields`);
     } else if (State.mode === 'forms' && State.selectedTemplate) {
-        summary.push(`<strong>Form:</strong> ${State.selectedTemplate.name}`);
+        summary.push(`<strong>Form:</strong> ${escapeHtml(State.selectedTemplate.name)}`);
         summary.push(`<strong>Fields:</strong> ${State.selectedInputIds.length} selected`);
         summary.push(`<strong>Workflow Steps:</strong> ${State.selectedWorkflowSteps.length} tracked`);
     } else if (State.mode === 'combined') {
         if (State.selectedArea) {
-            summary.push(`<strong>Document Folder:</strong> ${State.selectedArea.name}`);
+            summary.push(`<strong>Document Folder:</strong> ${escapeHtml(State.selectedArea.name)}`);
             summary.push(`<strong>Document Types:</strong> ${State.selectedDocTypes.length} selected`);
             summary.push(`<strong>Document Fields:</strong> ${State.selectedFields.length} fields`);
         }
         if (State.selectedTemplate) {
-            summary.push(`<strong>Form:</strong> ${State.selectedTemplate.name}`);
+            summary.push(`<strong>Form:</strong> ${escapeHtml(State.selectedTemplate.name)}`);
             summary.push(`<strong>Form Fields:</strong> ${State.selectedInputIds.length} selected`);
         }
         if (State.selectedWorkflowSteps.length > 0) {
             summary.push(`<strong>Workflow Steps:</strong> ${State.selectedWorkflowSteps.length} tracked`);
         }
     }
-    summary.push(`<strong>Groups:</strong> ${State.swimlanes.map(s => s.name).join(', ')}`);
+    summary.push(`<strong>Groups:</strong> ${State.swimlanes.map(s => escapeHtml(s.name)).join(', ')}`);
 
     if (State.advancedMode) {
         // Advanced mode - editable SQL
@@ -2154,7 +2247,7 @@ function renderGenerateStep() {
                 <h4><i class="bi bi-arrow-right-circle"></i> What happens next?</h4>
                 <ol style="line-height:2;margin:10px 0 0 0;padding-left:20px;">
                     <li>Click <strong>Download Dashboard</strong> below</li>
-                    <li>Create Source in Etrieve Central: <code>${State.sourceName}</code></li>
+                    <li>Create Source in Etrieve Central: <code>${escapeHtml(State.sourceName)}</code></li>
                     <li>Paste your SQL query into the Source</li>
                     <li>Upload the dashboard files</li>
                 </ol>
@@ -2196,10 +2289,10 @@ function renderGenerateStep() {
         <div class="info-box" style="background:rgba(23,162,184,0.08);">
             <h4><i class="bi bi-arrow-right-circle"></i> What happens next?</h4>
             <ol style="line-height:2;margin:10px 0 0 0;padding-left:20px;">
-                <li>Click <strong>Download Dashboard</strong> below</li>
-                <li>Send the files to your Softdocs administrator</li>
-                <li>They'll set it up in Etrieve Central</li>
-                <li>You're done!</li>
+                <li>Click <strong>Download Dashboard</strong> below to get your files</li>
+                <li>Email the ZIP to your Etrieve administrator</li>
+                <li>They'll create a source named <code>${escapeHtml(State.sourceName || 'your dashboard name')}</code> and upload the files</li>
+                <li>Your dashboard will be ready in Etrieve Central</li>
             </ol>
         </div>
 
@@ -2214,7 +2307,8 @@ function renderGenerateStep() {
 }
 
 function escapeHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 // Escape strings for SQL single-quote literals (prevents SQL injection in generated queries)
@@ -2227,6 +2321,16 @@ function escapeSQL(str) {
 function escapeJS(str) {
     if (!str) return '';
     return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\n/g, '\\n').replace(/\r/g, '');
+}
+
+// Toast notification for the wizard UI
+function showToast(msg, type) {
+    var t = document.createElement('div');
+    t.className = 'toast-notification' + (type === 'error' ? ' toast-error' : type === 'success' ? ' toast-success' : type === 'warning' ? ' toast-warning' : '');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function() { t.classList.add('show'); }, 10);
+    setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.remove(); }, 300); }, 3000);
 }
 
 function resetSQL() {
@@ -2247,6 +2351,8 @@ function copySQL(e) {
             btn.innerHTML = originalHtml;
             btn.classList.remove('active');
         }, 2000);
+    }).catch(() => {
+        showToast('Failed to copy — try selecting and copying manually.', 'error');
     });
 }
 
@@ -2290,32 +2396,32 @@ function generateSQL() {
 
 function generateContentSQL() {
     const area = State.selectedArea;
-    const docTypes = SimulatedData.documentTypes[area?.id] || [];
+    const docTypes = SimulatedData.documentTypes[(area && area.id)] || [];
     const selectedDocs = docTypes.filter(d => State.selectedDocTypes.includes(d.id));
-    const fields = SimulatedData.keyFields[area?.id] || [];
+    const fields = SimulatedData.keyFields[(area && area.id)] || [];
     const selectedFields = fields.filter(f => State.selectedFields.includes(f.id));
 
     const docTypeList = selectedDocs.map(d => `'${escapeSQL(d.name)}'`).join(',\n      ');
 
     let fieldSelects = selectedFields.map(f => {
         if (f.type === 'date') {
-            return `   ${f.alias}.DATE AS ${f.alias}`;
+            return `   [${f.alias}].DATE AS [${f.alias}]`;
         }
-        return `   ${f.alias}.text AS ${f.alias}`;
+        return `   [${f.alias}].text AS [${f.alias}]`;
     }).join(',\n');
 
     let fieldJoins = selectedFields.map(f => {
         const table = f.type === 'date' ? 'ivDocumentDateFieldValue' : 'ivDocumentTextFieldValue';
-        return `LEFT JOIN dbo.${table} AS ${f.alias}
-   ON Document.DocumentID = ${f.alias}.DocumentID
-   AND ${f.alias}.FieldID = ${f.id}  -- ${escapeSQL(f.name)}`;
+        return `LEFT JOIN dbo.${table} AS [${f.alias}]
+   ON Document.DocumentID = [${f.alias}].DocumentID
+   AND [${f.alias}].FieldID = ${parseInt(f.id, 10)}  -- ${escapeSQL(f.name)}`;
     }).join('\n');
 
     // Generate swimlane configuration comments
     const swimlaneConfig = generateSwimlaneConfig();
 
-    return `-- ${State.dashboardTitle || 'Content Dashboard'}
--- Source: ${State.sourceName || 'ContentSource'}
+    return `-- ${escapeSQL(State.dashboardTitle || 'Content Dashboard')}
+-- Source: ${escapeSQL(State.sourceName || 'ContentSource')}
 -- Generated by Dashboard Builder v3.0
 ${swimlaneConfig}
 SELECT
@@ -2333,7 +2439,7 @@ INNER JOIN dbo.Document
    )
 INNER JOIN dbo.Node
    ON Document.DocumentID = Node.DocumentID
-   AND Node.CatalogID = ${area?.id || 2}
+   AND Node.CatalogID = ${(area && area.id) || 2}
 ${fieldJoins}
 ORDER BY Document.DocumentID DESC`;
 }
@@ -2344,7 +2450,7 @@ function generateSwimlaneConfig() {
     let config = '\n-- ========== SWIMLANE CONFIGURATION ==========\n';
 
     State.swimlanes.forEach((sl, idx) => {
-        config += `-- Swimlane ${idx + 1}: "${sl.name}"\n`;
+        config += `-- Swimlane ${idx + 1}: "${escapeSQL(sl.name)}"\n`;
         if (sl.filters && sl.filters.length > 0) {
             sl.filters.forEach(f => {
                 config += `--   Filter: ${f.fieldName} IN (${f.values.map(v => `'${escapeSQL(v)}'`).join(', ')})\n`;
@@ -2360,7 +2466,7 @@ function generateSwimlaneConfig() {
 
 function generateFormsSQL() {
     const template = State.selectedTemplate;
-    const inputs = SimulatedData.formInputIds[template?.id] || [];
+    const inputs = SimulatedData.formInputIds[(template && template.id)] || [];
     const selectedInputs = inputs.filter(i => State.selectedInputIds.includes(i.id));
 
     let fieldPivots = selectedInputs.map(inp => {
@@ -2373,9 +2479,9 @@ function generateFormsSQL() {
     // Generate swimlane configuration comments
     const swimlaneConfig = generateSwimlaneConfig();
 
-    let sql = `-- ${State.dashboardTitle || 'Forms Dashboard'}
--- Source: ${State.sourceName || 'FormsSource'}
--- Template: ${template?.name || 'Form'} (ID: ${template?.id || 'XXX'})
+    let sql = `-- ${escapeSQL(State.dashboardTitle || 'Forms Dashboard')}
+-- Source: ${escapeSQL(State.sourceName || 'FormsSource')}
+-- Template: ${escapeSQL((template && template.name) || 'Form')} (ID: ${parseInt((template && template.id), 10) || 'XXX'})
 -- Generated by Dashboard Builder v3.0
 ${swimlaneConfig}
 SELECT
@@ -2385,8 +2491,7 @@ ${fieldPivots || '   -- Add your field pivots here'}`;
 
     if (hasWorkflow) {
         sql += `,
-   ps.Name AS CurrentStepName,
-   actor.Name AS AssignedTo`;
+   ps.Name AS CurrentStepName`;
     }
 
     sql += `
@@ -2397,19 +2502,17 @@ LEFT JOIN reporting.central_forms_InputValue iv
     if (hasWorkflow) {
         sql += `
 LEFT JOIN reporting.central_flow_PackageDocument pd
-   ON CAST(pd.SourceID AS INT) = f.FormID
+   ON pd.SourceID = CAST(f.FormID AS VARCHAR(50))
 LEFT JOIN reporting.central_flow_TaskQueue tq
    ON tq.PackageId = pd.PackageID
 LEFT JOIN reporting.central_flow_ProcessStep ps
-   ON tq.ProcessStepID = ps.ProcessStepID
-LEFT JOIN reporting.central_flow_Actor actor
-   ON tq.ActorId = actor.ActorId`;
+   ON tq.ProcessStepID = ps.ProcessStepId`;
     }
 
     sql += `
-WHERE f.TemplateVersionID = ${template?.id || 'XXX'}
+WHERE f.TemplateVersionID = ${parseInt((template && template.id), 10) || 'XXX'}
    AND f.IsDraft = 0
-GROUP BY f.FormID, f.Created${hasWorkflow ? ', ps.Name, actor.Name' : ''}
+GROUP BY f.FormID, f.Created${hasWorkflow ? ', ps.Name' : ''}
 ORDER BY f.Created DESC`;
 
     return sql;
@@ -2418,13 +2521,13 @@ ORDER BY f.Created DESC`;
 function generateCombinedSQL() {
     // Combined mode generates BOTH document and forms queries with a UNION
     const area = State.selectedArea;
-    const docTypes = SimulatedData.documentTypes[area?.id] || [];
+    const docTypes = SimulatedData.documentTypes[(area && area.id)] || [];
     const selectedDocs = docTypes.filter(d => State.selectedDocTypes.includes(d.id));
-    const docFields = SimulatedData.keyFields[area?.id] || [];
+    const docFields = SimulatedData.keyFields[(area && area.id)] || [];
     const selectedDocFields = docFields.filter(f => State.selectedFields.includes(f.id));
 
     const template = State.selectedTemplate;
-    const formInputs = SimulatedData.formInputIds[template?.id] || [];
+    const formInputs = SimulatedData.formInputIds[(template && template.id)] || [];
     const selectedFormInputs = formInputs.filter(i => State.selectedInputIds.includes(i.id));
 
     const hasWorkflow = State.selectedWorkflowSteps.length > 0;
@@ -2433,26 +2536,26 @@ function generateCombinedSQL() {
     // Build document portion
     const docTypeList = selectedDocs.map(d => `'${escapeSQL(d.name)}'`).join(', ');
 
-    let docFieldSelects = selectedDocFields.slice(0, 3).map(f => {
+    let docFieldSelects = selectedDocFields.slice(0, 3).map((f, idx) => {
         if (f.type === 'date') {
-            return `CAST(${f.alias}.DATE AS VARCHAR(50)) AS Field${selectedDocFields.indexOf(f) + 1}`;
+            return `CAST([${f.alias}].DATE AS VARCHAR(50)) AS Field${idx + 1}`;
         }
-        return `${f.alias}.text AS Field${selectedDocFields.indexOf(f) + 1}`;
+        return `[${f.alias}].text AS Field${idx + 1}`;
     }).join(',\n       ');
 
     let docFieldJoins = selectedDocFields.slice(0, 3).map(f => {
         const table = f.type === 'date' ? 'ivDocumentDateFieldValue' : 'ivDocumentTextFieldValue';
-        return `LEFT JOIN dbo.${table} AS ${f.alias}
-   ON Document.DocumentID = ${f.alias}.DocumentID AND ${f.alias}.FieldID = ${f.id}`;
+        return `LEFT JOIN dbo.${table} AS [${f.alias}]
+   ON Document.DocumentID = [${f.alias}].DocumentID AND [${f.alias}].FieldID = ${parseInt(f.id, 10)}`;
     }).join('\n');
 
     // Build form portion
     let formFieldSelects = selectedFormInputs.slice(0, 3).map((inp, idx) => {
-        return `MAX(CASE WHEN iv.InputID = '${inp.id}' THEN iv.Value END) AS Field${idx + 1}`;
+        return `MAX(CASE WHEN iv.InputID = '${escapeSQL(inp.id)}' THEN iv.Value END) AS Field${idx + 1}`;
     }).join(',\n       ');
 
-    let sql = `-- ${State.dashboardTitle || 'Combined Dashboard'}
--- Source: ${State.sourceName || 'CombinedSource'}
+    let sql = `-- ${escapeSQL(State.dashboardTitle || 'Combined Dashboard')}
+-- Source: ${escapeSQL(State.sourceName || 'CombinedSource')}
 -- Type: Combined (Documents + Forms)
 -- Generated by Dashboard Builder v3.0
 ${swimlaneConfig}
@@ -2472,7 +2575,7 @@ INNER JOIN dbo.Document
    AND DocumentType.[Name] IN (${docTypeList || "'YourDocType'"})
 INNER JOIN dbo.Node
    ON Document.DocumentID = Node.DocumentID
-   AND Node.CatalogID = ${area?.id || 2}
+   AND Node.CatalogID = ${(area && area.id) || 2}
 ${docFieldJoins}
 
 UNION ALL
@@ -2481,13 +2584,13 @@ UNION ALL
 SELECT
    'Form' AS RecordType,
    CAST(f.FormID AS VARCHAR(50)) AS RecordID,
-   '${template?.name || 'Form'}' AS Category,
+   '${escapeSQL((template && template.name) || 'Form')}' AS Category,
    ${formFieldSelects || "'' AS Field1, '' AS Field2, '' AS Field3"},
    '/forms/' + CAST(f.FormID AS VARCHAR) AS url
 FROM reporting.central_forms_Form f
 LEFT JOIN reporting.central_forms_InputValue iv
    ON f.FormID = iv.FormID
-WHERE f.TemplateVersionID = ${template?.id || 'XXX'}
+WHERE f.TemplateVersionID = ${parseInt((template && template.id), 10) || 'XXX'}
    AND f.IsDraft = 0
 GROUP BY f.FormID
 
@@ -2547,6 +2650,8 @@ function downloadDashboard() {
         link.download = `${State.sourceName || 'Dashboard'}_Package.zip`;
         link.click();
         URL.revokeObjectURL(link.href);
+    }).catch(err => {
+        showToast('Failed to generate ZIP file. Please try again.', 'error');
     });
 }
 
@@ -2555,76 +2660,115 @@ function showDownloadModal(files) {
     const modal = document.createElement('div');
     modal.id = 'downloadModal';
     modal.className = 'draft-modal';
-    modal.innerHTML = `
-        <div class="draft-modal-content" style="max-width:800px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">
-            <div style="padding:25px 30px;border-bottom:1px solid #e9ecef;">
-                <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:10px;">
-                    <i class="bi bi-file-earmark-zip" style="color:var(--primary);"></i>
-                    Dashboard Files Generated
-                </h3>
-                <p style="margin:0;color:#666;">Click each file tab to view and copy its contents.</p>
-            </div>
-            <div style="display:flex;border-bottom:1px solid #e9ecef;overflow-x:auto;">
-                ${Object.keys(files).map((filename, idx) => `
-                    <button class="file-tab ${idx === 0 ? 'active' : ''}" onclick="showFileContent('${filename}')" data-file="${filename}">
-                        <i class="bi bi-file-code"></i> ${filename}
-                    </button>
-                `).join('')}
-            </div>
-            <div style="flex:1;overflow:auto;padding:0;">
-                <div id="fileContentArea" style="height:100%;">
-                    <pre style="margin:0;padding:20px;background:#1e1e1e;color:#d4d4d4;font-family:Consolas,monospace;font-size:0.85rem;height:100%;overflow:auto;">${escapeHtml(files[Object.keys(files)[0]])}</pre>
-                </div>
-            </div>
-            <div style="padding:15px 25px;border-top:1px solid #e9ecef;display:flex;gap:12px;justify-content:flex-end;background:#f8f9fa;">
-                <button class="btn btn-secondary" onclick="copyCurrentFile(event)">
-                    <i class="bi bi-clipboard"></i> Copy Current File
-                </button>
-                <button class="btn btn-primary" onclick="closeDownloadModal()">
-                    <i class="bi bi-check-lg"></i> Done
-                </button>
-            </div>
-        </div>
-    `;
+
+    // Build tab buttons without inline onclick (CSP-safe)
+    var tabsHtml = Object.keys(files).map(function(filename, idx) {
+        return '<button class="file-tab' + (idx === 0 ? ' active' : '') + '" data-file="' + escapeHtml(filename) + '">' +
+               '<i class="bi bi-file-code"></i> ' + escapeHtml(filename) + '</button>';
+    }).join('');
+
+    // Build initial content using first file
+    var firstFile = Object.keys(files)[0];
+    var initialContent = '<pre style="margin:0;padding:20px;background:#1e1e1e;color:#d4d4d4;font-family:Consolas,monospace;font-size:0.85rem;height:100%;overflow:auto;">' + escapeHtml(files[firstFile]) + '</pre>';
+
+    modal.innerHTML =
+        '<div class="draft-modal-content" style="max-width:800px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">' +
+            '<div style="padding:25px 30px;border-bottom:1px solid #e9ecef;">' +
+                '<h3 style="margin:0 0 10px;display:flex;align-items:center;gap:10px;">' +
+                    '<i class="bi bi-file-earmark-zip" style="color:var(--primary);"></i>' +
+                    'Dashboard Files Generated' +
+                '</h3>' +
+                '<p style="margin:0;color:#666;">Click each file tab to view and copy its contents.</p>' +
+            '</div>' +
+            '<div class="file-tabs-bar" style="display:flex;border-bottom:1px solid #e9ecef;overflow-x:auto;">' +
+                tabsHtml +
+            '</div>' +
+            '<div style="flex:1;overflow:auto;padding:0;">' +
+                '<div id="fileContentArea" style="height:100%;">' + initialContent + '</div>' +
+            '</div>' +
+            '<div style="padding:15px 25px;border-top:1px solid #e9ecef;display:flex;gap:12px;justify-content:flex-end;background:#f8f9fa;">' +
+                '<button class="btn btn-secondary" id="copyFileBtn">' +
+                    '<i class="bi bi-clipboard"></i> Copy Current File' +
+                '</button>' +
+                '<button class="btn btn-primary" id="doneBtn">' +
+                    '<i class="bi bi-check-lg"></i> Done' +
+                '</button>' +
+            '</div>' +
+        '</div>';
 
     // Store files for copying
     window._downloadFiles = files;
-    window._currentFile = Object.keys(files)[0];
+    window._currentFile = firstFile;
 
     document.body.appendChild(modal);
+
+    // Event delegation for tab clicks (CSP-safe, no inline onclick)
+    modal.querySelector('.file-tabs-bar').addEventListener('click', function(e) {
+        var tab = e.target.closest('.file-tab');
+        if (tab && tab.dataset.file) {
+            e.stopPropagation();
+            showFileContent(tab.dataset.file);
+        }
+    });
+
+    // Copy button handler
+    modal.querySelector('#copyFileBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        copyCurrentFile(e);
+    });
+
+    // Done button handler
+    modal.querySelector('#doneBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        closeDownloadModal();
+    });
+
+    // Close on backdrop click (clicking the dark overlay, not the content)
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeDownloadModal();
+        }
+    });
+
+    // Escape key handled by global keydown listener (see closeFilterModal)
 }
 
 function showFileContent(filename) {
-    const files = window._downloadFiles;
+    var files = window._downloadFiles;
     if (!files || !files[filename]) return;
 
     window._currentFile = filename;
 
-    // Update tabs
-    document.querySelectorAll('.file-tab').forEach(tab => {
+    // Update tabs — scope to download modal only
+    var modal = document.getElementById('downloadModal');
+    if (!modal) return;
+    modal.querySelectorAll('.file-tab').forEach(function(tab) {
         tab.classList.toggle('active', tab.dataset.file === filename);
     });
 
-    // Update content
-    document.getElementById('fileContentArea').innerHTML = `
-        <pre style="margin:0;padding:20px;background:#1e1e1e;color:#d4d4d4;font-family:Consolas,monospace;font-size:0.85rem;height:100%;overflow:auto;">${escapeHtml(files[filename])}</pre>
-    `;
+    // Update content using string concatenation (avoids template literal issues with file content)
+    var contentArea = document.getElementById('fileContentArea');
+    if (contentArea) {
+        contentArea.innerHTML = '<pre style="margin:0;padding:20px;background:#1e1e1e;color:#d4d4d4;font-family:Consolas,monospace;font-size:0.85rem;height:100%;overflow:auto;">' + escapeHtml(files[filename]) + '</pre>';
+    }
 }
 
 function copyCurrentFile(e) {
-    const files = window._downloadFiles;
-    const filename = window._currentFile;
+    var files = window._downloadFiles;
+    var filename = window._currentFile;
     if (!files || !filename) return;
 
-    navigator.clipboard.writeText(files[filename]).then(() => {
+    navigator.clipboard.writeText(files[filename]).then(function() {
         // Visual feedback
-        const btn = e ? e.target.closest('button') : document.querySelector('#downloadModal .btn-secondary');
+        var btn = e ? e.target.closest('button') : document.getElementById('copyFileBtn');
         if (!btn) return;
-        const originalHtml = btn.innerHTML;
+        var originalHtml = btn.innerHTML;
         btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
-        setTimeout(() => {
+        setTimeout(function() {
             btn.innerHTML = originalHtml;
         }, 2000);
+    }).catch(function() {
+        showToast('Failed to copy — try selecting and copying manually.', 'error');
     });
 }
 
@@ -2635,473 +2779,38 @@ function closeDownloadModal() {
     window._currentFile = null;
 }
 
-function generateDashboardFiles() {
-    const sql = State.customSQL || generateSQL();
-    const config = generateConfigJS();
-    const viewModel = generateViewModelJS();
-    const indexHtml = generateIndexHTML();
-    const readme = generateReadme();
-
-    return {
-        'integration-query.sql': sql,
-        'configuration.js': config,
-        'viewmodel.js': viewModel,
-        'index.html': indexHtml,
-        'README.md': readme
-    };
-}
-
-function generateConfigJS() {
-    const swimlaneConfigs = State.swimlanes.map(sl => {
-        const filterStr = sl.filters && sl.filters.length > 0
-            ? sl.filters.map(f => `{ field: '${escapeJS(f.fieldName)}', values: [${f.values.map(v => `'${escapeJS(v)}'`).join(', ')}] }`).join(', ')
-            : '';
-        return `    { name: '${escapeJS(sl.name)}', filters: [${filterStr}] }`;
-    }).join(',\n');
-
-    return `/**
- * Dashboard Configuration
- * Generated by Dashboard Builder v3.0
- * ${new Date().toISOString()}
- */
-
-const DashboardConfig = {
-    // Dashboard metadata
-    title: '${escapeJS(State.dashboardTitle) || 'My Dashboard'}',
-    sourceName: '${escapeJS(State.sourceName) || 'Dashboard'}',
-    mode: '${State.mode}',
-
-    // Data source (configured in Etrieve Central)
-    integration: {
-        source: '${State.sourceName || 'Dashboard'}',
-        refreshInterval: 300000  // 5 minutes
-    },
-
-    // Swimlane configuration
-    swimlanes: [
-${swimlaneConfigs}
-    ],
-
-    // Column definitions
-    columns: [
-${generateColumnDefinitions()}
-    ],
-
-    // UI settings
-    ui: {
-        showSearch: true,
-        showFilters: true,
-        rowsPerPage: 25,
-        defaultSort: { field: 'date', direction: 'desc' }
-    }
-};
-
-// Export for module systems
-if (typeof module !== 'undefined') {
-    module.exports = DashboardConfig;
-}
-`;
-}
+// generateDashboardFiles(), generateConfigJS() are defined in wizard-generators.js
+// (which overrides these via function declaration hoisting when loaded second)
 
 function generateColumnDefinitions() {
     const columns = [];
 
     if (State.mode === 'content') {
-        const fields = SimulatedData.keyFields[State.selectedArea?.id] || [];
+        const fields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
         fields.filter(f => State.selectedFields.includes(f.id)).forEach(f => {
-            columns.push(`        { field: '${f.alias}', label: '${f.name}', type: '${f.type}' }`);
+            columns.push(`        { field: '${escapeJS(f.alias)}', label: '${escapeJS(f.name)}', type: '${escapeJS(f.type)}' }`);
         });
     } else if (State.mode === 'forms') {
-        const inputs = SimulatedData.formInputIds[State.selectedTemplate?.id] || [];
+        const inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
         inputs.filter(i => State.selectedInputIds.includes(i.id)).forEach(i => {
-            columns.push(`        { field: '${i.id}', label: '${i.label}', type: 'text' }`);
+            columns.push(`        { field: '${escapeJS(i.id)}', label: '${escapeJS(i.label)}', type: 'text' }`);
         });
     } else if (State.mode === 'combined') {
         // Combined mode: add both document fields and form fields
         columns.push(`        { field: 'RecordType', label: 'Type', type: 'text' }`);
         columns.push(`        { field: 'Category', label: 'Category', type: 'text' }`);
 
-        const docFields = SimulatedData.keyFields[State.selectedArea?.id] || [];
+        const docFields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
         docFields.filter(f => State.selectedFields.includes(f.id)).slice(0, 3).forEach((f, idx) => {
-            columns.push(`        { field: 'Field${idx + 1}', label: '${f.name}', type: '${f.type}' }`);
+            columns.push(`        { field: 'Field${idx + 1}', label: '${escapeJS(f.name)}', type: '${escapeJS(f.type)}' }`);
         });
     }
 
     return columns.join(',\n');
 }
 
-function generateViewModelJS() {
-    return `/**
- * Dashboard ViewModel
- * Generated by Dashboard Builder v3.0
- */
-
-class DashboardViewModel {
-    constructor(config) {
-        this.config = config;
-        this.data = [];
-        this.filteredData = [];
-        this.searchTerm = '';
-        this.activeFilters = {};
-    }
-
-    async loadData() {
-        try {
-            // Fetch from Etrieve integration source
-            const response = await fetch(\`/api/integration/\${this.config.integration.source}\`);
-            this.data = await response.json();
-            this.applyFilters();
-            this.render();
-        } catch (error) {
-            console.error('Failed to load dashboard data:', error);
-            this.showError('Unable to load data. Please try again.');
-        }
-    }
-
-    applyFilters() {
-        this.filteredData = this.data.filter(row => {
-            // Apply search
-            if (this.searchTerm) {
-                const searchLower = this.searchTerm.toLowerCase();
-                const matches = Object.values(row).some(val =>
-                    String(val).toLowerCase().includes(searchLower)
-                );
-                if (!matches) return false;
-            }
-
-            // Apply column filters
-            for (const [field, value] of Object.entries(this.activeFilters)) {
-                if (value && row[field] !== value) return false;
-            }
-
-            return true;
-        });
-    }
-
-    getSwimlaneCounts() {
-        return this.config.swimlanes.map(sl => {
-            const count = this.filteredData.filter(row => {
-                if (!sl.filters || sl.filters.length === 0) return true;
-                return sl.filters.every(f =>
-                    f.values.includes(row[f.field])
-                );
-            }).length;
-            return { name: sl.name, count };
-        });
-    }
-
-    render() {
-        // Render swimlanes with data
-        const container = document.getElementById('dashboardContent');
-        if (!container) return;
-
-        const swimlaneCounts = this.getSwimlaneCounts();
-
-        container.innerHTML = this.config.swimlanes.map((sl, idx) => {
-            const rows = this.getRowsForSwimlane(sl);
-            return this.renderSwimlane(sl, rows, swimlaneCounts[idx].count);
-        }).join('');
-    }
-
-    getRowsForSwimlane(swimlane) {
-        return this.filteredData.filter(row => {
-            if (!swimlane.filters || swimlane.filters.length === 0) return true;
-            return swimlane.filters.every(f =>
-                f.values.includes(row[f.field])
-            );
-        });
-    }
-
-    renderSwimlane(swimlane, rows, count) {
-        return \`
-            <div class="swimlane">
-                <div class="swimlane-header" onclick="toggleSwimlane(this)">
-                    <i class="bi bi-chevron-down"></i>
-                    <span>\${swimlane.name}</span>
-                    <span class="count">\${count}</span>
-                </div>
-                <div class="swimlane-content">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                \${this.config.columns.map(col => \`<th>\${col.label}</th>\`).join('')}
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            \${rows.map(row => this.renderRow(row)).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        \`;
-    }
-
-    renderRow(row) {
-        return \`
-            <tr>
-                \${this.config.columns.map(col => \`<td>\${row[col.field] || '-'}</td>\`).join('')}
-                <td>
-                    <a href="\${row.url}" target="_blank" class="view-btn">
-                        <i class="bi bi-eye"></i> View
-                    </a>
-                </td>
-            </tr>
-        \`;
-    }
-
-    showError(message) {
-        const container = document.getElementById('dashboardContent');
-        if (container) {
-            container.innerHTML = \`
-                <div class="error-message">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    \${message}
-                </div>
-            \`;
-        }
-    }
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-    window.dashboard = new DashboardViewModel(DashboardConfig);
-    window.dashboard.loadData();
-
-    // Set up auto-refresh
-    setInterval(() => {
-        window.dashboard.loadData();
-    }, DashboardConfig.integration.refreshInterval);
-});
-
-function toggleSwimlane(header) {
-    const content = header.nextElementSibling;
-    const icon = header.querySelector('i');
-    content.classList.toggle('collapsed');
-    icon.classList.toggle('bi-chevron-down');
-    icon.classList.toggle('bi-chevron-right');
-}
-`;
-}
-
-function generateIndexHTML() {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${State.dashboardTitle || 'Dashboard'}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #006341;
-            --primary-dark: #004d35;
-            --accent: #f4b41a;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f5f7fa;
-            min-height: 100vh;
-        }
-
-        .header {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            padding: 20px 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header h1 { font-size: 1.5rem; }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 30px;
-        }
-
-        .toolbar {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-        }
-
-        .search-box {
-            flex: 1;
-            min-width: 250px;
-            position: relative;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 12px 15px 12px 45px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-
-        .search-box i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-        }
-
-        .swimlane {
-            background: white;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            overflow: hidden;
-        }
-
-        .swimlane-header {
-            background: #f8f9fa;
-            padding: 15px 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 600;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .swimlane-header:hover { background: #f0f2f5; }
-
-        .swimlane-header .count {
-            background: var(--primary);
-            color: white;
-            padding: 3px 10px;
-            border-radius: 15px;
-            font-size: 0.85rem;
-        }
-
-        .swimlane-content { padding: 0; }
-        .swimlane-content.collapsed { display: none; }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .data-table th {
-            background: #f8f9fa;
-            padding: 12px 15px;
-            text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #e9ecef;
-        }
-
-        .data-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #f0f2f5;
-        }
-
-        .data-table tr:hover td { background: #fafbfc; }
-
-        .view-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 6px 12px;
-            background: var(--primary);
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            font-size: 0.85rem;
-        }
-
-        .view-btn:hover { background: var(--primary-dark); }
-
-        .error-message {
-            text-align: center;
-            padding: 50px;
-            color: #dc3545;
-        }
-
-        .error-message i { font-size: 3rem; margin-bottom: 15px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1><i class="bi bi-grid-3x3-gap"></i> ${State.dashboardTitle || 'Dashboard'}</h1>
-    </div>
-
-    <div class="container">
-        <div class="toolbar">
-            <div class="search-box">
-                <i class="bi bi-search"></i>
-                <input type="text" placeholder="Search..." oninput="dashboard.searchTerm = this.value; dashboard.applyFilters(); dashboard.render();">
-            </div>
-        </div>
-
-        <div id="dashboardContent">
-            <p style="text-align:center;padding:50px;color:#666;">Loading...</p>
-        </div>
-    </div>
-
-    <script src="configuration.js"></script>
-    <script src="viewmodel.js"></script>
-</body>
-</html>`;
-}
-
-function generateReadme() {
-    return `# ${State.dashboardTitle || 'Dashboard'}
-
-Generated by Dashboard Builder v3.0 on ${new Date().toLocaleDateString()}
-
-## Setup Instructions
-
-### 1. Create Integration Source in Etrieve Central
-
-1. Go to **Etrieve Central** > **Admin** > **Sources**
-2. Click **Add Source**
-3. Name it: \`${State.sourceName || 'Dashboard'}\`
-4. Set type to **SQL Query**
-5. Paste the contents of \`integration-query.sql\`
-6. Save and test the source
-
-### 2. Upload Dashboard Files
-
-1. Go to **Etrieve Central** > **Dashboards**
-2. Create a new dashboard or edit existing
-3. Upload \`index.html\`, \`configuration.js\`, and \`viewmodel.js\`
-
-### 3. Configure Permissions
-
-Ensure users have access to:
-- The dashboard itself
-- The underlying data (Area/Catalog: ${State.selectedArea?.name || 'N/A'})
-${State.selectedTemplate ? `- Form template: ${State.selectedTemplate.name}` : ''}
-
-## Files Included
-
-| File | Description |
-|------|-------------|
-| \`integration-query.sql\` | SQL query for the Etrieve integration source |
-| \`configuration.js\` | Dashboard settings and swimlane filters |
-| \`viewmodel.js\` | JavaScript logic for data loading and display |
-| \`index.html\` | Dashboard HTML template |
-
-## Swimlane Configuration
-
-${State.swimlanes.map(sl => {
-    const filterDesc = sl.filters && sl.filters.length > 0
-        ? sl.filters.map(f => `${f.fieldName}: ${f.values.join(', ')}`).join('; ')
-        : 'No filters (shows all)';
-    return `- **${sl.name}**: ${filterDesc}`;
-}).join('\n')}
-
-## Support
-
-For questions or issues, contact your Softdocs administrator.
-`;
-}
+// generateViewModelJS(), generateIndexHTML(), generateReadme() are defined in wizard-generators.js
+// (which overrides these via function declaration hoisting when loaded second)
 
 // ============================================================================
 // LIVE PREVIEW
@@ -3117,21 +2826,21 @@ function renderPreview() {
     // Get selected fields/columns for table headers
     let columns = [];
     if (State.mode === 'content') {
-        const fields = SimulatedData.keyFields[State.selectedArea?.id] || [];
+        const fields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
         columns = fields.filter(f => State.selectedFields.includes(f.id)).map(f => f.name);
         if (columns.length === 0) columns = ['Name', 'Date', 'Status'];
     } else if (State.mode === 'forms') {
-        const inputs = SimulatedData.formInputIds[State.selectedTemplate?.id] || [];
+        const inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
         columns = inputs.filter(i => State.selectedInputIds.includes(i.id)).map(i => i.label);
         if (columns.length === 0) columns = ['Requester', 'Date', 'Status'];
     } else if (State.mode === 'combined') {
         // Combined mode: show a mix of document and form fields
-        const docFields = SimulatedData.keyFields[State.selectedArea?.id] || [];
-        const formInputs = SimulatedData.formInputIds[State.selectedTemplate?.id] || [];
+        const docFields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
+        const formInputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
         const docCols = docFields.filter(f => State.selectedFields.includes(f.id)).map(f => f.name);
         const formCols = formInputs.filter(i => State.selectedInputIds.includes(i.id)).map(i => i.label);
         // Merge columns, prioritizing doc fields then form fields
-        columns = [...docCols, ...formCols.filter(c => !docCols.includes(c))];
+        columns = docCols.concat(formCols.filter(c => !docCols.includes(c)));
         if (columns.length === 0) columns = ['Name', 'Date', 'Type', 'Status'];
     }
 
@@ -3149,27 +2858,27 @@ function renderPreview() {
         const rowCount = idx === 0 ? 3 : 2;
         const rows = fakeData.slice(0, rowCount).map(row => `
             <tr>
-                ${columns.map(col => `<td>${row[col] || '—'}</td>`).join('')}
+                ${columns.map(col => `<td>${escapeHtml(row[col] || '—')}</td>`).join('')}
             </tr>
         `).join('');
 
         // Build filter summary for preview
         const filterSummary = sl.filters && sl.filters.length > 0
-            ? sl.filters.map(f => `${f.fieldName}: ${f.values.slice(0,2).join(', ')}${f.values.length > 2 ? '...' : ''}`).join(' | ')
+            ? sl.filters.map(f => `${escapeHtml(f.fieldName)}: ${f.values.slice(0,2).map(v => escapeHtml(v)).join(', ')}${f.values.length > 2 ? '...' : ''}`).join(' | ')
             : '';
 
         return `
             <div class="preview-swimlane">
                 <div class="preview-swimlane-header">
                     <i class="bi bi-chevron-down" style="font-size:0.7rem;"></i>
-                    ${sl.name}
+                    ${escapeHtml(sl.name)}
                     <span class="count">${rowCount}</span>
                 </div>
                 ${filterSummary ? `<div class="preview-filter-hint"><i class="bi bi-funnel"></i> ${filterSummary}</div>` : ''}
                 <table class="preview-table">
                     <thead>
                         <tr>
-                            ${columns.map(col => `<th>${col}</th>`).join('')}
+                            ${columns.map(col => `<th>${escapeHtml(col)}</th>`).join('')}
                         </tr>
                     </thead>
                     <tbody>
@@ -3184,7 +2893,7 @@ function renderPreview() {
         <div class="preview-label"><i class="bi bi-eye"></i> Preview</div>
         <div class="preview-dashboard">
             <div class="preview-dashboard-header">
-                <h4>${title}</h4>
+                <h4>${escapeHtml(title)}</h4>
                 <small>${State.mode === 'content' ? 'Document Dashboard' : State.mode === 'forms' ? 'Forms Dashboard' : 'Combined Dashboard'}</small>
             </div>
             ${swimlanesHtml}
@@ -3247,8 +2956,8 @@ function expandPreview() {
                     <span class="dot yellow"></span>
                     <span class="dot green"></span>
                 </div>
-                <span class="title">${State.dashboardTitle || 'Dashboard'} - Full Preview</span>
-                <button class="close-preview" onclick="closePreviewModal()">
+                <span class="title">${escapeHtml(State.dashboardTitle || 'Dashboard')} - Full Preview</span>
+                <button class="close-preview" id="closePreviewBtn">
                     <i class="bi bi-x-lg"></i> Close
                 </button>
             </div>
@@ -3259,6 +2968,11 @@ function expandPreview() {
     `;
 
     document.body.appendChild(modal);
+
+    // Close button (CSP-safe, no inline onclick)
+    modal.querySelector('#closePreviewBtn').addEventListener('click', function() {
+        closePreviewModal();
+    });
 
     // Close on backdrop click
     modal.addEventListener('click', (e) => {
@@ -3283,4 +2997,18 @@ function handlePreviewEscape(e) {
     if (e.key === 'Escape') {
         closePreviewModal();
     }
+}
+
+
+// ============================================================================
+// AMD MODULE REGISTRATION
+// ============================================================================
+// RequireJS needs a define() call to know this script has loaded.
+// All the code above runs in global scope (window.*) because it is OUTSIDE
+// the define() function body. This preserves onclick='selectMode(...)' etc.
+// ============================================================================
+if (typeof define === 'function' && define.amd) {
+    define('template/wizard-demo', [], function() {
+        return { loaded: true };
+    });
 }
