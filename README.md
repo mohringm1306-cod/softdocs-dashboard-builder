@@ -20,17 +20,26 @@ This wizard helps you build dashboards for Etrieve Content and Central Forms. Da
 
 ## Setting Up
 
-You'll create a few **data sources** in Etrieve Central, upload the wizard files, and connect them. Takes about 15 minutes.
+Three things: create the data sources, upload the files, and connect them. Takes about 15 minutes.
 
-### 1. Create These Sources in Etrieve Central
+### Step 1: Create 6 Data Sources
 
-Go to: **Central > Admin > Sources > Add New Source > Type: Database**
+Go to **Central > Admin > Sources** and click **Add New Source**.
 
-Create each source below. Copy the name exactly, paste the SQL, and add the parameter if one is listed.
+For each source below:
+
+1. **General Settings** tab — Set the **Name** (copy it exactly) and set **Connection** to your Etrieve Content database connection
+2. **Actions** tab — Turn on **Get**, turn on **Custom Action**, and paste the SQL into the **Query Editor**. If a parameter is listed, add it under **Source Keys**
+3. **Privileges** tab — Add your users and give them **Get** access
+4. Click **Save**
+
+Repeat for all 6 sources, then move on to Step 2.
 
 ---
 
 **`WizardBuilder_GetAreas`**
+
+No source keys needed.
 
 ```sql
 SELECT
@@ -44,7 +53,7 @@ ORDER BY [Name]
 
 **`WizardBuilder_GetDocTypes`**
 
-Parameter: `@CatalogID` (Integer)
+Add source key: `@CatalogID` (Integer)
 
 ```sql
 SELECT
@@ -62,7 +71,7 @@ ORDER BY dt.[Name]
 
 **`WizardBuilder_GetKeyFields`**
 
-Parameter: `@CatalogID` (Integer)
+Add source key: `@CatalogID` (Integer)
 
 ```sql
 SELECT DISTINCT
@@ -88,6 +97,8 @@ ORDER BY f.[Name]
 
 **`WizardBuilder_GetFormTemplates`**
 
+No source keys needed.
+
 ```sql
 SELECT
     tv.TemplateVersionID    AS id,
@@ -104,7 +115,7 @@ ORDER BY t.[Name]
 
 **`WizardBuilder_GetFormInputs`**
 
-Parameter: `@TemplateVersionID` (Integer)
+Add source key: `@TemplateVersionID` (Integer)
 
 ```sql
 SELECT DISTINCT
@@ -122,7 +133,7 @@ ORDER BY iv.InputID
 
 **`WizardBuilder_GetWorkflowSteps`**
 
-Parameter: `@TemplateID` (Integer)
+Add source key: `@TemplateID` (Integer)
 
 ```sql
 SELECT DISTINCT
@@ -143,13 +154,9 @@ ORDER BY ps.[Name]
 
 ---
 
-> **Permissions:** For each source, click into **Permissions** and grant your user group **Get** access. If you skip this, the wizard will get **403 Forbidden** errors.
+### Step 2: Upload the Wizard Files
 
----
-
-### 2. Upload the Wizard Files
-
-1. **Central > Admin > Forms** — create a new form
+1. Go to **Admin > Forms** and create a new form
 2. Name it whatever you like (e.g., "Dashboard Builder")
 3. Upload these 6 files:
    * `index.html`
@@ -161,16 +168,26 @@ ORDER BY ps.[Name]
 
 ---
 
-### 3. Connect the Sources
+### Step 3: Connect the Sources to the Form
 
 1. Open the form you just created
-2. Go to **Connect > Available Sources**
-3. Add each of the 6 sources from Step 1
-4. Check **Get** for each one
+2. Go to **Sources** (under the form's settings)
+3. Find each of the 6 sources and check **Get** for all of them
+
+It should look like this — all 6 sources associated with Get checked:
+
+```
+WizardBuilder_GetAreas          ☑ Get
+WizardBuilder_GetDocTypes       ☑ Get
+WizardBuilder_GetFormInputs     ☑ Get
+WizardBuilder_GetFormTemplates  ☑ Get
+WizardBuilder_GetKeyFields      ☑ Get
+WizardBuilder_GetWorkflowSteps  ☑ Get
+```
 
 ---
 
-### 4. Open and Go
+### Step 4: Open and Go
 
 Open the form in Etrieve. You'll see three options:
 
@@ -201,11 +218,11 @@ Pick one, walk through the wizard, and download your finished dashboard. Upload 
 
 ---
 
-## Tips
+## Something Not Working?
 
-* **403 errors** = missing permissions or incorrect source names
-* If you used different source names, update them in `configuration.js`
-* The wizard auto-saves your progress — just reopen the form to resume
+* **403 errors** — Check that the **Connection** on each source is set to your Etrieve Content database (not Etrieve Security or another connection). Then check **Privileges** — your users need **Get** access on every source.
+* **Source names don't match** — If you named your sources differently, update the names in `configuration.js` to match.
+* **Wizard won't save in the form editor** — Make sure you're using the latest files from this repo. Older versions used JavaScript syntax that Etrieve's editor doesn't accept.
 
 ---
 
