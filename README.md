@@ -28,9 +28,15 @@ Go to **Central > Admin > Sources** and click **Add New Source**.
 
 For each source below:
 
-1. **General Settings** tab — Set the **Name** (copy it exactly) and set **Connection** to your Etrieve Content database connection
-2. **Actions** tab — Turn on **Get**, turn on **Custom Action**, and paste the SQL into the **Query Editor**. If a parameter is listed, add it under **Source Keys**
-3. **Privileges** tab — Add your users and give them **Get** access
+1. **General Settings** tab: Set the **Name** (copy it exactly) and set **Connection** to your Etrieve Content database connection
+
+![General Settings tab](docs/source-general-settings.png)
+
+2. **Actions** tab: Turn on **Get**, turn on **Custom Action**, and paste the SQL into the **Query Editor**. If a source key is listed, add it under **Source Keys**
+
+![Actions tab](docs/source-actions.png)
+
+3. **Privileges** tab: Add your users and give them **Get** access
 4. Click **Save**
 
 Repeat for all 6 sources, then move on to Step 2.
@@ -174,16 +180,9 @@ ORDER BY ps.[Name]
 2. Go to **Sources** (under the form's settings)
 3. Find each of the 6 sources and check **Get** for all of them
 
-It should look like this — all 6 sources associated with Get checked:
+It should look like this:
 
-```
-WizardBuilder_GetAreas          ☑ Get
-WizardBuilder_GetDocTypes       ☑ Get
-WizardBuilder_GetFormInputs     ☑ Get
-WizardBuilder_GetFormTemplates  ☑ Get
-WizardBuilder_GetKeyFields      ☑ Get
-WizardBuilder_GetWorkflowSteps  ☑ Get
-```
+![Form sources with Get checked](docs/form-sources.png)
 
 ---
 
