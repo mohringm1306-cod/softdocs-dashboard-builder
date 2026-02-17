@@ -26,7 +26,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
             <span id="modeIndicator"></span>
-            <span class="badge">v3.0</span>
+            <span class="badge">v3.0.2</span>
         </div>
     </div>
 
@@ -114,8 +114,10 @@
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- Wizard scripts (wizard-demo.js, wizard-generators.js) loaded by RequireJS -->
-    <!-- via 'template/wizard-demo' and 'template/wizard-generators' in viewmodel.js -->
-    <!-- Do NOT add <script> tags here — Etrieve loads all JS via RequireJS -->
+    <!-- Wizard scripts: In Etrieve these load via RequireJS ('template/...') -->
+    <!-- For local testing, load via script tags: -->
+    <script src="wizard-demo.js"></script>
+    <script src="wizard-templates.js"></script>
+    <script src="wizard-generators.js"></script>
 </body>
 </html>

@@ -22,13 +22,15 @@ define([
     'integration',
     'template/configuration',
     'template/wizard-demo',
+    'template/wizard-templates',
     'template/wizard-generators'
 ], function viewmodel($, ko, vm, user, integration) {
 
-    // wizard-demo.js and wizard-generators.js are now loaded as RequireJS
-    // dependencies above. Their code runs in global scope (all function/var
-    // declarations become window.*), so showToast, selectArea, checkForDraft,
-    // etc. are all available by the time this module executes.
+    // wizard-demo.js, wizard-templates.js, and wizard-generators.js are loaded
+    // as RequireJS dependencies above. Their code runs in global scope (all
+    // function/var declarations become window.*), so showToast, selectArea,
+    // checkForDraft, renderStep, etc. are all available by the time this
+    // module executes.
 
     console.log('[WizardBuilder] All scripts loaded via RequireJS');
 
@@ -253,7 +255,7 @@ define([
         // Override the area selection to load doc types + key fields on demand
         var _origSelectArea = window.selectArea;
         if (typeof _origSelectArea === 'function') {
-            window.selectArea = function(areaId) {
+            window.selectArea = function(areaId, keepSelections) {
                 var loading = $('.loading');
                 if (loading.length) loading.show();
 
@@ -263,7 +265,7 @@ define([
                     window.SimulatedData.keyFields[areaId] = _cache.keyFields[areaId];
 
                     // Call original function
-                    _origSelectArea(areaId);
+                    _origSelectArea(areaId, keepSelections);
                     if (loading.length) loading.hide();
                 }).fail(function() {
                     safeToast('Unable to load document types for this folder. Try a different folder.', 'error');
@@ -275,7 +277,7 @@ define([
         // Override template selection to load form inputs + workflow steps on demand
         var _origSelectTemplate = window.selectTemplate;
         if (typeof _origSelectTemplate === 'function') {
-            window.selectTemplate = function(templateId) {
+            window.selectTemplate = function(templateId, keepSelections) {
                 var template = (_cache.formTemplates || []).find(function(t) { return t.id === templateId; });
                 var tvId = templateId;
                 var tId = template ? template.templateId : templateId;
@@ -283,12 +285,15 @@ define([
                 if (loading.length) loading.show();
 
                 $.when(loadFormInputs(tvId), loadWorkflowSteps(tId)).then(function() {
+                    console.log('[VM selectTemplate] Loaded formInputIds for', tvId, ':', (_cache.formInputIds[tvId] || []).length, 'inputs');
+                    console.log('[VM selectTemplate] keepSelections:', keepSelections, 'current selectedInputIds:', window.State ? window.State.selectedInputIds.length : 'N/A');
                     window.SimulatedData.formInputIds[tvId] = _cache.formInputIds[tvId];
                     window.SimulatedData.workflowSteps[tId] = _cache.workflowSteps[tId];
 
-                    _origSelectTemplate(templateId);
+                    _origSelectTemplate(templateId, keepSelections);
                     if (loading.length) loading.hide();
-                }).fail(function() {
+                }).fail(function(err) {
+                    console.error('[VM selectTemplate] FAILED for tvId:', tvId, 'tId:', tId, err);
                     safeToast('Unable to load form fields. Try selecting a different form.', 'error');
                     if (loading.length) loading.hide();
                 });

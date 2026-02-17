@@ -164,10 +164,11 @@ ORDER BY ps.[Name]
 
 1. Go to **Admin > Forms** and create a new form
 2. Name it whatever you like (e.g., "Dashboard Builder")
-3. Upload these 6 files:
+3. Upload these 7 files:
    * `index.html`
    * `wizard.css`
    * `wizard-demo.js`
+   * `wizard-templates.js`
    * `wizard-generators.js`
    * `viewmodel.js`
    * `configuration.js`
@@ -221,6 +222,7 @@ Pick one, walk through the wizard, and download your finished dashboard. Upload 
 
 * **403 errors** — Check that the **Connection** on each source is set to your Etrieve Content database (not Etrieve Security or another connection). Then check **Privileges** — your users need **Get** access on every source.
 * **Source names don't match** — If you named your sources differently, update the names in `configuration.js` to match.
+* **Upload error / 403 on wizard-demo.js** — Make sure you have the latest version with all 7 files. The wizard was split into 3 JS files (`wizard-demo.js`, `wizard-templates.js`, `wizard-generators.js`) to avoid Cloudflare WAF false positives. If you have an older version with only `wizard-demo.js` and `wizard-generators.js`, re-download all files from this repo.
 * **Wizard won't save in the form editor** — Make sure you're using the latest files from this repo. Older versions used JavaScript syntax that Etrieve's editor doesn't accept.
 
 ---
