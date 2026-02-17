@@ -806,7 +806,7 @@ function nextStep() {
             showToast('Please select a form template before continuing.', 'warning');
             return;
         }
-        if (step.id === 'fields' && State.selectedFields.length === 0) {
+        if (step.id === 'fields' && State.selectedFields.length === 0 && State.selectedInputIds.length === 0) {
             showToast('Please select at least one field.', 'warning');
             return;
         }
