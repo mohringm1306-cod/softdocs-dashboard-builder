@@ -35,12 +35,14 @@ The wizard needs to read your Etrieve data. You do this by creating **6 integrat
 
 **Where to go:** Etrieve Central > **Admin** (gear icon, top-right) > **Sources**
 
+**Which database connection do I use?** All 6 sources use your **Etrieve Content** database connection -- even the ones that query Forms and Workflow data. The `reporting.*` tables (forms, workflows) live in the same database as the `dbo.*` tables (documents). You do **not** need a separate "Central Forms" connection. If your connection is called something like "Etrieve Content" or "EtrieveContent" or "Production", that's the one.
+
 **For each source below, do these 4 things:**
 
 1. Click **Add New Source**
 2. On the **General Settings** tab:
    - Set the **Name** exactly as shown (copy-paste it)
-   - Set **Connection** to your **Etrieve Content database** connection
+   - Set **Connection** to your **Etrieve Content** database connection (see note above)
 
    ![General Settings tab showing Name and Connection fields](docs/source-general-settings.png)
 
@@ -319,6 +321,16 @@ The sources are connected but returning empty results. This can happen if:
 * Your Etrieve Content database connection is pointing to the wrong database
 * The `reporting.*` views don't exist (needed for Forms mode -- these are Etrieve's reporting views)
 * No forms have been submitted yet (Forms mode needs at least one non-draft submission)
+
+### "INVALID ELEMENT" or "autoSave" error on the generated dashboard
+
+If your generated dashboard shows an error like `INVALID ELEMENT: Please add a unique id or data-notsaved to all input elements`, you have an older version of the wizard that didn't include the `data-notsaved` attribute on form elements. Etrieve requires every `<input>`, `<select>`, and `<textarea>` to have either a unique `id` or `data-notsaved="true"`.
+
+**Fix:** Re-download the latest files from this repo and re-upload them to your wizard form. Then regenerate the dashboard -- the new version adds `data-notsaved` to all generated inputs automatically.
+
+### Which database connection do I use?
+
+Use your **Etrieve Content** database connection for all 6 sources -- even the ones that query forms and workflows. The `reporting.*` tables (central_forms, central_flow) live in the same database as the `dbo.*` tables (Catalog, Field, DocumentType). You do **not** need a separate "Central Forms" connection. If you're not sure which connection is correct, it's the one that works for your existing Etrieve Content integrations.
 
 ### Form fields show IDs instead of friendly names
 
