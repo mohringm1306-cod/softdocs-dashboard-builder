@@ -1046,6 +1046,9 @@ ${fieldPivots || '   -- Add your field pivots here'}`;
    ps.Name AS CurrentStepName`;
     }
 
+    sql += `,
+   '/forms/' + CAST(f.FormID AS VARCHAR) AS url`;
+
     sql += `
 FROM reporting.central_forms_Form f
 LEFT JOIN reporting.central_forms_InputValue iv
