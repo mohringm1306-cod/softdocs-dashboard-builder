@@ -1094,106 +1094,217 @@ function renderSwimlanesStep() {
         if (!sl.filters) sl.filters = [];
     });
 
+    // Count how many swimlanes are missing filters
+    const unfilteredCount = State.swimlanes.filter(sl => sl.filters.length === 0).length;
+    const allUnfiltered = unfilteredCount === State.swimlanes.length;
+
     const swimlanesHtml = State.swimlanes.map((sl, idx) => {
         // Build filter tags display
         const filterTags = sl.filters.map((f, fIdx) => `
             <span class="filter-tag">
                 <strong>${escapeHtml(f.fieldName)}:</strong> ${f.values.map(v => escapeHtml(v)).join(', ')}
-                <span class="remove-filter" onclick="event.stopPropagation(); removeFilter(${idx}, ${fIdx})">
+                <span class="remove-filter" onclick="event.stopPropagation(); removeFilter(${idx}, ${fIdx})" title="Remove this filter">
                     <i class="bi bi-x"></i>
                 </span>
             </span>
         `).join('');
 
+        const hasFilters = sl.filters.length > 0;
+
         return `
-            <div class="swimlane-config" data-index="${idx}">
+            <div class="swimlane-config ${hasFilters ? '' : 'swimlane-needs-filter'}" data-index="${idx}">
                 <div class="swimlane-header" draggable="true"
                      ondragstart="dragStart(event)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event)" ondragend="dragEnd(event)">
-                    <span class="drag-handle"><i class="bi bi-grip-vertical"></i></span>
+                    <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                     <input type="text" class="swimlane-name" value="${escapeHtml(sl.name)}"
-                           onchange="updateSwimlaneName(${idx}, this.value)" onclick="event.stopPropagation()">
-                    <span class="delete-btn" onclick="deleteSwimlane(${idx})" title="Delete group">
+                           onchange="updateSwimlaneName(${idx}, this.value)" onclick="event.stopPropagation()"
+                           title="Click to rename this group" placeholder="Enter group name...">
+                    ${hasFilters ? `
+                        <span class="swimlane-status-badge swimlane-status-ok" title="Filters configured">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </span>
+                    ` : `
+                        <span class="swimlane-status-badge swimlane-status-warn" title="No filters set - will show ALL data">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        </span>
+                    `}
+                    <span class="delete-btn" onclick="deleteSwimlane(${idx})" title="Delete this group">
                         <i class="bi bi-trash"></i>
                     </span>
                 </div>
                 <div class="swimlane-filters">
                     <div class="filter-label">
                         <i class="bi bi-funnel"></i> Show items where:
+                        <span class="filter-help-icon" title="Filters control which rows appear in this group. Without a filter, every row from your data source will show up here.">
+                            <i class="bi bi-question-circle"></i>
+                        </span>
                     </div>
-                    ${sl.filters.length > 0 ? `
+                    ${hasFilters ? `
                         <div class="filter-tags">
                             ${filterTags}
                         </div>
                     ` : `
-                        <div class="no-filters">No filters - shows all items</div>
+                        <div class="no-filters-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <div>
+                                <strong>No filters set</strong>
+                                <span>Every row will appear in this group. Click "Add Filter" below to choose which items belong here.</span>
+                            </div>
+                        </div>
                     `}
-                    <button class="add-filter-btn" onclick="openFilterModal(${idx})">
-                        <i class="bi bi-plus-circle"></i> Add Filter
+                    <button class="add-filter-btn ${hasFilters ? '' : 'add-filter-btn-emphasized'}" onclick="openFilterModal(${idx})"
+                            title="Choose a field and values to control which rows appear in this group">
+                        <i class="bi bi-plus-circle"></i> ${hasFilters ? 'Add Another Filter' : 'Add Filter (Recommended)'}
                     </button>
                 </div>
             </div>
         `;
     }).join('');
 
+    // Build the top-of-page guidance/warning area
+    let topGuidance = '';
+    if (filterableFields.length === 0) {
+        topGuidance = `
+            <div class="filter-guidance filter-guidance-error">
+                <div class="filter-guidance-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                <div class="filter-guidance-text">
+                    <strong>No filterable fields available</strong>
+                    <p>Go back to a previous step and make sure you selected fields that have predefined values (like Status, Workflow Step, Term, etc.). Without filterable fields, you can't control which rows appear in each group.</p>
+                </div>
+            </div>`;
+    } else if (allUnfiltered && State.swimlanes.length > 1) {
+        topGuidance = `
+            <div class="filter-guidance filter-guidance-warn">
+                <div class="filter-guidance-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                <div class="filter-guidance-text">
+                    <strong>All groups are showing the same data</strong>
+                    <p>None of your groups have filters, so every group will display the exact same rows. Use the "Add Filter" button on each group to pick which items belong in each section.</p>
+                </div>
+            </div>`;
+    } else if (unfilteredCount > 0) {
+        topGuidance = `
+            <div class="filter-guidance filter-guidance-info">
+                <div class="filter-guidance-icon"><i class="bi bi-info-circle-fill"></i></div>
+                <div class="filter-guidance-text">
+                    <strong>${unfilteredCount} group${unfilteredCount > 1 ? 's have' : ' has'} no filters</strong>
+                    <p>Groups without filters will show every row. If that's intentional (e.g., an "All Items" section), that's fine. Otherwise, add a filter so each group shows different data.</p>
+                </div>
+            </div>`;
+    }
+
     return `
         <div class="step-description">
             <p><i class="bi bi-layout-three-columns" style="color:var(--accent);margin-right:8px;"></i>
-            Create groups to organize your dashboard. Each group can filter by field values.</p>
+            Groups are the sections of your dashboard. <strong>Each group needs a filter</strong> so it shows the right data.
+            For example, an "In Progress" group should filter to only show in-progress items.</p>
+        </div>
+
+        ${topGuidance}
+
+        <div class="filter-quick-guide">
+            <div class="filter-quick-guide-header" onclick="toggleFilterGuide()">
+                <i class="bi bi-lightbulb"></i>
+                <span>How do filters work?</span>
+                <i class="bi bi-chevron-down filter-guide-chevron" id="filterGuideChevron"></i>
+            </div>
+            <div class="filter-quick-guide-body" id="filterGuideBody" style="display:none;">
+                <div class="filter-guide-steps">
+                    <div class="filter-guide-step">
+                        <div class="filter-guide-step-num">1</div>
+                        <div>
+                            <strong>Create groups</strong> for each section you want (e.g., "In Progress", "Completed", "Denied").
+                        </div>
+                    </div>
+                    <div class="filter-guide-step">
+                        <div class="filter-guide-step-num">2</div>
+                        <div>
+                            <strong>Add a filter</strong> to each group. Pick a field (like "Workflow Step") and then check which values belong in that group.
+                        </div>
+                    </div>
+                    <div class="filter-guide-step">
+                        <div class="filter-guide-step-num">3</div>
+                        <div>
+                            <strong>Each row goes to the first matching group.</strong> If a row's data matches a group's filter, it shows up there. If it matches no filters, it won't appear.
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-guide-example">
+                    <div class="filter-guide-example-title"><i class="bi bi-arrow-right-circle"></i> Example</div>
+                    <div class="filter-guide-example-body">
+                        <strong>"In Progress"</strong> group &rarr; filter: Workflow Step = "NICC Employees" or "Manager Review"<br>
+                        <strong>"Completed"</strong> group &rarr; filter: Workflow Step = "Approved" or "Completed"<br>
+                        <em>Result: each form goes to the right section based on where it is in the workflow.</em>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="swimlane-list" id="swimlaneList">
             ${swimlanesHtml}
         </div>
 
-        <button class="btn btn-secondary" onclick="addSwimlane()" style="margin-top:15px;">
+        <button class="btn btn-secondary" onclick="addSwimlane()" style="margin-top:15px;" title="Add a new group section to your dashboard">
             <i class="bi bi-plus-lg"></i> Add Another Group
         </button>
-
-        ${filterableFields.length === 0 ? `
-            <div class="info-box" style="margin-top:25px;background:rgba(255,193,7,0.1);border-color:#ffc107;">
-                <h4><i class="bi bi-exclamation-triangle" style="color:#856404;"></i> No Filterable Fields</h4>
-                <p style="color:#856404;">Go back and select fields that have predefined values (like Status, Term, etc.) to enable filtering.</p>
-            </div>
-        ` : `
-            <div class="info-box" style="margin-top:25px;">
-                <h4><i class="bi bi-lightbulb"></i> How Filters Work</h4>
-                <p>Each group shows items matching its filters. For example:<br>
-                <strong>"Pending Review"</strong> &rarr; FA Status = "Pending Review" or "Under Review"<br>
-                <strong>"Completed"</strong> &rarr; FA Status = "Approved" or "Denied"</p>
-            </div>
-        `}
 
         <!-- Filter Modal -->
         <div id="filterModal" class="filter-modal" style="display:none;">
             <div class="filter-modal-content">
                 <div class="filter-modal-header">
                     <h4><i class="bi bi-funnel"></i> Add Filter</h4>
-                    <button class="close-modal" onclick="closeFilterModal()">&times;</button>
+                    <button class="close-modal" onclick="closeFilterModal()" title="Close">&times;</button>
                 </div>
                 <div class="filter-modal-body">
+                    <div class="filter-modal-hint">
+                        <i class="bi bi-info-circle"></i>
+                        Pick a field below, then check off which values should appear in this group.
+                        Only rows that match will show up in this section of your dashboard.
+                    </div>
                     <div class="form-group">
-                        <label>Filter by Field:</label>
+                        <label>Filter by Field:
+                            <span class="field-label-hint">This is the column from your data source</span>
+                        </label>
                         <select id="filterFieldSelect" onchange="updateFilterValues()">
-                            <option value="">Select a field...</option>
+                            <option value="">-- Choose a field to filter on --</option>
                             ${filterableFields.map(f => `
-                                <option value="${escapeHtml(f.id)}" data-values="${escapeHtml(JSON.stringify(f.values))}">${escapeHtml(f.name)}</option>
+                                <option value="${escapeHtml(f.id)}" data-values="${escapeHtml(JSON.stringify(f.values))}">${escapeHtml(f.name)} (${f.values.length} option${f.values.length !== 1 ? 's' : ''})</option>
                             `).join('')}
                         </select>
                     </div>
                     <div class="form-group" id="filterValuesGroup" style="display:none;">
-                        <label>Include items matching ANY of these values:</label>
+                        <label>Include items where the field matches ANY of these:
+                            <span class="field-label-hint">Check one or more values that belong in this group</span>
+                        </label>
                         <div id="filterValuesContainer" class="filter-values-grid"></div>
+                        <div class="filter-values-hint" id="filterValuesHint" style="display:none;">
+                            <i class="bi bi-arrow-up"></i> Check at least one value, then click "Apply Filter"
+                        </div>
                     </div>
                 </div>
                 <div class="filter-modal-footer">
                     <button class="btn btn-secondary" onclick="closeFilterModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="applyFilter()" id="applyFilterBtn" disabled>
+                    <button class="btn btn-primary" onclick="applyFilter()" id="applyFilterBtn" disabled
+                            title="Select at least one value above to enable this button">
                         <i class="bi bi-check"></i> Apply Filter
                     </button>
                 </div>
             </div>
         </div>
     `;
+}
+
+function toggleFilterGuide() {
+    var body = document.getElementById('filterGuideBody');
+    var chevron = document.getElementById('filterGuideChevron');
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        chevron.classList.remove('bi-chevron-down');
+        chevron.classList.add('bi-chevron-up');
+    } else {
+        body.style.display = 'none';
+        chevron.classList.remove('bi-chevron-up');
+        chevron.classList.add('bi-chevron-down');
+    }
 }
 
 // Get fields that have predefined values for filtering
@@ -1246,6 +1357,15 @@ function openFilterModal(swimlaneIdx) {
     document.getElementById('filterFieldSelect').value = '';
     document.getElementById('filterValuesGroup').style.display = 'none';
     document.getElementById('applyFilterBtn').disabled = true;
+    // Update modal title to show which swimlane we're filtering
+    var modalTitle = document.querySelector('.filter-modal-header h4');
+    var swimlaneName = State.swimlanes[swimlaneIdx] ? State.swimlanes[swimlaneIdx].name : 'Group';
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="bi bi-funnel"></i> Add Filter to "' + escapeHtml(swimlaneName) + '"';
+    }
+    // Hide the values hint
+    var hint = document.getElementById('filterValuesHint');
+    if (hint) hint.style.display = 'none';
 }
 
 function closeFilterModal() {
@@ -1276,9 +1396,11 @@ function updateFilterValues() {
     const option = select.options[select.selectedIndex];
     const valuesContainer = document.getElementById('filterValuesContainer');
     const valuesGroup = document.getElementById('filterValuesGroup');
+    const valuesHint = document.getElementById('filterValuesHint');
 
     if (!option.value) {
         valuesGroup.style.display = 'none';
+        if (valuesHint) valuesHint.style.display = 'none';
         return;
     }
 
@@ -1286,13 +1408,14 @@ function updateFilterValues() {
     selectedFilterValues = [];
 
     valuesContainer.innerHTML = values.map(v => `
-        <label class="filter-value-item">
+        <label class="filter-value-item" title="Check this box to include rows where ${escapeHtml(option.text.split(' (')[0])} = &quot;${escapeHtml(v)}&quot;">
             <input type="checkbox" value="${escapeHtml(v)}" onchange="toggleFilterValue('${escapeJS(v)}')">
             <span>${escapeHtml(v)}</span>
         </label>
     `).join('');
 
     valuesGroup.style.display = 'block';
+    if (valuesHint) valuesHint.style.display = 'block';
     document.getElementById('applyFilterBtn').disabled = true;
 }
 
@@ -1303,7 +1426,11 @@ function toggleFilterValue(value) {
     } else {
         selectedFilterValues.splice(idx, 1);
     }
-    document.getElementById('applyFilterBtn').disabled = selectedFilterValues.length === 0;
+    var btn = document.getElementById('applyFilterBtn');
+    btn.disabled = selectedFilterValues.length === 0;
+    // Hide the hint once they've selected at least one value
+    var hint = document.getElementById('filterValuesHint');
+    if (hint) hint.style.display = selectedFilterValues.length > 0 ? 'none' : 'block';
 }
 
 function applyFilter() {
@@ -1312,7 +1439,8 @@ function applyFilter() {
     const select = document.getElementById('filterFieldSelect');
     const option = select.options[select.selectedIndex];
     const fieldId = option.value;
-    const fieldName = option.text;
+    // Strip the " (N options)" suffix we added for display
+    const fieldName = option.text.replace(/\s*\(\d+ options?\)$/, '');
 
     // Add filter to swimlane
     State.swimlanes[currentFilterSwimlaneIdx].filters.push({

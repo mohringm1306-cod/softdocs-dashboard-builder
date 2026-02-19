@@ -1920,6 +1920,312 @@ small {
     font-size: 1rem;
 }
 
+/* ============================================================================
+   SWIMLANE FILTER USABILITY ENHANCEMENTS
+   ============================================================================ */
+
+/* Swimlane needs-filter warning state */
+.swimlane-needs-filter {
+    border-color: #ffc107;
+    border-width: 2px;
+    border-style: dashed;
+}
+
+.swimlane-needs-filter .swimlane-header {
+    background: #fff8e1;
+}
+
+/* Status badges in swimlane header */
+.swimlane-status-badge {
+    display: flex;
+    align-items: center;
+    font-size: 1.1rem;
+    padding: 2px;
+}
+
+.swimlane-status-ok {
+    color: #28a745;
+}
+
+.swimlane-status-warn {
+    color: #e67c00;
+    animation: pulse-warn 2s ease-in-out infinite;
+}
+
+@keyframes pulse-warn {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* No-filters warning block (replaces the old italic text) */
+.no-filters-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    color: #856404;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.no-filters-warning i {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.no-filters-warning strong {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.95rem;
+}
+
+.no-filters-warning span {
+    color: #6d5603;
+}
+
+/* Emphasized add-filter button when no filters exist */
+.add-filter-btn-emphasized {
+    border-color: var(--primary) !important;
+    border-style: solid !important;
+    color: var(--primary) !important;
+    font-weight: 600;
+    background: rgba(var(--primary-rgb), 0.05) !important;
+    animation: nudge-border 2s ease-in-out infinite;
+}
+
+@keyframes nudge-border {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.2); }
+    50% { box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15); }
+}
+
+/* Help icon next to filter label */
+.filter-help-icon {
+    color: #999;
+    cursor: help;
+    font-size: 0.85rem;
+    margin-left: 4px;
+}
+
+.filter-help-icon:hover {
+    color: var(--primary);
+}
+
+/* Top-of-page guidance banners */
+.filter-guidance {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.filter-guidance-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.filter-guidance-text strong {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.filter-guidance-text p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.filter-guidance-error {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    color: #856404;
+}
+
+.filter-guidance-error .filter-guidance-icon { color: #d48806; }
+
+.filter-guidance-warn {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    color: #856404;
+}
+
+.filter-guidance-warn .filter-guidance-icon { color: #d48806; }
+
+.filter-guidance-info {
+    background: rgba(23,162,184,0.08);
+    border: 1px solid rgba(23,162,184,0.25);
+    color: #0c5460;
+}
+
+.filter-guidance-info .filter-guidance-icon { color: #17a2b8; }
+
+/* Collapsible "How do filters work?" guide */
+.filter-quick-guide {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.filter-quick-guide-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.04);
+    transition: background 0.2s;
+    user-select: none;
+}
+
+.filter-quick-guide-header:hover {
+    background: rgba(var(--primary-rgb), 0.08);
+}
+
+.filter-quick-guide-header i:first-child {
+    font-size: 1.1rem;
+}
+
+.filter-quick-guide-header span {
+    flex: 1;
+}
+
+.filter-guide-chevron {
+    transition: transform 0.2s;
+    font-size: 0.9rem;
+}
+
+.filter-quick-guide-body {
+    padding: 18px 20px 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+.filter-guide-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.filter-guide-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.filter-guide-step-num {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.filter-guide-step > div:last-child {
+    font-size: 0.9rem;
+    color: #444;
+    line-height: 1.5;
+    padding-top: 3px;
+}
+
+.filter-guide-example {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 14px 18px;
+    border-left: 4px solid var(--accent);
+}
+
+.filter-guide-example-title {
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+}
+
+.filter-guide-example-body {
+    font-size: 0.88rem;
+    color: #555;
+    line-height: 1.7;
+}
+
+.filter-guide-example-body em {
+    display: block;
+    margin-top: 6px;
+    color: #28a745;
+    font-style: normal;
+    font-weight: 500;
+}
+
+/* Filter modal enhancements */
+.filter-modal-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(var(--primary-rgb), 0.06);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    color: #555;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.filter-modal-hint i {
+    color: var(--primary);
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 1rem;
+}
+
+.field-label-hint {
+    display: block;
+    font-weight: 400;
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 2px;
+}
+
+.filter-values-hint {
+    text-align: center;
+    font-size: 0.82rem;
+    color: #999;
+    padding: 8px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.filter-values-hint i {
+    font-size: 0.9rem;
+    animation: bounce-up 1.5s ease-in-out infinite;
+}
+
+@keyframes bounce-up {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
 /* Responsive */
 @media (max-width: 992px) {
     .mode-cards { grid-template-columns: repeat(2, 1fr); }
