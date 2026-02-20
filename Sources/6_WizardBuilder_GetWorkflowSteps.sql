@@ -16,8 +16,10 @@
 --   ProcessStep uses "ProcessStepId" (lowercase 'd'), NOT "ProcessStepID".
 --   ProcessStep has NO StepOrder column.
 --
---   We link Template -> TemplateVersion (to get Code) -> PackageDocument
---   (SourceTypeCode matches Code) -> TaskQueue -> ProcessStep.
+-- IMPORTANT: Previous version only returned steps with active TaskQueue
+--   entries. This version first finds the ProcessID via any TaskQueue row
+--   linked to this template, then returns ALL steps for that Process.
+--   This ensures steps show up even if no form has reached them yet.
 -- ============================================================================
 
 SELECT DISTINCT
@@ -25,12 +27,17 @@ SELECT DISTINCT
     ps.[Name]                       AS name,
     REPLACE(ps.[Name], '_', ' ')    AS displayName
 FROM reporting.central_flow_ProcessStep ps
-INNER JOIN reporting.central_flow_TaskQueue tq
-    ON tq.ProcessStepID = ps.ProcessStepId
-INNER JOIN reporting.central_flow_PackageDocument pd
-    ON tq.PackageId = pd.PackageID
-INNER JOIN reporting.central_forms_TemplateVersion tv
-    ON pd.SourceTypeCode = tv.Code
-WHERE tv.TemplateID = @TemplateID
+WHERE ps.ProcessID IN (
+    -- Find the ProcessID(s) linked to this template via TaskQueue chain
+    SELECT DISTINCT ps2.ProcessID
+    FROM reporting.central_flow_ProcessStep ps2
+    INNER JOIN reporting.central_flow_TaskQueue tq
+        ON tq.ProcessStepID = ps2.ProcessStepId
+    INNER JOIN reporting.central_flow_PackageDocument pd
+        ON tq.PackageId = pd.PackageID
+    INNER JOIN reporting.central_forms_TemplateVersion tv
+        ON pd.SourceTypeCode = tv.Code
+    WHERE tv.TemplateID = @TemplateID
+)
     AND ps.IsDeleted = 0
 ORDER BY ps.[Name]

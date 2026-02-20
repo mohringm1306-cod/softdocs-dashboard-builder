@@ -65,7 +65,9 @@ function generateIndexHTML() {
 function generateConfigJS() {
   var swimlaneConfigs = State.swimlanes.map(function (sl) {
     var filterStr = sl.filters && sl.filters.length > 0 ? sl.filters.map(function (f) {
-      return "{ field: '".concat(escapeJS(f.fieldName), "', values: [").concat(f.values.map(function (v) {
+      // Use sqlAlias (actual SQL column name) instead of display name for row lookups
+      var fieldKey = f.sqlAlias || f.fieldName;
+      return "{ field: '".concat(escapeJS(fieldKey), "', values: [").concat(f.values.map(function (v) {
         return "'".concat(escapeJS(v), "'");
       }).join(', '), "] }");
     }).join(', ') : '';

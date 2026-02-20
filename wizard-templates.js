@@ -1016,16 +1016,25 @@ function selectAllFormFields() {
 
 // Resolve workflow steps from SimulatedData -- works in both standalone (string keys) and Etrieve (numeric keys) mode
 function getWorkflowSteps() {
-    let workflowKey = 'service';
-    if ((State.selectedTemplate && State.selectedTemplate.id) === 692) workflowKey = 'incident';
-    if ((State.selectedTemplate && State.selectedTemplate.id) === 665) workflowKey = 'budget';
-    let steps = SimulatedData.workflowSteps[workflowKey] || [];
-    if (steps.length === 0 && (State.selectedTemplate && State.selectedTemplate.templateId)) {
+    if (!State.selectedTemplate) return [];
+
+    // First try live data keys (templateId or id, as set by the Etrieve viewmodel)
+    var steps = [];
+    if (State.selectedTemplate.templateId) {
         steps = SimulatedData.workflowSteps[State.selectedTemplate.templateId] || [];
     }
-    if (steps.length === 0 && (State.selectedTemplate && State.selectedTemplate.id)) {
+    if (steps.length === 0 && State.selectedTemplate.id) {
         steps = SimulatedData.workflowSteps[State.selectedTemplate.id] || [];
     }
+
+    // Fall back to hardcoded demo keys only if no live data found
+    if (steps.length === 0) {
+        var workflowKey = 'service';
+        if (State.selectedTemplate.id === 692) workflowKey = 'incident';
+        if (State.selectedTemplate.id === 665) workflowKey = 'budget';
+        steps = SimulatedData.workflowSteps[workflowKey] || [];
+    }
+
     return steps;
 }
 
@@ -1308,10 +1317,12 @@ function toggleFilterGuide() {
 }
 
 // Get fields that have predefined values for filtering
+// Each field must have: id, name (display), values[], sqlAlias (actual SQL column name)
 function getFilterableFields() {
     if (State.mode === 'content') {
         const fields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
-        return fields.filter(f => f.values && f.values.length > 0 && State.selectedFields.includes(f.id));
+        return fields.filter(f => f.values && f.values.length > 0 && State.selectedFields.includes(f.id))
+            .map(f => ({ id: f.id, name: f.name, values: f.values, sqlAlias: f.alias || f.name }));
     } else if (State.mode === 'forms') {
         // For forms, use workflow steps as filterable
         const steps = getWorkflowSteps();
@@ -1319,6 +1330,7 @@ function getFilterableFields() {
             return [{
                 id: 'workflow_step',
                 name: 'Current Workflow Step',
+                sqlAlias: 'CurrentStepName',
                 values: steps.filter(s => State.selectedWorkflowSteps.includes(s.id)).map(s => s.displayName)
             }];
         }
@@ -1329,7 +1341,8 @@ function getFilterableFields() {
 
         // Add document fields with predefined values
         const docFields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
-        const docFilterable = docFields.filter(f => f.values && f.values.length > 0 && State.selectedFields.includes(f.id));
+        const docFilterable = docFields.filter(f => f.values && f.values.length > 0 && State.selectedFields.includes(f.id))
+            .map(f => ({ id: f.id, name: f.name, values: f.values, sqlAlias: f.alias || f.name }));
         filterableFields.push.apply(filterableFields, docFilterable);
 
         // Add workflow steps if selected
@@ -1338,6 +1351,7 @@ function getFilterableFields() {
             filterableFields.push({
                 id: 'workflow_step',
                 name: 'Current Workflow Step',
+                sqlAlias: 'CurrentStepName',
                 values: steps.filter(s => State.selectedWorkflowSteps.includes(s.id)).map(s => s.displayName)
             });
         }
@@ -1442,10 +1456,16 @@ function applyFilter() {
     // Strip the " (N options)" suffix we added for display
     const fieldName = option.text.replace(/\s*\(\d+ options?\)$/, '');
 
+    // Look up the SQL column alias from the filterable fields list
+    const filterableFields = getFilterableFields();
+    const fieldDef = filterableFields.find(f => String(f.id) === String(fieldId));
+    const sqlAlias = fieldDef ? (fieldDef.sqlAlias || fieldDef.name) : fieldName;
+
     // Add filter to swimlane
     State.swimlanes[currentFilterSwimlaneIdx].filters.push({
         fieldId: fieldId,
         fieldName: fieldName,
+        sqlAlias: sqlAlias,
         values: selectedFilterValues.slice(0)
     });
 

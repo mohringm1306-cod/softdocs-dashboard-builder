@@ -1043,7 +1043,7 @@ ${fieldPivots || '   -- Add your field pivots here'}`;
 
     if (hasWorkflow) {
         sql += `,
-   ps.Name AS CurrentStepName`;
+   REPLACE(ps.Name, '_', ' ') AS CurrentStepName`;
     }
 
     sql += `,
