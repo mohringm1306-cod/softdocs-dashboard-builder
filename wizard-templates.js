@@ -1389,7 +1389,7 @@ function closeFilterModal() {
     selectedFilterValues = [];
 }
 
-// Global Escape key handler -- closes any open modal
+// Global Escape key handler -- closes any open modal (only if one is actually visible)
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         var filterModal = document.getElementById('filterModal');
@@ -1398,7 +1398,7 @@ document.addEventListener('keydown', function(e) {
             return;
         }
         var downloadModal = document.getElementById('downloadModal');
-        if (downloadModal) {
+        if (downloadModal && downloadModal.offsetParent !== null) {
             closeDownloadModal();
             return;
         }
@@ -1461,13 +1461,24 @@ function applyFilter() {
     const fieldDef = filterableFields.find(f => String(f.id) === String(fieldId));
     const sqlAlias = fieldDef ? (fieldDef.sqlAlias || fieldDef.name) : fieldName;
 
-    // Add filter to swimlane
-    State.swimlanes[currentFilterSwimlaneIdx].filters.push({
-        fieldId: fieldId,
-        fieldName: fieldName,
-        sqlAlias: sqlAlias,
-        values: selectedFilterValues.slice(0)
-    });
+    // Prevent duplicate filters for the same field on the same swimlane
+    const existingFilter = State.swimlanes[currentFilterSwimlaneIdx].filters.find(f => String(f.fieldId) === String(fieldId));
+    if (existingFilter) {
+        // Merge new values into existing filter (deduplicated)
+        selectedFilterValues.forEach(function(v) {
+            if (existingFilter.values.indexOf(v) === -1) {
+                existingFilter.values.push(v);
+            }
+        });
+    } else {
+        // Add new filter to swimlane
+        State.swimlanes[currentFilterSwimlaneIdx].filters.push({
+            fieldId: fieldId,
+            fieldName: fieldName,
+            sqlAlias: sqlAlias,
+            values: selectedFilterValues.slice(0)
+        });
+    }
 
     closeFilterModal();
     renderStep();
@@ -1475,6 +1486,8 @@ function applyFilter() {
 }
 
 function removeFilter(swimlaneIdx, filterIdx) {
+    if (!State.swimlanes[swimlaneIdx] || !State.swimlanes[swimlaneIdx].filters) return;
+    if (filterIdx < 0 || filterIdx >= State.swimlanes[swimlaneIdx].filters.length) return;
     State.swimlanes[swimlaneIdx].filters.splice(filterIdx, 1);
     renderStep();
     saveDraft();
@@ -1487,11 +1500,13 @@ function addSwimlane() {
 }
 
 function updateSwimlaneName(idx, value) {
+    if (!State.swimlanes[idx]) return;
     State.swimlanes[idx].name = value;
     saveDraft();
 }
 
 function deleteSwimlane(idx) {
+    if (idx < 0 || idx >= State.swimlanes.length) return;
     if (State.swimlanes.length <= 1) {
         showToast('You need at least one group.', 'warning');
         return;

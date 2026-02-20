@@ -472,6 +472,29 @@ function restoreDraft(draft) {
     if (draft.styleConfig) {
         Object.assign(State.styleConfig, draft.styleConfig);
     }
+    if (draft.securityConfig) {
+        State.securityConfig = draft.securityConfig;
+    }
+
+    // Migrate old drafts: backfill missing sqlAlias on swimlane filters
+    if (State.swimlanes) {
+        State.swimlanes.forEach(function(sl) {
+            if (sl.filters) {
+                sl.filters.forEach(function(f) {
+                    if (!f.sqlAlias && f.fieldName) {
+                        // Try to resolve from current filterable fields
+                        try {
+                            var fields = getFilterableFields();
+                            var match = fields.find(function(ff) { return ff.name === f.fieldName || String(ff.id) === String(f.fieldId); });
+                            f.sqlAlias = match ? (match.sqlAlias || match.name) : f.fieldName;
+                        } catch (e) {
+                            f.sqlAlias = f.fieldName;
+                        }
+                    }
+                });
+            }
+        });
+    }
 }
 
 function showDraftIndicator(status) {
@@ -844,14 +867,14 @@ function escapeHtml(str) {
 
 // Escape strings for SQL single-quote literals (prevents SQL injection in generated queries)
 function escapeSQL(str) {
-    if (!str) return '';
-    return str.replace(/'/g, "''");
+    if (str == null) return '';
+    return String(str).replace(/'/g, "''");
 }
 
 // Escape strings for JavaScript output (prevents code injection in generated files)
 function escapeJS(str) {
-    if (!str) return '';
-    return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\n/g, '\\n').replace(/\r/g, '');
+    if (str == null) return '';
+    return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\n/g, '\\n').replace(/\r/g, '');
 }
 
 // Toast notification for the wizard UI
@@ -1088,15 +1111,22 @@ function generateCombinedSQL() {
     const hasWorkflow = State.selectedWorkflowSteps.length > 0;
     const swimlaneConfig = generateSwimlaneConfig();
 
-    // Build document portion
+    // Normalize both sides to exactly 3 Field columns for UNION compatibility
     const docTypeList = selectedDocs.map(d => `'${escapeSQL(d.name)}'`).join(', ');
 
-    let docFieldSelects = selectedDocFields.slice(0, 3).map((f, idx) => {
-        if (f.type === 'date') {
-            return `CAST([${f.alias}].DATE AS VARCHAR(50)) AS Field${idx + 1}`;
+    let docFieldSelects = [];
+    for (let idx = 0; idx < 3; idx++) {
+        const f = selectedDocFields[idx];
+        if (f) {
+            if (f.type === 'date') {
+                docFieldSelects.push(`CAST([${f.alias}].DATE AS VARCHAR(50)) AS Field${idx + 1}`);
+            } else {
+                docFieldSelects.push(`[${f.alias}].text AS Field${idx + 1}`);
+            }
+        } else {
+            docFieldSelects.push(`'' AS Field${idx + 1}`);
         }
-        return `[${f.alias}].text AS Field${idx + 1}`;
-    }).join(',\n       ');
+    }
 
     let docFieldJoins = selectedDocFields.slice(0, 3).map(f => {
         const table = f.type === 'date' ? 'ivDocumentDateFieldValue' : 'ivDocumentTextFieldValue';
@@ -1104,10 +1134,16 @@ function generateCombinedSQL() {
    ON Document.DocumentID = [${f.alias}].DocumentID AND [${f.alias}].FieldID = ${parseInt(f.id, 10)}`;
     }).join('\n');
 
-    // Build form portion
-    let formFieldSelects = selectedFormInputs.slice(0, 3).map((inp, idx) => {
-        return `MAX(CASE WHEN iv.InputID = '${escapeSQL(inp.id)}' THEN iv.Value END) AS Field${idx + 1}`;
-    }).join(',\n       ');
+    // Build form portion — also exactly 3 Field columns
+    let formFieldSelects = [];
+    for (let idx = 0; idx < 3; idx++) {
+        const inp = selectedFormInputs[idx];
+        if (inp) {
+            formFieldSelects.push(`MAX(CASE WHEN iv.InputID = '${escapeSQL(inp.id)}' THEN iv.Value END) AS Field${idx + 1}`);
+        } else {
+            formFieldSelects.push(`'' AS Field${idx + 1}`);
+        }
+    }
 
     let sql = `-- ${escapeSQL(State.dashboardTitle || 'Combined Dashboard')}
 -- Source: ${escapeSQL(State.sourceName || 'CombinedSource')}
@@ -1119,7 +1155,7 @@ SELECT
    'Document' AS RecordType,
    CAST(Document.DocumentID AS VARCHAR(50)) AS RecordID,
    DocumentType.[Name] AS Category,
-   ${docFieldSelects || "'' AS Field1, '' AS Field2, '' AS Field3"},
+   ${docFieldSelects.join(',\n       ')},${hasWorkflow ? "\n   '' AS CurrentStepName," : ''}
    '/#areaId=' + CAST(Node.CatalogID AS VARCHAR) +
    '&NodeId=' + CAST(Node.NodeID AS VARCHAR) +
    '&DocumentId=' + CAST(Document.DocumentID AS VARCHAR) AS url
@@ -1140,14 +1176,33 @@ SELECT
    'Form' AS RecordType,
    CAST(f.FormID AS VARCHAR(50)) AS RecordID,
    '${escapeSQL((template && template.name) || 'Form')}' AS Category,
-   ${formFieldSelects || "'' AS Field1, '' AS Field2, '' AS Field3"},
+   ${formFieldSelects.join(',\n       ')}`;
+
+    if (hasWorkflow) {
+        sql += `,
+   REPLACE(ps.Name, '_', ' ') AS CurrentStepName`;
+    }
+
+    sql += `,
    '/forms/' + CAST(f.FormID AS VARCHAR) AS url
 FROM reporting.central_forms_Form f
 LEFT JOIN reporting.central_forms_InputValue iv
-   ON f.FormID = iv.FormID
+   ON f.FormID = iv.FormID`;
+
+    if (hasWorkflow) {
+        sql += `
+LEFT JOIN reporting.central_flow_PackageDocument pd
+   ON pd.SourceID = CAST(f.FormID AS VARCHAR(50))
+LEFT JOIN reporting.central_flow_TaskQueue tq
+   ON tq.PackageId = pd.PackageID
+LEFT JOIN reporting.central_flow_ProcessStep ps
+   ON tq.ProcessStepID = ps.ProcessStepId`;
+    }
+
+    sql += `
 WHERE f.TemplateVersionID = ${parseInt((template && template.id), 10) || 'XXX'}
    AND f.IsDraft = 0
-GROUP BY f.FormID
+GROUP BY f.FormID${hasWorkflow ? ', ps.Name' : ''}
 
 ORDER BY RecordType, RecordID DESC`;
 
