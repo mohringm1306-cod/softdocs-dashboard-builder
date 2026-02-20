@@ -64,7 +64,7 @@ define([
      * Expected SQL: SELECT CatalogID AS id, [Name] AS name FROM [dbo].[Catalog] ORDER BY [Name]
      */
     function loadAreas() {
-        if (_cache.areas) return $.Deferred().resolve(_cache.areas).promise();
+        if (_cache.areas && _cache.areas.length > 0) return $.Deferred().resolve(_cache.areas).promise();
         return integration.all(areasIntegrationName).then(function(data) {
             _cache.areas = data.map(function(row) {
                 return { id: row.id || row.CatalogID, name: row.name || row.Name, description: row.description || row.Description || '' };
@@ -78,7 +78,7 @@ define([
      * Expected SQL: SELECT DocumentTypeID AS id, d.Name AS name, d.Name AS code FROM [dbo].[DocumentType] d JOIN [dbo].[CatalogDocumentType] cd ON d.DocumentTypeID = cd.DocumentTypeID WHERE cd.CatalogID = @CatalogID ORDER BY d.Name
      */
     function loadDocTypes(areaId) {
-        if (_cache.documentTypes[areaId]) return $.Deferred().resolve(_cache.documentTypes[areaId]).promise();
+        if (_cache.documentTypes[areaId] && _cache.documentTypes[areaId].length > 0) return $.Deferred().resolve(_cache.documentTypes[areaId]).promise();
         return integration.all(docTypesIntegrationName, { CatalogID: areaId }).then(function(data) {
             _cache.documentTypes[areaId] = data.map(function(row) {
                 return { id: row.id || row.DocumentTypeID, name: row.name || row.Name, code: row.code || row.Code || '' };
@@ -92,7 +92,7 @@ define([
      * Expected SQL: SELECT DISTINCT f.FieldID AS id, f.Name AS name, CASE WHEN dt.Name='Date' THEN 'date' ELSE 'text' END AS type, f.Name AS alias FROM Field f JOIN DataType dt ON f.DataTypeID=dt.DataTypeID JOIN DocumentTypeField dtf ON f.FieldID=dtf.FieldID JOIN CatalogDocumentType cdt ON dtf.DocumentTypeID=cdt.DocumentTypeID WHERE cdt.CatalogID=@CatalogID
      */
     function loadKeyFields(areaId) {
-        if (_cache.keyFields[areaId]) return $.Deferred().resolve(_cache.keyFields[areaId]).promise();
+        if (_cache.keyFields[areaId] && _cache.keyFields[areaId].length > 0) return $.Deferred().resolve(_cache.keyFields[areaId]).promise();
         return integration.all(keyFieldsIntegrationName, { CatalogID: areaId }).then(function(data) {
             _cache.keyFields[areaId] = data.map(function(row) {
                 return { id: row.id || row.FieldID, name: row.name || row.Name, type: row.type || 'text', alias: row.alias || row.Name || '' };
@@ -106,7 +106,7 @@ define([
      * Expected SQL: SELECT tv.TemplateVersionID AS id, t.Name AS name, t.TemplateID AS templateId FROM reporting.central_forms_Template t JOIN reporting.central_forms_TemplateVersion tv ON t.TemplateID = tv.TemplateID WHERE tv.IsPublished = 1 ORDER BY t.Name
      */
     function loadFormTemplates() {
-        if (_cache.formTemplates) return $.Deferred().resolve(_cache.formTemplates).promise();
+        if (_cache.formTemplates && _cache.formTemplates.length > 0) return $.Deferred().resolve(_cache.formTemplates).promise();
         return integration.all(formTemplatesIntegrationName).then(function(data) {
             _cache.formTemplates = data.map(function(row) {
                 return { id: row.id || row.TemplateVersionID, name: row.name || row.Name, templateId: row.templateId || row.TemplateID };
@@ -120,7 +120,7 @@ define([
      * Expected SQL: SELECT DISTINCT iv.InputID AS id, iv.InputID AS label FROM reporting.central_forms_InputValue iv JOIN reporting.central_forms_Form f ON iv.FormID = f.FormID JOIN reporting.central_forms_TemplateVersion tv ON f.TemplateVersionID = tv.TemplateVersionID WHERE tv.TemplateVersionID = @TemplateVersionID ORDER BY iv.InputID
      */
     function loadFormInputs(templateVersionId) {
-        if (_cache.formInputIds[templateVersionId]) return $.Deferred().resolve(_cache.formInputIds[templateVersionId]).promise();
+        if (_cache.formInputIds[templateVersionId] && _cache.formInputIds[templateVersionId].length > 0) return $.Deferred().resolve(_cache.formInputIds[templateVersionId]).promise();
         return integration.all(formInputsIntegrationName, { TemplateVersionID: templateVersionId }).then(function(data) {
             _cache.formInputIds[templateVersionId] = data.map(function(row) {
                 return { id: row.id || row.InputID, label: row.label || row.InputID };
@@ -136,7 +136,7 @@ define([
      * NOTE: ProcessStepId (lowercase 'd'), no StepOrder column exists
      */
     function loadWorkflowSteps(templateId) {
-        if (_cache.workflowSteps[templateId]) return $.Deferred().resolve(_cache.workflowSteps[templateId]).promise();
+        if (_cache.workflowSteps[templateId] && _cache.workflowSteps[templateId].length > 0) return $.Deferred().resolve(_cache.workflowSteps[templateId]).promise();
         return integration.all(workflowStepsIntegrationName, { TemplateID: templateId }).then(function(data) {
             _cache.workflowSteps[templateId] = data.map(function(row, idx) {
                 return {
@@ -197,10 +197,12 @@ define([
         var results = { areas: false, templates: false };
 
         // Wrap each promise so it always resolves (never rejects) — ensures $.when waits for BOTH
+        // IMPORTANT: Use single .then(ok, err) form — jQuery < 3.0 doesn't swallow rejections
+        // with .then(ok).then(null, err) two-call chains.
         var areasPromise = loadAreas().then(function(data) {
             results.areas = true;
             console.log('[WizardBuilder] ✓ GetAreas returned ' + data.length + ' areas');
-        }).then(null, function(err) {
+        }, function(err) {
             console.error('[WizardBuilder] ✗ GetAreas FAILED:', areasIntegrationName, err);
             return $.Deferred().resolve().promise(); // swallow rejection so $.when waits for both
         });
@@ -208,7 +210,7 @@ define([
         var templatesPromise = loadFormTemplates().then(function(data) {
             results.templates = true;
             console.log('[WizardBuilder] ✓ GetFormTemplates returned ' + data.length + ' templates');
-        }).then(null, function(err) {
+        }, function(err) {
             console.error('[WizardBuilder] ✗ GetFormTemplates FAILED:', formTemplatesIntegrationName, err);
             return $.Deferred().resolve().promise(); // swallow rejection so $.when waits for both
         });
@@ -284,10 +286,16 @@ define([
         var _origSelectTemplate = window.selectTemplate;
         if (typeof _origSelectTemplate === 'function' && !_origSelectTemplate._isVMWrapped) {
             window.selectTemplate = function(templateId, keepSelections) {
-                // Use == for type-coerced comparison (onclick may pass numeric ID, integration returns string)
+                // Use String coercion for comparison (onclick may pass numeric ID, integration returns string)
                 var template = (_cache.formTemplates || []).find(function(t) { return String(t.id) === String(templateId); });
                 var tvId = templateId;
-                var tId = template ? template.templateId : templateId;
+                var tId;
+                if (template) {
+                    tId = template.templateId;
+                } else {
+                    console.warn('[VM selectTemplate] Template not found in cache for id:', templateId, '— workflow steps may not load correctly');
+                    tId = templateId; // fallback: best-effort, may be wrong ID type
+                }
                 var loading = $('.loading');
                 if (loading.length) loading.show();
 

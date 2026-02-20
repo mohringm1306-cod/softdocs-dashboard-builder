@@ -294,7 +294,7 @@ function renderStyleStep() {
         styles.forEach(s => {
             const selected = State.selectedStyle === s.id;
             html += `
-                <div class="style-select-card ${selected ? 'selected' : ''}" onclick="selectStyle('${escapeJS(s.id)}')">
+                <div class="style-select-card ${selected ? 'selected' : ''}" onclick="selectStyle('${escapeJSAttr(s.id)}')">
                     <div class="style-select-icon"><i class="bi ${escapeHtml(s.icon)}"></i></div>
                     <div class="style-select-info">
                         <div class="style-select-name">${escapeHtml(s.name)}</div>
@@ -364,7 +364,7 @@ function renderDetailFieldsStep() {
         <div class="field-selection-grid">
             ${allCandidates.map(f => `
                 <div class="field-item ${State.styleConfig.detailFields.includes(f.id) ? 'selected' : ''}"
-                     onclick="toggleDetailField('${escapeJS(f.id)}')">
+                     onclick="toggleDetailField('${escapeJSAttr(f.id)}')">
                     <input type="checkbox" ${State.styleConfig.detailFields.includes(f.id) ? 'checked' : ''}>
                     <span>${escapeHtml(f.name)}</span>
                 </div>
@@ -399,7 +399,7 @@ function renderAlphaConfigStep() {
             <div class="field-selection-grid">
                 ${fields.map(f => `
                     <div class="field-item ${State.styleConfig.nameField === f.id ? 'selected' : ''}"
-                         onclick="selectAlphaNameField('${escapeJS(f.id)}')">
+                         onclick="selectAlphaNameField('${escapeJSAttr(f.id)}')">
                         <input type="radio" name="nameField" ${State.styleConfig.nameField === f.id ? 'checked' : ''}>
                         <span>${escapeHtml(f.name)}</span>
                     </div>
@@ -531,7 +531,7 @@ function renderActionsConfigStep() {
                         const isActive = slActions.some(a => a.label === ap.label);
                         return `
                             <div class="action-preset ${isActive ? 'active' : ''}"
-                                 onclick="toggleWorkflowAction('${escapeJS(sl.name)}', '${escapeJS(ap.label)}', '${escapeJS(ap.icon)}', '${escapeJS(ap.btnStyle)}')">
+                                 onclick="toggleWorkflowAction('${escapeJSAttr(sl.name)}', '${escapeJSAttr(ap.label)}', '${escapeJSAttr(ap.icon)}', '${escapeJSAttr(ap.btnStyle)}')">
                                 <i class="bi ${escapeHtml(ap.icon)}"></i> ${escapeHtml(ap.label)}
                             </div>
                         `;
@@ -570,7 +570,7 @@ function renderSurveyConfigStep() {
             <div class="field-selection-grid">
                 ${fields.map(f => `
                     <div class="field-item ${State.styleConfig.ratingField === f.id ? 'selected' : ''}"
-                         onclick="State.styleConfig.ratingField = Number('${escapeJS(f.id)}'); renderStep(); saveDraft();">
+                         onclick="State.styleConfig.ratingField = Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
                         <input type="radio" name="ratingField" ${State.styleConfig.ratingField === f.id ? 'checked' : ''}>
                         <span>${escapeHtml(f.name)}</span>
                     </div>
@@ -583,7 +583,7 @@ function renderSurveyConfigStep() {
             <div class="field-selection-grid">
                 ${fields.map(f => `
                     <div class="field-item ${State.styleConfig.commentField === f.id ? 'selected' : ''}"
-                         onclick="State.styleConfig.commentField = Number('${escapeJS(f.id)}'); renderStep(); saveDraft();">
+                         onclick="State.styleConfig.commentField = Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
                         <input type="radio" name="commentField" ${State.styleConfig.commentField === f.id ? 'checked' : ''}>
                         <span>${escapeHtml(f.name)}</span>
                     </div>
@@ -596,7 +596,7 @@ function renderSurveyConfigStep() {
             <div class="field-selection-grid">
                 ${fields.map(f => `
                     <div class="field-item ${State.styleConfig.departmentField === f.id ? 'selected' : ''}"
-                         onclick="State.styleConfig.departmentField = Number('${escapeJS(f.id)}'); renderStep(); saveDraft();">
+                         onclick="State.styleConfig.departmentField = Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
                         <input type="radio" name="deptField" ${State.styleConfig.departmentField === f.id ? 'checked' : ''}>
                         <span>${escapeHtml(f.name)}</span>
                     </div>
@@ -627,7 +627,7 @@ function renderCommitteeConfigStep() {
                         ${colorOptions.map(c => `
                             <div class="color-swatch ${m.color === c ? 'selected' : ''}"
                                  style="background:${escapeHtml(c)};"
-                                 onclick="updateCommitteeMember(${i}, 'color', '${escapeJS(c)}')"></div>
+                                 onclick="updateCommitteeMember(${i}, 'color', '${escapeJSAttr(c)}')"></div>
                         `).join('')}
                     </div>
                     ${members.length > 2 ? `<button class="btn-remove-range" onclick="removeCommitteeMember(${i})"><i class="bi bi-x"></i></button>` : ''}
@@ -688,13 +688,13 @@ function renderCardsConfigStep() {
                         <small style="color:#888;margin-left:8px;">${escapeHtml(info.desc)}</small></label>
                     <div class="field-selection-grid">
                         <div class="field-item ${!State.styleConfig[configKey] ? 'selected' : ''}"
-                             onclick="State.styleConfig['${escapeJS(configKey)}'] = null; renderStep(); saveDraft();">
+                             onclick="State.styleConfig['${escapeJSAttr(configKey)}'] = null; renderStep(); saveDraft();">
                             <input type="radio" name="${escapeHtml(configKey)}" ${!State.styleConfig[configKey] ? 'checked' : ''}>
                             <span style="color:#999;">None</span>
                         </div>
                         ${fields.map(f => `
                             <div class="field-item ${State.styleConfig[configKey] === f.id ? 'selected' : ''}"
-                                 onclick="State.styleConfig['${escapeJS(configKey)}'] = Number('${escapeJS(f.id)}'); renderStep(); saveDraft();">
+                                 onclick="State.styleConfig['${escapeJSAttr(configKey)}'] = Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
                                 <input type="radio" name="${escapeHtml(configKey)}" ${State.styleConfig[configKey] === f.id ? 'checked' : ''}>
                                 <span>${escapeHtml(f.name)}</span>
                             </div>
@@ -954,7 +954,7 @@ function renderFormFieldsStep() {
 
     const inputsHtml = inputs.map(inp => `
         <div class="field-item ${State.selectedInputIds.includes(inp.id) ? 'selected' : ''}"
-             onclick="toggleInputId('${escapeJS(inp.id)}')">
+             onclick="toggleInputId('${escapeJSAttr(inp.id)}')">
             <input type="checkbox" ${State.selectedInputIds.includes(inp.id) ? 'checked' : ''}>
             <span class="field-name">${escapeHtml(inp.label)}</span>
         </div>
@@ -1044,7 +1044,7 @@ function renderWorkflowStep() {
 
     const stepsHtml = steps.map((s, idx) => `
         <div class="field-item ${State.selectedWorkflowSteps.includes(s.id) ? 'selected' : ''}"
-             onclick="toggleWorkflowStep('${escapeJS(s.id)}')" style="position:relative;">
+             onclick="toggleWorkflowStep('${escapeJSAttr(s.id)}')" style="position:relative;">
             <input type="checkbox" ${State.selectedWorkflowSteps.includes(s.id) ? 'checked' : ''}>
             <span style="background:var(--primary);color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;margin-right:10px;">${idx + 1}</span>
             <span class="field-name">${escapeHtml(s.displayName)}</span>
@@ -1423,7 +1423,7 @@ function updateFilterValues() {
 
     valuesContainer.innerHTML = values.map(v => `
         <label class="filter-value-item" title="Check this box to include rows where ${escapeHtml(option.text.split(' (')[0])} = &quot;${escapeHtml(v)}&quot;">
-            <input type="checkbox" value="${escapeHtml(v)}" onchange="toggleFilterValue('${escapeJS(v)}')">
+            <input type="checkbox" value="${escapeHtml(v)}" onchange="toggleFilterValue('${escapeJSAttr(v)}')">
             <span>${escapeHtml(v)}</span>
         </label>
     `).join('');
