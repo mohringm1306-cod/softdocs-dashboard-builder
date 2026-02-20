@@ -2005,7 +2005,7 @@ small {
 
 @media (prefers-reduced-motion: reduce) {
     .add-filter-btn.add-filter-btn-emphasized { animation: none; }
-    .swimlane-needs-filter { animation: none; }
+    .swimlane-status-warn { animation: none; }
 }
 
 /* Help icon next to filter label */

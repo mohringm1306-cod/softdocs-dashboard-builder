@@ -1398,7 +1398,7 @@ document.addEventListener('keydown', function(e) {
             return;
         }
         var downloadModal = document.getElementById('downloadModal');
-        if (downloadModal && downloadModal.offsetParent !== null) {
+        if (downloadModal) {
             closeDownloadModal();
             return;
         }

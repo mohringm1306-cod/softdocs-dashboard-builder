@@ -480,18 +480,26 @@ function restoreDraft(draft) {
     }
 
     // Migrate old drafts: backfill missing sqlAlias on swimlane filters
+    // Known field name → SQL alias mappings (for when SimulatedData isn't loaded yet)
+    var knownAliases = {
+        'Current Workflow Step': 'CurrentStepName'
+    };
     if (State.swimlanes) {
         State.swimlanes.forEach(function(sl) {
             if (sl.filters) {
                 sl.filters.forEach(function(f) {
                     if (!f.sqlAlias && f.fieldName) {
-                        // Try to resolve from current filterable fields
-                        try {
-                            var fields = getFilterableFields();
-                            var match = fields.find(function(ff) { return ff.name === f.fieldName || String(ff.id) === String(f.fieldId); });
-                            f.sqlAlias = match ? (match.sqlAlias || match.name) : f.fieldName;
-                        } catch (e) {
-                            f.sqlAlias = f.fieldName;
+                        // Use known mapping first, then try live fields, then fall back
+                        if (knownAliases[f.fieldName]) {
+                            f.sqlAlias = knownAliases[f.fieldName];
+                        } else {
+                            try {
+                                var fields = getFilterableFields();
+                                var match = fields.find(function(ff) { return ff.name === f.fieldName || String(ff.id) === String(f.fieldId); });
+                                f.sqlAlias = match ? (match.sqlAlias || match.name) : f.fieldName;
+                            } catch (e) {
+                                f.sqlAlias = f.fieldName;
+                            }
                         }
                     }
                 });
