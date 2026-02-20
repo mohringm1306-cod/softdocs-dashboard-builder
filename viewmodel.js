@@ -196,21 +196,24 @@ define([
 
         var results = { areas: false, templates: false };
 
+        // Wrap each promise so it always resolves (never rejects) — ensures $.when waits for BOTH
         var areasPromise = loadAreas().then(function(data) {
             results.areas = true;
             console.log('[WizardBuilder] ✓ GetAreas returned ' + data.length + ' areas');
-        }).fail(function(err) {
+        }).then(null, function(err) {
             console.error('[WizardBuilder] ✗ GetAreas FAILED:', areasIntegrationName, err);
+            return $.Deferred().resolve().promise(); // swallow rejection so $.when waits for both
         });
 
         var templatesPromise = loadFormTemplates().then(function(data) {
             results.templates = true;
             console.log('[WizardBuilder] ✓ GetFormTemplates returned ' + data.length + ' templates');
-        }).fail(function(err) {
+        }).then(null, function(err) {
             console.error('[WizardBuilder] ✗ GetFormTemplates FAILED:', formTemplatesIntegrationName, err);
+            return $.Deferred().resolve().promise(); // swallow rejection so $.when waits for both
         });
 
-        // Wait for both to settle (regardless of success/failure), then initialize
+        // Wait for both to settle, then initialize
         $.when(areasPromise, templatesPromise).always(function() {
             // Replace SimulatedData with whatever we got
             window.SimulatedData = buildLiveDataProxy();
@@ -253,8 +256,9 @@ define([
         // we intercept and load the data from Etrieve first.
 
         // Override the area selection to load doc types + key fields on demand
+        // Guard against double-wrapping if afterLoad fires twice
         var _origSelectArea = window.selectArea;
-        if (typeof _origSelectArea === 'function') {
+        if (typeof _origSelectArea === 'function' && !_origSelectArea._isVMWrapped) {
             window.selectArea = function(areaId, keepSelections) {
                 var loading = $('.loading');
                 if (loading.length) loading.show();
@@ -272,13 +276,16 @@ define([
                     if (loading.length) loading.hide();
                 });
             };
+            window.selectArea._isVMWrapped = true;
         }
 
         // Override template selection to load form inputs + workflow steps on demand
+        // Guard against double-wrapping if afterLoad fires twice
         var _origSelectTemplate = window.selectTemplate;
-        if (typeof _origSelectTemplate === 'function') {
+        if (typeof _origSelectTemplate === 'function' && !_origSelectTemplate._isVMWrapped) {
             window.selectTemplate = function(templateId, keepSelections) {
-                var template = (_cache.formTemplates || []).find(function(t) { return t.id === templateId; });
+                // Use == for type-coerced comparison (onclick may pass numeric ID, integration returns string)
+                var template = (_cache.formTemplates || []).find(function(t) { return String(t.id) === String(templateId); });
                 var tvId = templateId;
                 var tId = template ? template.templateId : templateId;
                 var loading = $('.loading');
@@ -298,6 +305,7 @@ define([
                     if (loading.length) loading.hide();
                 });
             };
+            window.selectTemplate._isVMWrapped = true;
         }
     };
 

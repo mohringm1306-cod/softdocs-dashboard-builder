@@ -1989,18 +1989,23 @@ small {
 }
 
 /* Emphasized add-filter button when no filters exist */
-.add-filter-btn-emphasized {
-    border-color: var(--primary) !important;
-    border-style: solid !important;
-    color: var(--primary) !important;
+.add-filter-btn.add-filter-btn-emphasized {
+    border-color: var(--primary);
+    border-style: solid;
+    color: var(--primary);
     font-weight: 600;
-    background: rgba(var(--primary-rgb), 0.05) !important;
+    background: rgba(var(--primary-rgb), 0.05);
     animation: nudge-border 2s ease-in-out infinite;
 }
 
 @keyframes nudge-border {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.2); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.2); will-change: box-shadow; }
     50% { box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .add-filter-btn.add-filter-btn-emphasized { animation: none; }
+    .swimlane-needs-filter { animation: none; }
 }
 
 /* Help icon next to filter label */
@@ -2044,12 +2049,12 @@ small {
 }
 
 .filter-guidance-error {
-    background: #fff3cd;
-    border: 1px solid #ffc107;
-    color: #856404;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
 }
 
-.filter-guidance-error .filter-guidance-icon { color: #d48806; }
+.filter-guidance-error .filter-guidance-icon { color: #dc3545; }
 
 .filter-guidance-warn {
     background: #fff3cd;

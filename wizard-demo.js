@@ -430,6 +430,9 @@ function saveDraft() {
             showDraftIndicator('saved');
         } catch (e) {
             console.warn('Could not save draft:', e);
+            if (e && e.name === 'QuotaExceededError') {
+                showToast('Draft save failed: browser storage full. Try clearing old drafts.', 'warning');
+            }
         }
     }, DRAFT_SAVE_DELAY);
 }
@@ -1061,8 +1064,11 @@ function generateFormsSQL() {
 ${swimlaneConfig}
 SELECT
    f.FormID,
-   f.Created AS SubmittedDate,
-${fieldPivots || '   -- Add your field pivots here'}`;
+   f.Created AS SubmittedDate`;
+
+    if (fieldPivots) {
+        sql += `,\n${fieldPivots}`;
+    }
 
     if (hasWorkflow) {
         sql += `,
@@ -1275,7 +1281,8 @@ function generateColumnDefinitions() {
     } else if (State.mode === 'forms') {
         const inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
         inputs.filter(i => State.selectedInputIds.includes(i.id)).forEach(i => {
-            columns.push(`        { field: '${escapeJS(i.id)}', label: '${escapeJS(i.label)}', type: 'text' }`);
+            // field key must match the SQL column alias (which uses inp.label)
+            columns.push(`        { field: '${escapeJS(i.label)}', label: '${escapeJS(i.label)}', type: 'text' }`);
         });
     } else if (State.mode === 'combined') {
         // Combined mode: add both document fields and form fields
