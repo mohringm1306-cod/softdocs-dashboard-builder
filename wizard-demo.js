@@ -1106,18 +1106,22 @@ SELECT
    REPLACE(ps.Name, '_', ' ') AS CurrentStepName`;
     }
 
+    // URL: Etrieve Central uses /central/submissions?packageId=...&itemId=...&focusMode=true
     sql += `,
-   '/forms/' + CAST(f.FormID AS VARCHAR) AS url`;
+   '/central/submissions?packageId=' + CAST(pd.PackageID AS VARCHAR(50)) +
+   '&itemId=' + CAST(f.FormID AS VARCHAR) +
+   '&focusMode=true' AS url`;
 
+    // Always join PackageDocument for the URL (packageId)
     sql += `
 FROM reporting.central_forms_Form f
 LEFT JOIN reporting.central_forms_InputValue iv
-   ON f.FormID = iv.FormID`;
+   ON f.FormID = iv.FormID
+LEFT JOIN reporting.central_flow_PackageDocument pd
+   ON pd.SourceID = CAST(f.FormID AS VARCHAR(50))`;
 
     if (hasWorkflow) {
         sql += `
-LEFT JOIN reporting.central_flow_PackageDocument pd
-   ON pd.SourceID = CAST(f.FormID AS VARCHAR(50))
 LEFT JOIN reporting.central_flow_TaskQueue tq
    ON tq.PackageId = pd.PackageID
 LEFT JOIN reporting.central_flow_ProcessStep ps
@@ -1127,7 +1131,7 @@ LEFT JOIN reporting.central_flow_ProcessStep ps
     sql += `
 WHERE f.TemplateVersionID = ${template ? safeInt(template.id) : '/* SELECT A TEMPLATE */'}
    AND f.IsDraft = 0
-GROUP BY f.FormID, f.Created${hasWorkflow ? ', ps.Name' : ''}
+GROUP BY f.FormID, f.Created, pd.PackageID${hasWorkflow ? ', ps.Name' : ''}
 ORDER BY f.Created DESC`;
 
     return sql;
@@ -1221,15 +1225,17 @@ SELECT
     }
 
     sql += `,
-   '/forms/' + CAST(f.FormID AS VARCHAR) AS url
+   '/central/submissions?packageId=' + CAST(pd.PackageID AS VARCHAR(50)) +
+   '&itemId=' + CAST(f.FormID AS VARCHAR) +
+   '&focusMode=true' AS url
 FROM reporting.central_forms_Form f
 LEFT JOIN reporting.central_forms_InputValue iv
-   ON f.FormID = iv.FormID`;
+   ON f.FormID = iv.FormID
+LEFT JOIN reporting.central_flow_PackageDocument pd
+   ON pd.SourceID = CAST(f.FormID AS VARCHAR(50))`;
 
     if (hasWorkflow) {
         sql += `
-LEFT JOIN reporting.central_flow_PackageDocument pd
-   ON pd.SourceID = CAST(f.FormID AS VARCHAR(50))
 LEFT JOIN reporting.central_flow_TaskQueue tq
    ON tq.PackageId = pd.PackageID
 LEFT JOIN reporting.central_flow_ProcessStep ps
@@ -1239,7 +1245,7 @@ LEFT JOIN reporting.central_flow_ProcessStep ps
     sql += `
 WHERE f.TemplateVersionID = ${template ? safeInt(template.id) : '/* SELECT A TEMPLATE */'}
    AND f.IsDraft = 0
-GROUP BY f.FormID${hasWorkflow ? ', ps.Name' : ''}
+GROUP BY f.FormID, pd.PackageID${hasWorkflow ? ', ps.Name' : ''}
 
 ORDER BY RecordType, RecordID DESC`;
 

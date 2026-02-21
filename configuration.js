@@ -134,19 +134,23 @@ var formInputsIntegrationName = 'WizardBuilder_GetFormInputs';
 // Process has NO TemplateID column. The link goes through PackageDocument.
 // ProcessStepId (lowercase 'd'), NO StepOrder column.
 //
-// SQL:
+// SQL (subquery approach — finds ProcessID, then returns ALL steps):
 //   SELECT DISTINCT
 //       ps.ProcessStepId AS id,
 //       ps.[Name] AS name,
 //       REPLACE(ps.[Name], '_', ' ') AS displayName
 //   FROM reporting.central_flow_ProcessStep ps
-//   INNER JOIN reporting.central_flow_TaskQueue tq
-//       ON tq.ProcessStepID = ps.ProcessStepId
-//   INNER JOIN reporting.central_flow_PackageDocument pd
-//       ON tq.PackageId = pd.PackageID
-//   INNER JOIN reporting.central_forms_TemplateVersion tv
-//       ON pd.SourceTypeCode = tv.Code
-//   WHERE tv.TemplateID = @TemplateID
+//   WHERE ps.ProcessID IN (
+//       SELECT DISTINCT ps2.ProcessID
+//       FROM reporting.central_forms_TemplateVersion tv
+//       INNER JOIN reporting.central_flow_PackageDocument pd
+//           ON pd.SourceTypeCode = tv.Code
+//       INNER JOIN reporting.central_flow_TaskQueue tq
+//           ON tq.PackageId = pd.PackageID
+//       INNER JOIN reporting.central_flow_ProcessStep ps2
+//           ON tq.ProcessStepID = ps2.ProcessStepId
+//       WHERE tv.TemplateID = @TemplateID
+//   )
 //       AND ps.IsDeleted = 0
 //   ORDER BY ps.[Name]
 //

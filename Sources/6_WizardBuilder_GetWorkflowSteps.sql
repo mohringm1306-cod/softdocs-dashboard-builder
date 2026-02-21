@@ -13,13 +13,16 @@
 --   goes through: TemplateVersion.Code -> PackageDocument.SourceTypeCode
 --   -> PackageDocument.PackageID -> TaskQueue.PackageId -> ProcessStep.
 --
---   ProcessStep uses "ProcessStepId" (lowercase 'd'), NOT "ProcessStepID".
---   ProcessStep has NO StepOrder column.
+--   ProcessStepId uses lowercase 'd'. ProcessStep has NO StepOrder column.
 --
--- IMPORTANT: Previous version only returned steps with active TaskQueue
---   entries. This version first finds the ProcessID via any TaskQueue row
---   linked to this template, then returns ALL steps for that Process.
---   This ensures steps show up even if no form has reached them yet.
+-- APPROACH: Discover ALL ProcessIDs linked to this template by collecting
+--   every ProcessStep that any TaskQueue entry points to for any package
+--   associated with this template. Then return ALL non-deleted steps for
+--   those Processes — even steps that have never had a form routed to them.
+--
+-- NOTE: If this returns only one step but you expect more, the workflow
+--   at your site may use multiple linked Processes. Check whether ALL
+--   forms from this template appear in PackageDocument/TaskQueue.
 -- ============================================================================
 
 SELECT DISTINCT
@@ -28,15 +31,16 @@ SELECT DISTINCT
     REPLACE(ps.[Name], '_', ' ')    AS displayName
 FROM reporting.central_flow_ProcessStep ps
 WHERE ps.ProcessID IN (
-    -- Find the ProcessID(s) linked to this template via TaskQueue chain
+    -- Find ALL ProcessIDs linked to this template via the full chain:
+    -- TemplateVersion.Code → PackageDocument.SourceTypeCode → TaskQueue → ProcessStep
     SELECT DISTINCT ps2.ProcessID
-    FROM reporting.central_flow_ProcessStep ps2
-    INNER JOIN reporting.central_flow_TaskQueue tq
-        ON tq.ProcessStepID = ps2.ProcessStepId
+    FROM reporting.central_forms_TemplateVersion tv
     INNER JOIN reporting.central_flow_PackageDocument pd
-        ON tq.PackageId = pd.PackageID
-    INNER JOIN reporting.central_forms_TemplateVersion tv
         ON pd.SourceTypeCode = tv.Code
+    INNER JOIN reporting.central_flow_TaskQueue tq
+        ON tq.PackageId = pd.PackageID
+    INNER JOIN reporting.central_flow_ProcessStep ps2
+        ON tq.ProcessStepID = ps2.ProcessStepId
     WHERE tv.TemplateID = @TemplateID
 )
     AND ps.IsDeleted = 0
