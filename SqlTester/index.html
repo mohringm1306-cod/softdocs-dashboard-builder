@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html xmlns="https://www.w3.org/1999/xhtml">
+<head>
+  <title>SQL Integration Test Dashboard</title>
+  <link href="jquery-ui.min.css" rel="stylesheet" />
+  <link href="bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'Consolas', 'Monaco', monospace;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      margin: 0;
+      padding: 0;
+    }
+
+    .test-container {
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .header {
+      background: #252526;
+      padding: 20px 30px;
+      border-bottom: 3px solid #007acc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      color: #007acc;
+      font-weight: bold;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+      font-family: 'Consolas', monospace;
+    }
+
+    .btn-primary {
+      background: #007acc;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #005a9e;
+    }
+
+    .btn-success {
+      background: #16a34a;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #15803d;
+    }
+
+    .btn-warning {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background: #d97706;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    .stats-bar {
+      background: #2d2d30;
+      padding: 12px 30px;
+      display: flex;
+      gap: 40px;
+      border-bottom: 1px solid #3e3e42;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stat-label {
+      color: #858585;
+      font-size: 13px;
+    }
+
+    .stat-value {
+      color: #4ec9b0;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .output-area {
+      padding: 30px;
+      min-height: calc(100vh - 180px);
+      overflow-y: auto;
+    }
+
+    .log-line {
+      margin-bottom: 4px;
+      padding: 3px 0;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .log-success {
+      color: #16a34a;
+    }
+
+    .log-error {
+      color: #f48771;
+      background: rgba(220, 38, 38, 0.1);
+      padding: 3px 8px;
+      border-left: 3px solid #dc2626;
+    }
+
+    .log-warn {
+      color: #dcdcaa;
+      border-left: 3px solid #f59e0b;
+      padding-left: 8px;
+    }
+
+    .log-header {
+      color: #569cd6;
+      font-weight: bold;
+      font-size: 14px;
+      margin-top: 15px;
+    }
+
+    .log-box {
+      color: #ce9178;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .log-data {
+      background: #252526;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 4px;
+      border-left: 3px solid #007acc;
+      overflow-x: auto;
+      color: #d4d4d4;
+    }
+
+    .record-count {
+      color: #4ec9b0;
+      font-weight: bold;
+    }
+
+    .field-name {
+      color: #9cdcfe;
+    }
+
+    .field-value {
+      color: #ce9178;
+    }
+
+    .loading-spinner {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      padding: 40px 60px;
+      border-radius: 8px;
+      border: 2px solid #007acc;
+      z-index: 10000;
+      text-align: center;
+    }
+
+    .loading-spinner.active {
+      display: block;
+    }
+
+    .spinner {
+      border: 4px solid #3e3e42;
+      border-top: 4px solid #007acc;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #16a34a;
+      color: white;
+      padding: 15px 30px;
+      border-radius: 5px;
+      display: none;
+      z-index: 11000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      font-weight: bold;
+    }
+
+    .notification.show {
+      display: block;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #858585;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <div class="header">
+      <h1>SQL Integration Test Dashboard</h1>
+      <div class="controls">
+        <button class="btn btn-success" id="runBtn">
+          Refresh Data
+        </button>
+        <button class="btn btn-primary" id="copyBtn">
+          Copy All
+        </button>
+        <button class="btn btn-warning" id="copyJsonBtn">
+          Copy JSON
+        </button>
+        <button class="btn btn-danger" id="clearBtn">
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-label">Integration:</span>
+        <span class="stat-value" id="integrationName">-</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Records:</span>
+        <span class="stat-value" id="recordCount">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Columns:</span>
+        <span class="stat-value" id="columnCount">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Last Run:</span>
+        <span class="stat-value" id="lastRun">Never</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Status:</span>
+        <span class="stat-value" id="status">Ready</span>
+      </div>
+    </div>
+
+    <div class="output-area" id="outputArea">
+      <div class="empty-state">
+        <div class="empty-state-icon">&#127919;</div>
+        <h2>Ready to Test SQL Integration</h2>
+        <p>Click "Refresh Data" to run the query</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-spinner" id="loadingSpinner">
+    <div class="spinner"></div>
+    <div style="color: #007acc; font-weight: bold; font-size: 16px;">
+      Loading Integration Data...
+    </div>
+  </div>
+
+  <div class="notification" id="notification">
+    Copied to clipboard!
+  </div>
+
+  <script src="jquery.min.js"></script>
+  <script data-main="main" src="require.js"></script>
+</body>
+</html>

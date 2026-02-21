@@ -226,6 +226,14 @@ Pick one, walk through the wizard, and download your finished dashboard. Upload 
 
 ---
 
+## SQL Tester Tool
+
+The `SqlTester/` folder contains a standalone SQL testing form you can deploy alongside the wizard. It lets you paste any SQL into an integration source and instantly see the results — useful for testing queries, probing your schema, and diagnosing workflow issues.
+
+See [`SqlTester/README.md`](SqlTester/README.md) for setup instructions and workflow diagnostic probes.
+
+---
+
 ## Something Not Working?
 
 * **403 errors** — Check that the **Connection** on each source is set to your Etrieve Content database (not Etrieve Security or another connection). Then check **Privileges** — your users need **Get** access on every source.
