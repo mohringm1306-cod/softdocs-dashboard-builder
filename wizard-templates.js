@@ -216,13 +216,21 @@ function renderSetupStep() {
         ${State.advancedMode ? `
             <div class="advanced-section active">
                 <h5><i class="bi bi-gear"></i> Technical Settings</h5>
-                <div class="form-group" style="margin-bottom:0;">
+                <div class="form-group">
                     <label style="font-size:0.9rem;">Integration Source Name</label>
                     <input type="text" class="advanced-input" id="sourceName"
                            placeholder="e.g., FinAid_Dashboard"
                            value="${escapeHtml(State.sourceName)}"
                            oninput="State.sourceName = this.value.replace(/[^a-zA-Z0-9_]/g, '_')">
                     <small style="color:#666;">Technical name for Etrieve Central. Letters, numbers, and underscores only. This must match the source name you create in Admin &gt; Sources.</small>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:0.9rem;">Etrieve Central URL <span style="color:#999;font-weight:normal;">(optional)</span></label>
+                    <input type="text" class="advanced-input" id="baseUrl"
+                           placeholder="e.g., https://mysite.etrieve.cloud"
+                           value="${escapeHtml(State.baseUrl)}"
+                           oninput="State.baseUrl = this.value.replace(/\\/+$/, ''); saveDraft();">
+                    <small style="color:#666;">Only needed if your dashboard form is hosted on a different subdomain than Central submissions (e.g., <code>sitename<b>central</b>.etrieve.cloud</code> vs <code>sitename.etrieve.cloud</code>). Leave blank if they match.</small>
                 </div>
             </div>
         ` : ''}
@@ -1718,6 +1726,9 @@ function renderGenerateStep() {
     summary.push(`<strong>Dashboard Name:</strong> ${escapeHtml(State.dashboardTitle || 'Untitled Dashboard')}`);
     if (State.advancedMode) {
         summary.push(`<strong>Source Name:</strong> <code>${escapeHtml(State.sourceName)}</code>`);
+        if (State.baseUrl) {
+            summary.push(`<strong>Base URL:</strong> <code>${escapeHtml(State.baseUrl)}</code>`);
+        }
     }
     if (State.mode === 'content' && State.selectedArea) {
         summary.push(`<strong>Folder:</strong> ${escapeHtml(State.selectedArea.name)}`);

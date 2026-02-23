@@ -219,6 +219,7 @@ var State = {
     // Dashboard info
     dashboardTitle: '',
     sourceName: '',
+    baseUrl: '',
 
     // Style selection
     selectedStyle: null,
@@ -463,6 +464,7 @@ function restoreDraft(draft) {
     State.advancedMode = draft.advancedMode || false;
     State.dashboardTitle = draft.dashboardTitle || '';
     State.sourceName = draft.sourceName || '';
+    State.baseUrl = draft.baseUrl || '';
     State.selectedStyle = draft.selectedStyle || null;
     State.selectedArea = draft.selectedArea;
     State.selectedDocTypes = draft.selectedDocTypes || [];
