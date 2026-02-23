@@ -206,14 +206,25 @@ function renderSetupStep() {
                    oninput="updateDashboardTitle(this.value)">
         </div>
 
+        ${State.mode === 'forms' || State.mode === 'combined' ? `
         <div class="form-group">
             <label><i class="bi bi-globe" style="margin-right:8px;color:var(--primary);"></i>Etrieve Central URL</label>
-            <input type="text" class="form-control" id="baseUrl"
+            <input type="text" class="form-control" id="centralUrl"
                    placeholder="https://yoursite.etrieve.cloud"
-                   value="${escapeHtml(State.baseUrl)}"
-                   oninput="State.baseUrl = this.value.replace(/\\/+$/, ''); saveDraft();">
+                   value="${escapeHtml(State.centralUrl)}"
+                   oninput="State.centralUrl = this.value.replace(/\\/+$/, ''); saveDraft();">
             <small style="color:#666;">Your Etrieve Central domain. View buttons will link here to open form submissions.</small>
-        </div>
+        </div>` : ''}
+
+        ${State.mode === 'content' || State.mode === 'combined' ? `
+        <div class="form-group">
+            <label><i class="bi bi-archive" style="margin-right:8px;color:var(--primary);"></i>Etrieve Content URL</label>
+            <input type="text" class="form-control" id="contentUrl"
+                   placeholder="https://yoursitecontent.etrieve.cloud"
+                   value="${escapeHtml(State.contentUrl)}"
+                   oninput="State.contentUrl = this.value.replace(/\\/+$/, ''); saveDraft();">
+            <small style="color:#666;">Your Etrieve Content domain. View buttons will link here to open documents.</small>
+        </div>` : ''}
 
         <div id="techNameDisplay" style="background:#f0f7f4;border-radius:10px;padding:15px 20px;border:1px solid #c3e6cb;display:${State.dashboardTitle && !State.advancedMode ? 'block' : 'none'};">
             <div style="display:flex;align-items:center;gap:10px;">
@@ -1725,7 +1736,8 @@ function renderGenerateStep() {
     // Summary of what was built
     const summary = [];
     summary.push(`<strong>Dashboard Name:</strong> ${escapeHtml(State.dashboardTitle || 'Untitled Dashboard')}`);
-    summary.push(`<strong>Etrieve URL:</strong> <code>${escapeHtml(State.baseUrl)}</code>`);
+    if (State.centralUrl) summary.push(`<strong>Central URL:</strong> <code>${escapeHtml(State.centralUrl)}</code>`);
+    if (State.contentUrl) summary.push(`<strong>Content URL:</strong> <code>${escapeHtml(State.contentUrl)}</code>`);
     if (State.advancedMode) {
         summary.push(`<strong>Source Name:</strong> <code>${escapeHtml(State.sourceName)}</code>`);
     }

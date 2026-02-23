@@ -219,7 +219,8 @@ var State = {
     // Dashboard info
     dashboardTitle: '',
     sourceName: '',
-    baseUrl: '',
+    centralUrl: '',
+    contentUrl: '',
 
     // Style selection
     selectedStyle: null,
@@ -464,7 +465,8 @@ function restoreDraft(draft) {
     State.advancedMode = draft.advancedMode || false;
     State.dashboardTitle = draft.dashboardTitle || '';
     State.sourceName = draft.sourceName || '';
-    State.baseUrl = draft.baseUrl || '';
+    State.centralUrl = draft.centralUrl || draft.baseUrl || '';
+    State.contentUrl = draft.contentUrl || '';
     State.selectedStyle = draft.selectedStyle || null;
     State.selectedArea = draft.selectedArea;
     State.selectedDocTypes = draft.selectedDocTypes || [];
@@ -826,9 +828,15 @@ function nextStep() {
             showToast('Please enter a dashboard name before continuing.', 'warning');
             return;
         }
-        if (step.id === 'setup' && !State.baseUrl.trim()) {
-            showToast('Please enter your Etrieve Central URL (e.g., https://yoursite.etrieve.cloud).', 'warning');
-            return;
+        if (step.id === 'setup') {
+            if ((State.mode === 'forms' || State.mode === 'combined') && !State.centralUrl.trim()) {
+                showToast('Please enter your Etrieve Central URL (e.g., https://yoursite.etrieve.cloud).', 'warning');
+                return;
+            }
+            if ((State.mode === 'content' || State.mode === 'combined') && !State.contentUrl.trim()) {
+                showToast('Please enter your Etrieve Content URL (e.g., https://yoursitecontent.etrieve.cloud).', 'warning');
+                return;
+            }
         }
         if (step.id === 'style' && !State.selectedStyle) {
             showToast('Please select a dashboard style before continuing.', 'warning');
