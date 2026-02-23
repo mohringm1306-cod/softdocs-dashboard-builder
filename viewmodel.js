@@ -138,6 +138,12 @@ define([
     function loadWorkflowSteps(templateId) {
         if (_cache.workflowSteps[templateId] && _cache.workflowSteps[templateId].length > 0) return $.Deferred().resolve(_cache.workflowSteps[templateId]).promise();
         return integration.all(workflowStepsIntegrationName, { TemplateID: templateId }).then(function(data) {
+            if (!data || data.length === 0) {
+                console.warn('[VM loadWorkflowSteps] Source "' + workflowStepsIntegrationName + '" returned 0 rows for TemplateID=' + templateId + '. This usually means no forms from this template have entered the workflow yet, or the integration source SQL needs the correct TemplateID parameter.');
+                _cache.workflowSteps[templateId] = [];
+                return [];
+            }
+            console.log('[VM loadWorkflowSteps] Loaded ' + data.length + ' workflow steps for TemplateID=' + templateId);
             _cache.workflowSteps[templateId] = data.map(function(row, idx) {
                 return {
                     id: row.id || row.ProcessStepId,
@@ -148,6 +154,10 @@ define([
                 };
             });
             return _cache.workflowSteps[templateId];
+        }).fail(function(err) {
+            console.error('[VM loadWorkflowSteps] FAILED for TemplateID=' + templateId + ':', err);
+            console.error('[VM loadWorkflowSteps] Check that integration source "' + workflowStepsIntegrationName + '" exists and has valid SQL. A 500 error typically means a SQL syntax error or wrong column/table name.');
+            _cache.workflowSteps[templateId] = [];
         });
     }
 
