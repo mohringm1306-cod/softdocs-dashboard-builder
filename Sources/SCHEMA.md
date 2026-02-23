@@ -129,12 +129,27 @@ All columns verified via live probing through COD Central integrations.
 | YCoordinate | int | Visual designer position |
 | **NO StepOrder** | — | No ordering column exists |
 
+### Package (verified 2026-02-23)
+| Column | Type | Notes |
+|--------|------|-------|
+| PackageId | GUID | PK |
+| Name | string | |
+| Status | int | |
+| CreateUserId | GUID | |
+| CreateDate | datetime | |
+| LastUpdateDate | datetime | |
+| **ProcessID** | GUID | FK to Process -- key link for step discovery |
+| LastUpdateActorID | GUID | |
+| ClusterID | int | |
+| ParentID | GUID/null | |
+| ActorFilterID | string | |
+
 ### PackageDocument
 | Column | Type | Notes |
 |--------|------|-------|
 | PackageDocumentID | int | PK |
 | Name | string | |
-| PackageID | GUID | FK → Package/TaskQueue |
+| PackageID | GUID | FK to Package |
 | SourceID | string | FormID as string |
 | SourceName | string | |
 | **SourceTypeCode** | string | Matches TemplateVersion.Code |
@@ -147,15 +162,18 @@ All columns verified via live probing through COD Central integrations.
 
 ```
 Content DB:
-  Catalog ←→ CatalogDocumentType ←→ DocumentType
-  DocumentType ←→ DocumentTypeField ←→ Field → DataType
+  Catalog <-> CatalogDocumentType <-> DocumentType
+  DocumentType <-> DocumentTypeField <-> Field -> DataType
 
 Central Forms:
-  Template → TemplateVersion → Form → InputValue
+  Template -> TemplateVersion -> Form -> InputValue
 
 Central Flow (NO direct Template link):
   TemplateVersion.Code = PackageDocument.SourceTypeCode
-  PackageDocument.PackageID = TaskQueue.PackageId
+  PackageDocument.PackageID = Package.PackageId       (step discovery)
+  Package.ProcessID = Process.ProcessID
+  Process.ProcessID = ProcessStep.ProcessID
+
+  PackageDocument.PackageID = TaskQueue.PackageId      (current step only)
   TaskQueue.ProcessStepID = ProcessStep.ProcessStepId
-  ProcessStep.ProcessID = Process.ProcessID
 ```

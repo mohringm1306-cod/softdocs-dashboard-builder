@@ -126,30 +126,30 @@ var formInputsIntegrationName = 'WizardBuilder_GetFormInputs';
 // ============================================================================
 // INTEGRATION 6: Get Workflow Steps for a Form Template
 // ============================================================================
-// Step: "Select Workflow Steps" — populates the workflow step checkboxes
+// Step: "Select Workflow Steps" -- populates the workflow step checkboxes
 // Parameter: @TemplateID (from selected template's templateId)
 //
-// Chain: Template → TemplateVersion.Code → PackageDocument.SourceTypeCode
-//        → TaskQueue → ProcessStep
-// Process has NO TemplateID column. The link goes through PackageDocument.
+// Chain: Template -> TemplateVersion.Code -> PackageDocument.SourceTypeCode
+//        -> Package.PackageId -> Package.ProcessID -> ProcessStep
+// Uses Package table (NOT TaskQueue) so ALL steps are returned regardless
+// of whether forms are currently parked at that step.
 // ProcessStepId (lowercase 'd'), NO StepOrder column.
 //
-// SQL (subquery approach — finds ProcessID, then returns ALL steps):
+// SQL (finds most-recent ProcessID via Package, returns ALL steps):
 //   SELECT DISTINCT
 //       ps.ProcessStepId AS id,
 //       ps.[Name] AS name,
 //       REPLACE(ps.[Name], '_', ' ') AS displayName
 //   FROM reporting.central_flow_ProcessStep ps
-//   WHERE ps.ProcessID IN (
-//       SELECT DISTINCT ps2.ProcessID
+//   WHERE ps.ProcessID = (
+//       SELECT TOP 1 pkg.ProcessID
 //       FROM reporting.central_forms_TemplateVersion tv
 //       INNER JOIN reporting.central_flow_PackageDocument pd
 //           ON pd.SourceTypeCode = tv.Code
-//       INNER JOIN reporting.central_flow_TaskQueue tq
-//           ON tq.PackageId = pd.PackageID
-//       INNER JOIN reporting.central_flow_ProcessStep ps2
-//           ON tq.ProcessStepID = ps2.ProcessStepId
+//       INNER JOIN reporting.central_flow_Package pkg
+//           ON pd.PackageID = pkg.PackageId
 //       WHERE tv.TemplateID = @TemplateID
+//       ORDER BY pkg.CreateDate DESC
 //   )
 //       AND ps.IsDeleted = 0
 //   ORDER BY ps.[Name]

@@ -8,21 +8,22 @@
 --
 -- Purpose: Populates the workflow step checkboxes in Step 4 (forms mode)
 --
--- SCHEMA NOTES (verified 2026-02-13):
+-- SCHEMA NOTES (verified 2026-02-23):
 --   Process has NO TemplateID column. The link from form template to workflow
 --   goes through: TemplateVersion.Code -> PackageDocument.SourceTypeCode
---   -> PackageDocument.PackageID -> TaskQueue.PackageId -> ProcessStep.
+--   -> PackageDocument.PackageID -> Package.PackageId -> Package.ProcessID
 --
 --   ProcessStepId uses lowercase 'd'. ProcessStep has NO StepOrder column.
 --
--- APPROACH: Discover ALL ProcessIDs linked to this template by collecting
---   every ProcessStep that any TaskQueue entry points to for any package
---   associated with this template. Then return ALL non-deleted steps for
---   those Processes — even steps that have never had a form routed to them.
+-- APPROACH: Find the ProcessID via the Package table (NOT TaskQueue).
+--   A template may have packages linked to multiple Process versions
+--   (e.g. "IT Equipment Review" and "IT Equipment Review v2"), so we
+--   pick the Process with the most recent package activity (TOP 1 by
+--   CreateDate DESC). Then return ALL non-deleted steps for that Process.
 --
--- NOTE: If this returns only one step but you expect more, the workflow
---   at your site may use multiple linked Processes. Check whether ALL
---   forms from this template appear in PackageDocument/TaskQueue.
+--   Previous approach used TaskQueue, which only found steps that had
+--   forms actively parked there. This version finds ALL steps regardless
+--   of current form activity.
 -- ============================================================================
 
 SELECT DISTINCT
@@ -30,18 +31,15 @@ SELECT DISTINCT
     ps.[Name]                       AS name,
     REPLACE(ps.[Name], '_', ' ')    AS displayName
 FROM reporting.central_flow_ProcessStep ps
-WHERE ps.ProcessID IN (
-    -- Find ALL ProcessIDs linked to this template via the full chain:
-    -- TemplateVersion.Code → PackageDocument.SourceTypeCode → TaskQueue → ProcessStep
-    SELECT DISTINCT ps2.ProcessID
+WHERE ps.ProcessID = (
+    SELECT TOP 1 pkg.ProcessID
     FROM reporting.central_forms_TemplateVersion tv
     INNER JOIN reporting.central_flow_PackageDocument pd
         ON pd.SourceTypeCode = tv.Code
-    INNER JOIN reporting.central_flow_TaskQueue tq
-        ON tq.PackageId = pd.PackageID
-    INNER JOIN reporting.central_flow_ProcessStep ps2
-        ON tq.ProcessStepID = ps2.ProcessStepId
+    INNER JOIN reporting.central_flow_Package pkg
+        ON pd.PackageID = pkg.PackageId
     WHERE tv.TemplateID = @TemplateID
+    ORDER BY pkg.CreateDate DESC
 )
     AND ps.IsDeleted = 0
 ORDER BY ps.[Name]
