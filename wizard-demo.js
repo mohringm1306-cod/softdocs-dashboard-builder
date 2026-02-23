@@ -826,6 +826,10 @@ function nextStep() {
             showToast('Please enter a dashboard name before continuing.', 'warning');
             return;
         }
+        if (step.id === 'setup' && !State.baseUrl.trim()) {
+            showToast('Please enter your Etrieve Central URL (e.g., https://yoursite.etrieve.cloud).', 'warning');
+            return;
+        }
         if (step.id === 'style' && !State.selectedStyle) {
             showToast('Please select a dashboard style before continuing.', 'warning');
             return;
