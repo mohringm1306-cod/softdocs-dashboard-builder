@@ -492,6 +492,84 @@ body {
     background: #f8f9fa;
 }
 
+/* Preview toolbar */
+.preview-toolbar {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    align-items: center;
+}
+
+.preview-search {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.6rem;
+    color: #999;
+    background: white;
+}
+
+.preview-search i {
+    font-size: 0.55rem;
+}
+
+.preview-refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 10px;
+    background: var(--primary);
+    color: white;
+    border-radius: 5px;
+    font-size: 0.6rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.preview-export-btn {
+    font-size: 0.55rem;
+    font-weight: 500;
+    color: #000;
+    background: #f4b41a;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* Sortable preview headers */
+.preview-sortable-th {
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.preview-sortable-th:hover {
+    background: #e2e5e9;
+}
+
+/* Collapsible swimlane body */
+.preview-swimlane-header:hover {
+    background: #f0f2f5;
+}
+
+.preview-swimlane-body {
+    overflow-x: auto;
+}
+
+.preview-view-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    background: var(--primary);
+    color: white;
+    border-radius: 4px;
+    font-size: 0.55rem;
+    white-space: nowrap;
+}
+
 .preview-empty {
     padding: 30px 20px;
     text-align: center;

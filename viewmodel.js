@@ -64,7 +64,7 @@ define([
      * Expected SQL: SELECT CatalogID AS id, [Name] AS name FROM [dbo].[Catalog] ORDER BY [Name]
      */
     function loadAreas() {
-        if (_cache.areas && _cache.areas.length > 0) return $.Deferred().resolve(_cache.areas).promise();
+        if (_cache.areas !== null) return $.Deferred().resolve(_cache.areas).promise();
         return integration.all(areasIntegrationName).then(function(data) {
             _cache.areas = data.map(function(row) {
                 return { id: row.id || row.CatalogID, name: row.name || row.Name, description: row.description || row.Description || '' };
@@ -78,7 +78,8 @@ define([
      * Expected SQL: SELECT DocumentTypeID AS id, d.Name AS name, d.Name AS code FROM [dbo].[DocumentType] d JOIN [dbo].[CatalogDocumentType] cd ON d.DocumentTypeID = cd.DocumentTypeID WHERE cd.CatalogID = @CatalogID ORDER BY d.Name
      */
     function loadDocTypes(areaId) {
-        if (_cache.documentTypes[areaId] && _cache.documentTypes[areaId].length > 0) return $.Deferred().resolve(_cache.documentTypes[areaId]).promise();
+        areaId = String(areaId); // normalize cache key
+        if (_cache.documentTypes[areaId] !== undefined) return $.Deferred().resolve(_cache.documentTypes[areaId]).promise();
         return integration.all(docTypesIntegrationName, { CatalogID: areaId }).then(function(data) {
             _cache.documentTypes[areaId] = data.map(function(row) {
                 return { id: row.id || row.DocumentTypeID, name: row.name || row.Name, code: row.code || row.Code || '' };
@@ -92,7 +93,8 @@ define([
      * Expected SQL: SELECT DISTINCT f.FieldID AS id, f.Name AS name, CASE WHEN dt.Name='Date' THEN 'date' ELSE 'text' END AS type, f.Name AS alias FROM Field f JOIN DataType dt ON f.DataTypeID=dt.DataTypeID JOIN DocumentTypeField dtf ON f.FieldID=dtf.FieldID JOIN CatalogDocumentType cdt ON dtf.DocumentTypeID=cdt.DocumentTypeID WHERE cdt.CatalogID=@CatalogID
      */
     function loadKeyFields(areaId) {
-        if (_cache.keyFields[areaId] && _cache.keyFields[areaId].length > 0) return $.Deferred().resolve(_cache.keyFields[areaId]).promise();
+        areaId = String(areaId); // normalize cache key
+        if (_cache.keyFields[areaId] !== undefined) return $.Deferred().resolve(_cache.keyFields[areaId]).promise();
         return integration.all(keyFieldsIntegrationName, { CatalogID: areaId }).then(function(data) {
             _cache.keyFields[areaId] = data.map(function(row) {
                 return { id: row.id || row.FieldID, name: row.name || row.Name, type: row.type || 'text', alias: row.alias || row.Name || '' };
@@ -106,7 +108,7 @@ define([
      * Expected SQL: SELECT tv.TemplateVersionID AS id, t.Name AS name, t.TemplateID AS templateId FROM reporting.central_forms_Template t JOIN reporting.central_forms_TemplateVersion tv ON t.TemplateID = tv.TemplateID WHERE tv.IsPublished = 1 ORDER BY t.Name
      */
     function loadFormTemplates() {
-        if (_cache.formTemplates && _cache.formTemplates.length > 0) return $.Deferred().resolve(_cache.formTemplates).promise();
+        if (_cache.formTemplates !== null) return $.Deferred().resolve(_cache.formTemplates).promise();
         return integration.all(formTemplatesIntegrationName).then(function(data) {
             _cache.formTemplates = data.map(function(row) {
                 return { id: row.id || row.TemplateVersionID, name: row.name || row.Name, templateId: row.templateId || row.TemplateID };
@@ -120,7 +122,8 @@ define([
      * Expected SQL: SELECT DISTINCT iv.InputID AS id, iv.InputID AS label FROM reporting.central_forms_InputValue iv JOIN reporting.central_forms_Form f ON iv.FormID = f.FormID JOIN reporting.central_forms_TemplateVersion tv ON f.TemplateVersionID = tv.TemplateVersionID WHERE tv.TemplateVersionID = @TemplateVersionID ORDER BY iv.InputID
      */
     function loadFormInputs(templateVersionId) {
-        if (_cache.formInputIds[templateVersionId] && _cache.formInputIds[templateVersionId].length > 0) return $.Deferred().resolve(_cache.formInputIds[templateVersionId]).promise();
+        templateVersionId = String(templateVersionId); // normalize cache key
+        if (_cache.formInputIds[templateVersionId] !== undefined) return $.Deferred().resolve(_cache.formInputIds[templateVersionId]).promise();
         return integration.all(formInputsIntegrationName, { TemplateVersionID: templateVersionId }).then(function(data) {
             _cache.formInputIds[templateVersionId] = data.map(function(row) {
                 return { id: row.id || row.InputID, label: row.label || row.InputID };
@@ -136,12 +139,16 @@ define([
      * NOTE: ProcessStepId (lowercase 'd'), no StepOrder column exists
      */
     function loadWorkflowSteps(templateId) {
-        if (_cache.workflowSteps[templateId] && _cache.workflowSteps[templateId].length > 0) return $.Deferred().resolve(_cache.workflowSteps[templateId]).promise();
-        return integration.all(workflowStepsIntegrationName, { TemplateID: templateId }).then(function(data) {
+        templateId = String(templateId); // normalize cache key
+        if (_cache.workflowSteps[templateId] !== undefined) return $.Deferred().resolve(_cache.workflowSteps[templateId]).promise();
+        // Wrap in explicit Deferred so this ALWAYS resolves (jQuery < 3.0 safe)
+        var d = $.Deferred();
+        integration.all(workflowStepsIntegrationName, { TemplateID: templateId }).then(function(data) {
             if (!data || data.length === 0) {
                 console.warn('[VM loadWorkflowSteps] Source "' + workflowStepsIntegrationName + '" returned 0 rows for TemplateID=' + templateId + '. This usually means no forms from this template have entered the workflow yet, or the integration source SQL needs the correct TemplateID parameter.');
                 _cache.workflowSteps[templateId] = [];
-                return [];
+                d.resolve([]);
+                return;
             }
             console.log('[VM loadWorkflowSteps] Loaded ' + data.length + ' workflow steps for TemplateID=' + templateId);
             _cache.workflowSteps[templateId] = data.map(function(row, idx) {
@@ -153,12 +160,14 @@ define([
                     activeCount: 0
                 };
             });
-            return _cache.workflowSteps[templateId];
-        }).fail(function(err) {
+            d.resolve(_cache.workflowSteps[templateId]);
+        }, function(err) {
             console.error('[VM loadWorkflowSteps] FAILED for TemplateID=' + templateId + ':', err);
             console.error('[VM loadWorkflowSteps] Check that integration source "' + workflowStepsIntegrationName + '" exists and has valid SQL. A 500 error typically means a SQL syntax error or wrong column/table name.');
             _cache.workflowSteps[templateId] = [];
+            d.resolve([]);
         });
+        return d.promise();
     }
 
     // ========================================================================
@@ -194,7 +203,7 @@ define([
 
         // Store current user info for the wizard
         window._etrieveUser = {
-            username: user.userName || '',
+            username: user.UserName || '',
             displayName: (user.FirstName || '') + ' ' + (user.LastName || ''),
             firstName: user.FirstName || '',
             lastName: user.LastName || ''
@@ -275,6 +284,7 @@ define([
                 var loading = $('.loading');
                 if (loading.length) loading.show();
 
+                // Single-call .then(ok, err) — jQuery < 3.0 safe (avoids .fail() on transformed promise)
                 $.when(loadDocTypes(areaId), loadKeyFields(areaId)).then(function() {
                     // Update SimulatedData with newly loaded data
                     window.SimulatedData.documentTypes[areaId] = _cache.documentTypes[areaId];
@@ -283,8 +293,9 @@ define([
                     // Call original function
                     _origSelectArea(areaId, keepSelections);
                     if (loading.length) loading.hide();
-                }).fail(function() {
+                }, function() {
                     safeToast('Unable to load document types for this folder. Try a different folder.', 'error');
+                    _origSelectArea(areaId, keepSelections);
                     if (loading.length) loading.hide();
                 });
             };
@@ -309,6 +320,7 @@ define([
                 var loading = $('.loading');
                 if (loading.length) loading.show();
 
+                // Single-call .then(ok, err) — jQuery < 3.0 safe (avoids .fail() on transformed promise)
                 $.when(loadFormInputs(tvId), loadWorkflowSteps(tId)).then(function() {
                     console.log('[VM selectTemplate] Loaded formInputIds for', tvId, ':', (_cache.formInputIds[tvId] || []).length, 'inputs');
                     console.log('[VM selectTemplate] keepSelections:', keepSelections, 'current selectedInputIds:', window.State ? window.State.selectedInputIds.length : 'N/A');
@@ -317,9 +329,10 @@ define([
 
                     _origSelectTemplate(templateId, keepSelections);
                     if (loading.length) loading.hide();
-                }).fail(function(err) {
+                }, function(err) {
                     console.error('[VM selectTemplate] FAILED for tvId:', tvId, 'tId:', tId, err);
                     safeToast('Unable to load form fields. Try selecting a different form.', 'error');
+                    _origSelectTemplate(templateId, keepSelections);
                     if (loading.length) loading.hide();
                 });
             };

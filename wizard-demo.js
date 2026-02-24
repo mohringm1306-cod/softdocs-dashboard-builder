@@ -536,6 +536,7 @@ function showDraftIndicator(status) {
 
 function formatDraftTime(isoString) {
     const date = new Date(isoString);
+    if (isNaN(date.getTime())) return 'unknown time';
     const now = new Date();
     const diff = now - date;
 
@@ -554,6 +555,7 @@ function checkForDraft() {
 }
 
 function showDraftModal(draft) {
+    if (document.getElementById('draftModal')) return; // prevent duplicate modals
     const timeAgo = formatDraftTime(draft.savedAt);
     const title = draft.dashboardTitle || 'Untitled';
     const modeLabel = draft.mode === 'content' ? 'Document' : draft.mode === 'forms' ? 'Form' : 'Combined';
@@ -709,6 +711,8 @@ function resetWizard() {
     State.advancedMode = false;
     State.dashboardTitle = '';
     State.sourceName = '';
+    State.centralUrl = '';
+    State.contentUrl = '';
     State.selectedStyle = null;
     State.selectedArea = null;
     State.selectedDocTypes = [];
@@ -726,6 +730,9 @@ function resetWizard() {
         committeeMembers: [{name:'Member A',color:'#e8f5e9'},{name:'Member B',color:'#e3f2fd'},{name:'Member C',color:'#fff3e0'}],
         cardTitleField: null, cardStatusField: null, cardLeadField: null, cardBudgetField: null,
         reassignTargets: ['Get Quotes','Vendor Review','Budget Approval','Supervisor Approval','Procurement']
+    };
+    State.securityConfig = {
+        enabled: false, powerGroupId: '', powerGroupName: '', swimlaneGroups: []
     };
 
     // Clear saved draft
@@ -837,6 +844,14 @@ function nextStep() {
                 showToast('Please enter your Etrieve Content URL (e.g., https://yoursitecontent.etrieve.cloud).', 'warning');
                 return;
             }
+            if (State.centralUrl && !State.centralUrl.match(/^https?:\/\//i)) {
+                showToast('Central URL must start with https:// (e.g., https://yoursite.etrieve.cloud).', 'warning');
+                return;
+            }
+            if (State.contentUrl && !State.contentUrl.match(/^https?:\/\//i)) {
+                showToast('Content URL must start with https:// (e.g., https://yoursitecontent.etrieve.cloud).', 'warning');
+                return;
+            }
         }
         if (step.id === 'style' && !State.selectedStyle) {
             showToast('Please select a dashboard style before continuing.', 'warning');
@@ -866,6 +881,10 @@ function nextStep() {
             showToast('Please select at least one document field.', 'warning');
             return;
         }
+        if (step.id === 'swimlanes' && State.swimlanes.length === 0) {
+            showToast('Please add at least one group before continuing.', 'warning');
+            return;
+        }
     }
 
     if (State.currentStep < steps.length - 1) {
@@ -881,6 +900,8 @@ function nextStep() {
 }
 
 function prevStep() {
+    var steps = getSteps();
+    if (State.currentStep >= steps.length) State.currentStep = steps.length - 1;
     if (State.currentStep > 0) {
         State.currentStep--;
         renderProgress();
@@ -902,6 +923,13 @@ function escapeSQL(str) {
         return String(str).replace(/'/g, "''");
     }
     return String(str).replace(/'/g, "''");
+}
+
+// Escape strings for T-SQL bracket-delimited identifiers ([...])
+// Inside brackets, ] must be doubled to ]] to prevent breakout
+function escapeBracket(str) {
+    if (str == null) return '';
+    return String(str).replace(/\]/g, ']]');
 }
 
 // Safe integer conversion for SQL output — never emits NaN, handles id=0 correctly
@@ -1026,17 +1054,19 @@ function generateContentSQL() {
     const docTypeList = selectedDocs.map(d => `'${escapeSQL(d.name)}'`).join(',\n      ');
 
     let fieldSelects = selectedFields.map(f => {
+        const a = escapeBracket(f.alias);
         if (f.type === 'date') {
-            return `   [${f.alias}].DATE AS [${f.alias}]`;
+            return `   [${a}].DATE AS [${a}]`;
         }
-        return `   [${f.alias}].text AS [${f.alias}]`;
+        return `   [${a}].text AS [${a}]`;
     }).join(',\n');
 
     let fieldJoins = selectedFields.map(f => {
+        const a = escapeBracket(f.alias);
         const table = f.type === 'date' ? 'ivDocumentDateFieldValue' : 'ivDocumentTextFieldValue';
-        return `LEFT JOIN dbo.${table} AS [${f.alias}]
-   ON Document.DocumentID = [${f.alias}].DocumentID
-   AND [${f.alias}].FieldID = ${safeInt(f.id)}  -- ${escapeSQL(f.name)}`;
+        return `LEFT JOIN dbo.${table} AS [${a}]
+   ON Document.DocumentID = [${a}].DocumentID
+   AND [${a}].FieldID = ${safeInt(f.id)}  -- ${escapeSQL(f.name)}`;
     }).join('\n');
 
     // Generate swimlane configuration comments
@@ -1076,7 +1106,7 @@ function generateSwimlaneConfig() {
         if (sl.filters && sl.filters.length > 0) {
             sl.filters.forEach(f => {
                 var vals = (f.values || []).map(v => `'${escapeSQL(v)}'`).join(', ');
-                config += `--   Filter: ${f.fieldName} IN (${vals})\n`;
+                config += `--   Filter: ${escapeSQL(f.fieldName).replace(/[\r\n]/g, '')} IN (${vals})\n`;
             });
         } else {
             config += `--   Filter: (none - shows all remaining items)\n`;
@@ -1093,8 +1123,7 @@ function generateFormsSQL() {
     const selectedInputs = inputs.filter(i => State.selectedInputIds.includes(i.id));
 
     let fieldPivots = selectedInputs.map(inp => {
-        const alias = inp.label.replace(/[^A-Za-z0-9]/g, '');
-        return `   MAX(CASE WHEN iv.InputID = '${escapeSQL(inp.id)}' THEN iv.Value END) AS [${escapeSQL(inp.label)}]`;
+        return `   MAX(CASE WHEN iv.InputID = '${escapeSQL(inp.id)}' THEN iv.Value END) AS [${escapeBracket(inp.label)}]`;
     }).join(',\n');
 
     const hasWorkflow = State.selectedWorkflowSteps.length > 0;
@@ -1173,10 +1202,11 @@ function generateCombinedSQL() {
     for (let idx = 0; idx < 3; idx++) {
         const f = selectedDocFields[idx];
         if (f) {
+            const a = escapeBracket(f.alias);
             if (f.type === 'date') {
-                docFieldSelects.push(`CAST([${f.alias}].DATE AS VARCHAR(50)) AS Field${idx + 1}`);
+                docFieldSelects.push(`CAST([${a}].DATE AS VARCHAR(50)) AS Field${idx + 1}`);
             } else {
-                docFieldSelects.push(`[${f.alias}].text AS Field${idx + 1}`);
+                docFieldSelects.push(`[${a}].text AS Field${idx + 1}`);
             }
         } else {
             docFieldSelects.push(`'' AS Field${idx + 1}`);
@@ -1184,9 +1214,10 @@ function generateCombinedSQL() {
     }
 
     let docFieldJoins = selectedDocFields.slice(0, 3).map(f => {
+        const a = escapeBracket(f.alias);
         const table = f.type === 'date' ? 'ivDocumentDateFieldValue' : 'ivDocumentTextFieldValue';
-        return `LEFT JOIN dbo.${table} AS [${f.alias}]
-   ON Document.DocumentID = [${f.alias}].DocumentID AND [${f.alias}].FieldID = ${safeInt(f.id)}`;
+        return `LEFT JOIN dbo.${table} AS [${a}]
+   ON Document.DocumentID = [${a}].DocumentID AND [${a}].FieldID = ${safeInt(f.id)}`;
     }).join('\n');
 
     // Build form portion — also exactly 3 Field columns
@@ -1261,7 +1292,7 @@ WHERE f.TemplateVersionID = ${template ? safeInt(template.id) : '/* SELECT A TEM
    AND f.IsDraft = 0
 GROUP BY f.FormID, pd.PackageID${hasWorkflow ? ', ps.Name' : ''}
 
-ORDER BY RecordType, RecordID DESC`;
+ORDER BY RecordType, TRY_CAST(RecordID AS INT) DESC`;
 
     return sql;
 }
@@ -1275,7 +1306,7 @@ function highlightSQL(sql) {
     let highlighted = sql;
 
     // Escape HTML
-    highlighted = highlighted.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    highlighted = highlighted.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     // Comments
     highlighted = highlighted.replace(/(--[^\n]*)/g, '<span class="comment">$1</span>');

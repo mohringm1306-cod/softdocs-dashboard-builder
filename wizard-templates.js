@@ -100,6 +100,13 @@ function renderProgress() {
 
 function renderStep() {
     const steps = getSteps();
+    // Clamp currentStep to valid range (protects against stale drafts with different step counts)
+    if (State.currentStep < 0 || isNaN(State.currentStep)) {
+        State.currentStep = 0;
+    }
+    if (State.currentStep >= steps.length) {
+        State.currentStep = steps.length - 1;
+    }
     const step = steps[State.currentStep];
 
     // Update header - simplified for non-technical users
@@ -241,7 +248,7 @@ function renderSetupStep() {
                     <input type="text" class="advanced-input" id="sourceName"
                            placeholder="e.g., FinAid_Dashboard"
                            value="${escapeHtml(State.sourceName)}"
-                           oninput="State.sourceName = this.value.replace(/[^a-zA-Z0-9_]/g, '_')">
+                           oninput="State.sourceName = this.value.replace(/[^a-zA-Z0-9_]/g, '_'); saveDraft()">
                     <small style="color:#666;">Technical name for Etrieve Central. Letters, numbers, and underscores only. This must match the source name you create in Admin &gt; Sources.</small>
                 </div>
             </div>
@@ -449,19 +456,26 @@ function renderAlphaConfigStep() {
 }
 
 function selectAlphaNameField(fieldId) {
-    State.styleConfig.nameField = Number(fieldId);
+    State.styleConfig.nameField = isNaN(fieldId) ? fieldId : Number(fieldId);
     renderStep();
     saveDraft();
 }
 
 function updateAlphaRange(idx, pos, val) {
-    State.styleConfig.alphaRanges[idx][pos] = val;
+    var letter = String(val).toUpperCase().replace(/[^A-Z]/g, '').charAt(0) || 'A';
+    State.styleConfig.alphaRanges[idx][pos] = letter;
+    if (letter !== val) renderStep();
     saveDraft();
 }
 
 function addAlphaRange() {
     const last = State.styleConfig.alphaRanges[State.styleConfig.alphaRanges.length - 1];
-    const nextChar = String.fromCharCode(last[1].charCodeAt(0) + 1);
+    var nextCode = last[1].charCodeAt(0) + 1;
+    if (nextCode > 90) { // past 'Z'
+        showToast('All letters A-Z are already covered.', 'warning');
+        return;
+    }
+    const nextChar = String.fromCharCode(nextCode);
     State.styleConfig.alphaRanges.push([nextChar, 'Z']);
     renderStep();
     saveDraft();
@@ -590,7 +604,7 @@ function renderSurveyConfigStep() {
             <div class="field-selection-grid">
                 ${fields.map(f => `
                     <div class="field-item ${State.styleConfig.ratingField === f.id ? 'selected' : ''}"
-                         onclick="State.styleConfig.ratingField = Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
+                         onclick="State.styleConfig.ratingField = isNaN('${escapeJSAttr(f.id)}') ? '${escapeJSAttr(f.id)}' : Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
                         <input type="radio" name="ratingField" ${State.styleConfig.ratingField === f.id ? 'checked' : ''}>
                         <span>${escapeHtml(f.name)}</span>
                     </div>
@@ -603,7 +617,7 @@ function renderSurveyConfigStep() {
             <div class="field-selection-grid">
                 ${fields.map(f => `
                     <div class="field-item ${State.styleConfig.commentField === f.id ? 'selected' : ''}"
-                         onclick="State.styleConfig.commentField = Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
+                         onclick="State.styleConfig.commentField = isNaN('${escapeJSAttr(f.id)}') ? '${escapeJSAttr(f.id)}' : Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
                         <input type="radio" name="commentField" ${State.styleConfig.commentField === f.id ? 'checked' : ''}>
                         <span>${escapeHtml(f.name)}</span>
                     </div>
@@ -616,7 +630,7 @@ function renderSurveyConfigStep() {
             <div class="field-selection-grid">
                 ${fields.map(f => `
                     <div class="field-item ${State.styleConfig.departmentField === f.id ? 'selected' : ''}"
-                         onclick="State.styleConfig.departmentField = Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
+                         onclick="State.styleConfig.departmentField = isNaN('${escapeJSAttr(f.id)}') ? '${escapeJSAttr(f.id)}' : Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
                         <input type="radio" name="deptField" ${State.styleConfig.departmentField === f.id ? 'checked' : ''}>
                         <span>${escapeHtml(f.name)}</span>
                     </div>
@@ -714,7 +728,7 @@ function renderCardsConfigStep() {
                         </div>
                         ${fields.map(f => `
                             <div class="field-item ${State.styleConfig[configKey] === f.id ? 'selected' : ''}"
-                                 onclick="State.styleConfig['${escapeJSAttr(configKey)}'] = Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
+                                 onclick="State.styleConfig['${escapeJSAttr(configKey)}'] = isNaN('${escapeJSAttr(f.id)}') ? '${escapeJSAttr(f.id)}' : Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
                                 <input type="radio" name="${escapeHtml(configKey)}" ${State.styleConfig[configKey] === f.id ? 'checked' : ''}>
                                 <span>${escapeHtml(f.name)}</span>
                             </div>
@@ -1096,6 +1110,8 @@ function renderWorkflowStep() {
 }
 
 function toggleWorkflowStep(id) {
+    // Coerce to number if numeric (Etrieve may return numeric IDs as strings via onclick)
+    id = isNaN(id) ? id : Number(id);
     const idx = State.selectedWorkflowSteps.indexOf(id);
     if (idx === -1) {
         State.selectedWorkflowSteps.push(id);
@@ -1116,6 +1132,7 @@ function renderSwimlanesStep() {
             { id: 1, name: 'In Progress', filters: [] },
             { id: 2, name: 'Completed', filters: [] }
         ];
+        saveDraft();
     }
 
     // Ensure all swimlanes have filters array
@@ -1381,8 +1398,8 @@ function getFilterableFields() {
     return [];
 }
 
-let currentFilterSwimlaneIdx = null;
-let selectedFilterValues = [];
+var currentFilterSwimlaneIdx = null;
+var selectedFilterValues = [];
 
 function openFilterModal(swimlaneIdx) {
     currentFilterSwimlaneIdx = swimlaneIdx;
@@ -1419,6 +1436,14 @@ document.addEventListener('keydown', function(e) {
         }
         var downloadModal = document.getElementById('downloadModal');
         if (downloadModal) {
+            var copied = Object.keys(window._copiedFiles || {}).length;
+            var fileKeys = window._downloadFiles ? Object.keys(window._downloadFiles) : [];
+            if (copied < fileKeys.length) {
+                var remaining = fileKeys.length - copied;
+                if (!confirm('You have ' + remaining + ' file' + (remaining > 1 ? 's' : '') + ' remaining that you haven\'t copied or saved yet.\n\nClose anyway?')) {
+                    return;
+                }
+            }
             closeDownloadModal();
             return;
         }
@@ -1514,14 +1539,39 @@ function removeFilter(swimlaneIdx, filterIdx) {
 }
 
 function addSwimlane() {
-    State.swimlanes.push({ id: Date.now(), name: 'New Group', filters: [] });
+    var baseName = 'New Group';
+    var name = baseName;
+    var num = 2;
+    var existingNames = State.swimlanes.map(function(s) { return s.name; });
+    while (existingNames.indexOf(name) !== -1) {
+        name = baseName + ' ' + num++;
+    }
+    State.swimlanes.push({ id: Date.now(), name: name, filters: [] });
     renderStep();
     saveDraft();
 }
 
 function updateSwimlaneName(idx, value) {
     if (!State.swimlanes[idx]) return;
+    var oldName = State.swimlanes[idx].name;
     State.swimlanes[idx].name = value;
+    // Only cascade if no other swimlane shares the old name (prevents cross-contamination)
+    var otherHasOldName = State.swimlanes.some(function(sl, i) {
+        return i !== idx && sl.name === oldName;
+    });
+    if (!otherHasOldName) {
+        // Cascade rename to securityConfig swimlaneGroups
+        if (State.securityConfig && State.securityConfig.swimlaneGroups) {
+            State.securityConfig.swimlaneGroups.forEach(function(g) {
+                if (g.swimlaneName === oldName) g.swimlaneName = value;
+            });
+        }
+        // Cascade rename to styleConfig workflowActions
+        if (State.styleConfig && State.styleConfig.workflowActions && State.styleConfig.workflowActions[oldName]) {
+            State.styleConfig.workflowActions[value] = State.styleConfig.workflowActions[oldName];
+            delete State.styleConfig.workflowActions[oldName];
+        }
+    }
     saveDraft();
 }
 
@@ -1531,13 +1581,24 @@ function deleteSwimlane(idx) {
         showToast('You need at least one group.', 'warning');
         return;
     }
+    var deletedName = State.swimlanes[idx].name;
     State.swimlanes.splice(idx, 1);
+    // Clean up securityConfig swimlaneGroups
+    if (State.securityConfig && State.securityConfig.swimlaneGroups) {
+        State.securityConfig.swimlaneGroups = State.securityConfig.swimlaneGroups.filter(function(g) {
+            return g.swimlaneName !== deletedName;
+        });
+    }
+    // Clean up styleConfig workflowActions
+    if (State.styleConfig && State.styleConfig.workflowActions) {
+        delete State.styleConfig.workflowActions[deletedName];
+    }
     renderStep();
     saveDraft();
 }
 
 // Drag and Drop for Swimlanes
-let draggedIndex = null;
+var draggedIndex = null;
 
 function dragStart(e) {
     // Find the parent swimlane-config element which has the data-index
@@ -1651,14 +1712,14 @@ function renderSecurityConfigStep() {
                         <label style="font-size:0.8rem;color:#888;font-weight:600;text-transform:uppercase;">Group ID (GUID)</label>
                         <input type="text" value="${escapeHtml(sc.powerGroupId || '')}"
                             placeholder="e.g. f8eab38d-e771-47dd-a112-13a09cd63e44"
-                            oninput="State.securityConfig.powerGroupId = this.value"
+                            oninput="State.securityConfig.powerGroupId = this.value; saveDraft()"
                             style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-family:Consolas,monospace;font-size:0.85rem;">
                     </div>
                     <div>
                         <label style="font-size:0.8rem;color:#888;font-weight:600;text-transform:uppercase;">Display Name</label>
                         <input type="text" value="${escapeHtml(sc.powerGroupName || '')}"
                             placeholder="e.g. FA Supervisors"
-                            oninput="State.securityConfig.powerGroupName = this.value"
+                            oninput="State.securityConfig.powerGroupName = this.value; saveDraft()"
                             style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;">
                     </div>
                 </div>
@@ -1702,6 +1763,7 @@ function toggleSecurityEnabled(checked) {
     State.securityConfig.enabled = checked;
     var details = document.getElementById('securityDetails');
     if (details) details.style.display = checked ? 'block' : 'none';
+    saveDraft();
 }
 
 function updateSwimlaneGroupId(idx, value) {
@@ -1715,6 +1777,7 @@ function updateSwimlaneGroupId(idx, value) {
         groups.push({ swimlaneName: sl.name, groupId: value, groupName: '' });
     }
     State.securityConfig.swimlaneGroups = groups;
+    saveDraft();
 }
 
 function updateSwimlaneGroupName(idx, value) {
@@ -1728,6 +1791,7 @@ function updateSwimlaneGroupName(idx, value) {
         groups.push({ swimlaneName: sl.name, groupId: '', groupName: value });
     }
     State.securityConfig.swimlaneGroups = groups;
+    saveDraft();
 }
 
 function renderGenerateStep() {
@@ -1813,7 +1877,7 @@ function renderGenerateStep() {
                     ` : ''}
                 </div>
                 <textarea class="sql-editor" id="sqlEditor"
-                          oninput="State.customSQL = this.value"
+                          oninput="State.customSQL = this.value; saveDraft()"
                           spellcheck="false">${escapeHtml(sql)}</textarea>
                 <small style="color:#666;display:block;margin-top:10px;">
                     <i class="bi bi-info-circle"></i> Edit the SQL directly. Changes will be included in your download.
@@ -2193,94 +2257,7 @@ function closeDownloadModal() {
 // (which overrides these via function declaration hoisting when loaded second)
 
 
-// ============================================================================
-// LIVE PREVIEW
-// ============================================================================
-
-function renderPreview() {
-    const container = document.getElementById('previewContent');
-    if (!container) return;
-
-    const title = State.dashboardTitle || 'My Dashboard';
-    const swimlanes = State.swimlanes.length > 0 ? State.swimlanes : [{ name: 'In Progress' }, { name: 'Completed' }];
-
-    // Get selected fields/columns for table headers
-    let columns = [];
-    if (State.mode === 'content') {
-        const fields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
-        columns = fields.filter(f => State.selectedFields.includes(f.id)).map(f => f.name);
-        if (columns.length === 0) columns = ['Name', 'Date', 'Status'];
-    } else if (State.mode === 'forms') {
-        const inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
-        columns = inputs.filter(i => State.selectedInputIds.includes(i.id)).map(i => i.label);
-        if (columns.length === 0) columns = ['Requester', 'Date', 'Status'];
-    } else if (State.mode === 'combined') {
-        // Combined mode: show a mix of document and form fields
-        const docFields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
-        const formInputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
-        const docCols = docFields.filter(f => State.selectedFields.includes(f.id)).map(f => f.name);
-        const formCols = formInputs.filter(i => State.selectedInputIds.includes(i.id)).map(i => i.label);
-        // Merge columns, prioritizing doc fields then form fields
-        columns = docCols.concat(formCols.filter(c => !docCols.includes(c)));
-        if (columns.length === 0) columns = ['Name', 'Date', 'Type', 'Status'];
-    }
-
-    // Limit columns for preview
-    columns = columns.slice(0, 4);
-    if (columns.length > 3) {
-        columns = columns.slice(0, 3);
-        columns.push('...');
-    }
-
-    // Generate fake preview data
-    const fakeData = generateFakePreviewData(columns);
-
-    const swimlanesHtml = swimlanes.map((sl, idx) => {
-        const rowCount = idx === 0 ? 3 : 2;
-        const rows = fakeData.slice(0, rowCount).map(row => `
-            <tr>
-                ${columns.map(col => `<td>${escapeHtml(row[col] || '--')}</td>`).join('')}
-            </tr>
-        `).join('');
-
-        // Build filter summary for preview
-        const filterSummary = sl.filters && sl.filters.length > 0
-            ? sl.filters.map(f => `${escapeHtml(f.fieldName)}: ${f.values.slice(0,2).map(v => escapeHtml(v)).join(', ')}${f.values.length > 2 ? '...' : ''}`).join(' | ')
-            : '';
-
-        return `
-            <div class="preview-swimlane">
-                <div class="preview-swimlane-header">
-                    <i class="bi bi-chevron-down" style="font-size:0.7rem;"></i>
-                    ${escapeHtml(sl.name)}
-                    <span class="count">${rowCount}</span>
-                </div>
-                ${filterSummary ? `<div class="preview-filter-hint"><i class="bi bi-funnel"></i> ${filterSummary}</div>` : ''}
-                <table class="preview-table">
-                    <thead>
-                        <tr>
-                            ${columns.map(col => `<th>${escapeHtml(col)}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-            </div>
-        `;
-    }).join('');
-
-    container.innerHTML = `
-        <div class="preview-label"><i class="bi bi-eye"></i> Preview</div>
-        <div class="preview-dashboard">
-            <div class="preview-dashboard-header">
-                <h4>${escapeHtml(title)}</h4>
-                <small>${State.mode === 'content' ? 'Document Dashboard' : State.mode === 'forms' ? 'Forms Dashboard' : 'Combined Dashboard'}</small>
-            </div>
-            ${swimlanesHtml}
-        </div>
-    `;
-}
+// renderPreview() is defined in wizard-generators.js (loaded after this file)
 
 function generateFakePreviewData(columns) {
     const fakeNames = ['John Smith', 'Maria Garcia', 'James Wilson', 'Sarah Johnson', 'Michael Brown'];
