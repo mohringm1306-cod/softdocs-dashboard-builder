@@ -1377,43 +1377,58 @@ function toggleFilterGuide() {
 function getFilterableFields() {
     if (State.mode === 'content') {
         const fields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
-        return fields.filter(f => f.values && f.values.length > 0 && State.selectedFields.includes(f.id))
-            .map(f => ({ id: f.id, name: f.name, values: f.values, sqlAlias: f.alias || f.name }));
+        return fields.filter(f => State.selectedFields.includes(f.id))
+            .map(f => ({ id: f.id, name: f.name, values: f.values || [], sqlAlias: f.alias || f.name }));
     } else if (State.mode === 'forms') {
-        // For forms, use workflow steps as filterable
+        var result = [];
+        // Add workflow steps as filterable
         const steps = getWorkflowSteps();
         var hasWorkflowField = State.selectedWorkflowSteps.length > 0 || State.selectedInputIds.includes('__currentStepName__');
         if (hasWorkflowField && steps.length > 0) {
-            // If specific steps are selected, filter to those; otherwise offer all steps
             var stepValues = State.selectedWorkflowSteps.length > 0
                 ? steps.filter(s => State.selectedWorkflowSteps.includes(s.id)).map(s => s.displayName)
                 : steps.map(s => s.displayName);
-            return [{
+            result.push({
                 id: 'workflow_step',
                 name: 'Current Workflow Step',
                 sqlAlias: 'CurrentStepName',
                 values: stepValues
-            }];
+            });
         }
-        return [];
+        // Add form input fields as filterable (user can type values manually)
+        const inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
+        inputs.filter(i => State.selectedInputIds.includes(i.id)).forEach(i => {
+            result.push({ id: i.id, name: i.label, values: [], sqlAlias: i.label });
+        });
+        return result;
     } else if (State.mode === 'combined') {
-        // Combined mode: merge document fields and workflow steps
+        // Combined mode: merge document fields, form fields, and workflow steps
         const filterableFields = [];
 
-        // Add document fields with predefined values
+        // Add all selected document fields (values may be empty for live Etrieve data)
         const docFields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
-        const docFilterable = docFields.filter(f => f.values && f.values.length > 0 && State.selectedFields.includes(f.id))
-            .map(f => ({ id: f.id, name: f.name, values: f.values, sqlAlias: f.alias || f.name }));
+        const docFilterable = docFields.filter(f => State.selectedFields.includes(f.id))
+            .map(f => ({ id: f.id, name: f.name, values: f.values || [], sqlAlias: f.alias || f.name }));
         filterableFields.push.apply(filterableFields, docFilterable);
+
+        // Add form input fields
+        const formInputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
+        formInputs.filter(i => State.selectedInputIds.includes(i.id)).forEach(i => {
+            filterableFields.push({ id: i.id, name: i.label, values: [], sqlAlias: i.label });
+        });
 
         // Add workflow steps if selected
         const steps = getWorkflowSteps();
-        if (State.selectedWorkflowSteps.length > 0) {
+        var hasWorkflowCombined = State.selectedWorkflowSteps.length > 0 || State.selectedInputIds.includes('__currentStepName__');
+        if (hasWorkflowCombined && steps.length > 0) {
+            var stepVals = State.selectedWorkflowSteps.length > 0
+                ? steps.filter(s => State.selectedWorkflowSteps.includes(s.id)).map(s => s.displayName)
+                : steps.map(s => s.displayName);
             filterableFields.push({
                 id: 'workflow_step',
                 name: 'Current Workflow Step',
                 sqlAlias: 'CurrentStepName',
-                values: steps.filter(s => State.selectedWorkflowSteps.includes(s.id)).map(s => s.displayName)
+                values: stepVals
             });
         }
 
@@ -1490,16 +1505,37 @@ function updateFilterValues() {
     const values = JSON.parse(option.dataset.values || '[]');
     selectedFilterValues = [];
 
-    valuesContainer.innerHTML = values.map(v => `
-        <label class="filter-value-item" title="Check this box to include rows where ${escapeHtml(option.text.split(' (')[0])} = &quot;${escapeHtml(v)}&quot;">
-            <input type="checkbox" value="${escapeHtml(v)}" onchange="toggleFilterValue('${escapeJSAttr(v)}')">
-            <span>${escapeHtml(v)}</span>
-        </label>
-    `).join('');
+    if (values.length > 0) {
+        // Predefined values — show checkboxes
+        valuesContainer.innerHTML = values.map(v => `
+            <label class="filter-value-item" title="Check this box to include rows where ${escapeHtml(option.text.split(' (')[0])} = &quot;${escapeHtml(v)}&quot;">
+                <input type="checkbox" value="${escapeHtml(v)}" onchange="toggleFilterValue('${escapeJSAttr(v)}')">
+                <span>${escapeHtml(v)}</span>
+            </label>
+        `).join('');
+    } else {
+        // No predefined values — show text input for manual entry
+        valuesContainer.innerHTML = `
+            <div style="padding:8px 0;">
+                <label style="font-size:0.85rem;font-weight:600;margin-bottom:6px;display:block;">
+                    <i class="bi bi-pencil-square" style="color:var(--accent);"></i> Type the values to filter on:
+                </label>
+                <input type="text" id="manualFilterValues" placeholder="e.g. Pending, Approved, In Review"
+                    data-notsaved="true"
+                    style="width:100%;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:0.9rem;"
+                    oninput="updateManualFilterValues(this.value)">
+                <small style="color:#888;margin-top:4px;display:block;">Separate multiple values with commas. These must match your data exactly.</small>
+            </div>`;
+    }
 
     valuesGroup.style.display = 'block';
     if (valuesHint) valuesHint.style.display = 'block';
     document.getElementById('applyFilterBtn').disabled = true;
+}
+
+function updateManualFilterValues(text) {
+    selectedFilterValues = text.split(',').map(v => v.trim()).filter(v => v.length > 0);
+    document.getElementById('applyFilterBtn').disabled = selectedFilterValues.length === 0;
 }
 
 function toggleFilterValue(value) {
@@ -1913,8 +1949,13 @@ function renderGenerateStep() {
                 <ol style="line-height:2;margin:10px 0 0 0;padding-left:20px;">
                     <li>Click <strong>Get Dashboard Files</strong> below</li>
                     <li>Save each file to your computer (copy and paste into Notepad, or use Save File)</li>
-                    <li>Create a Source in Etrieve Central named: <code>${escapeHtml(State.sourceName || 'your dashboard name')}</code></li>
-                    <li>Paste the SQL query into the Source, then upload the remaining files</li>
+                    ${State.mode === 'combined' ?
+                    `<li>Create <strong>two</strong> Sources in Etrieve Central:<br>
+                        &bull; Content source: <code>${escapeHtml((State.sourceName || 'Dashboard') + '_Content')}</code><br>
+                        &bull; Forms source: <code>${escapeHtml((State.sourceName || 'Dashboard') + '_Forms')}</code></li>
+                    <li>Paste the content SQL into the Content source and the forms SQL into the Forms source</li>` :
+                    `<li>Create a Source in Etrieve Central named: <code>${escapeHtml(State.sourceName || 'your dashboard name')}</code></li>
+                    <li>Paste the SQL query into the Source, then upload the remaining files</li>`}
                 </ol>
             </div>
 
@@ -1957,7 +1998,9 @@ function renderGenerateStep() {
                 <li>Click <strong>Get Dashboard Files</strong> below</li>
                 <li>Save each file to your computer (copy and paste into Notepad, or use Save File)</li>
                 <li>Email the saved files to your Etrieve administrator</li>
-                <li>They'll create a source named <code>${escapeHtml(State.sourceName || 'your dashboard name')}</code> and set it up</li>
+                ${State.mode === 'combined' ?
+                `<li>They'll create <strong>two</strong> sources: <code>${escapeHtml((State.sourceName || 'Dashboard') + '_Content')}</code> and <code>${escapeHtml((State.sourceName || 'Dashboard') + '_Forms')}</code></li>` :
+                `<li>They'll create a source named <code>${escapeHtml(State.sourceName || 'your dashboard name')}</code> and set it up</li>`}
             </ol>
         </div>
 
