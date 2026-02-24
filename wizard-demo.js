@@ -1126,7 +1126,7 @@ function generateFormsSQL() {
         return `   MAX(CASE WHEN iv.InputID = '${escapeSQL(inp.id)}' THEN iv.Value END) AS [${escapeBracket(inp.label)}]`;
     }).join(',\n');
 
-    const hasWorkflow = State.selectedWorkflowSteps.length > 0;
+    const hasWorkflow = State.selectedWorkflowSteps.length > 0 || State.selectedInputIds.includes('__currentStepName__');
 
     // Generate swimlane configuration comments
     const swimlaneConfig = generateSwimlaneConfig();
@@ -1192,7 +1192,7 @@ function generateCombinedSQL() {
     const formInputs = SimulatedData.formInputIds[(template && template.id)] || [];
     const selectedFormInputs = formInputs.filter(i => State.selectedInputIds.includes(i.id));
 
-    const hasWorkflow = State.selectedWorkflowSteps.length > 0;
+    const hasWorkflow = State.selectedWorkflowSteps.length > 0 || State.selectedInputIds.includes('__currentStepName__');
     const swimlaneConfig = generateSwimlaneConfig();
 
     // Normalize both sides to exactly 3 Field columns for UNION compatibility
@@ -1366,6 +1366,10 @@ function generateColumnDefinitions() {
             // field key must match the SQL column alias (which uses inp.label)
             columns.push(`        { field: '${escapeJS(i.label)}', label: '${escapeJS(i.label)}', type: 'text' }`);
         });
+        // Virtual field: Current Workflow Step (auto-joined from ProcessStep table)
+        if (State.selectedInputIds.includes('__currentStepName__')) {
+            columns.push(`        { field: 'CurrentStepName', label: 'Current Step', type: 'text' }`);
+        }
     } else if (State.mode === 'combined') {
         // Combined mode: add both document fields and form fields
         columns.push(`        { field: 'RecordType', label: 'Type', type: 'text' }`);

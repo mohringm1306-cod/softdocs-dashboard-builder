@@ -986,6 +986,21 @@ function renderFormFieldsStep() {
         return '<div style="text-align:center;padding:40px;"><i class="bi bi-hourglass-split" style="font-size:2rem;color:var(--accent);"></i><p style="margin-top:15px;color:#aaa;">Loading form fields...</p></div>';
     }
 
+    // Add virtual "Current Workflow Step" field if template has workflow steps
+    var steps = getWorkflowSteps();
+    var virtualFieldHtml = '';
+    if (steps.length > 0) {
+        var stepSelected = State.selectedInputIds.includes('__currentStepName__');
+        virtualFieldHtml = `
+        <div class="field-item ${stepSelected ? 'selected' : ''}" style="border-left:3px solid var(--accent);"
+             onclick="toggleInputId('__currentStepName__')">
+            <input type="checkbox" ${stepSelected ? 'checked' : ''}>
+            <i class="bi bi-signpost-split" style="color:var(--accent);"></i>
+            <span class="field-name">Current Workflow Step</span>
+            <span style="font-size:0.7rem;color:#888;margin-left:auto;">auto-joined</span>
+        </div>`;
+    }
+
     const inputsHtml = inputs.map(inp => `
         <div class="field-item ${State.selectedInputIds.includes(inp.id) ? 'selected' : ''}"
              onclick="toggleInputId('${escapeJSAttr(inp.id)}')">
@@ -1009,6 +1024,7 @@ function renderFormFieldsStep() {
             </button>
         </div>
 
+        ${virtualFieldHtml ? '<div class="field-grid" style="margin-bottom:12px;">' + virtualFieldHtml + '</div><hr style="border:none;border-top:1px solid #eee;margin:0 0 12px;">' : ''}
         <div class="field-grid">
             ${inputsHtml || '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#666;background:#f8f9fa;border-radius:8px;"><i class="bi bi-exclamation-circle" style="font-size:1.5rem;display:block;margin-bottom:10px;color:#ffc107;"></i>No form fields found for this template. This form may not have any submitted data yet, or the template has no input fields.</div>'}
         </div>
@@ -1039,10 +1055,13 @@ function toggleInputId(id) {
 
 function selectAllFormFields() {
     const inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
-    if (State.selectedInputIds.length === inputs.length) {
+    var steps = getWorkflowSteps();
+    var allIds = inputs.map(i => i.id);
+    if (steps.length > 0) allIds.push('__currentStepName__');
+    if (State.selectedInputIds.length === allIds.length) {
         State.selectedInputIds = [];
     } else {
-        State.selectedInputIds = inputs.map(i => i.id);
+        State.selectedInputIds = allIds.slice();
     }
     renderStep();
     saveDraft();
@@ -1363,12 +1382,17 @@ function getFilterableFields() {
     } else if (State.mode === 'forms') {
         // For forms, use workflow steps as filterable
         const steps = getWorkflowSteps();
-        if (State.selectedWorkflowSteps.length > 0) {
+        var hasWorkflowField = State.selectedWorkflowSteps.length > 0 || State.selectedInputIds.includes('__currentStepName__');
+        if (hasWorkflowField && steps.length > 0) {
+            // If specific steps are selected, filter to those; otherwise offer all steps
+            var stepValues = State.selectedWorkflowSteps.length > 0
+                ? steps.filter(s => State.selectedWorkflowSteps.includes(s.id)).map(s => s.displayName)
+                : steps.map(s => s.displayName);
             return [{
                 id: 'workflow_step',
                 name: 'Current Workflow Step',
                 sqlAlias: 'CurrentStepName',
-                values: steps.filter(s => State.selectedWorkflowSteps.includes(s.id)).map(s => s.displayName)
+                values: stepValues
             }];
         }
         return [];
