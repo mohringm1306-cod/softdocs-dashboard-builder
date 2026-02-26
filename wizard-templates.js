@@ -1,11 +1,11 @@
 ﻿/**
- * Dashboard Builder Wizard 3.0 - Template Renderers
+ * Dashboard Builder Wizard - Template Renderers
  * Step rendering, live preview, download modal, and UI template functions.
  * Split from wizard-demo.js to avoid Cloudflare WAF false-positive on upload.
  * All functions run in global scope - loaded via RequireJS after wizard-demo.js.
  */
 
-console.log('Dashboard Builder Wizard 3.0 - Template renderers loaded');
+console.log('Dashboard Builder Wizard v' + (typeof WIZARD_VERSION !== 'undefined' ? WIZARD_VERSION : '?') + ' - Template renderers loaded');
 
 // Initialize draft check on DOM ready
 document.addEventListener('DOMContentLoaded', checkForDraft);

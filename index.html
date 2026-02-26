@@ -26,7 +26,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
             <span id="modeIndicator"></span>
-            <span class="badge">v3.0.2</span>
+            <span class="badge" id="versionBadge">v3.0</span>
         </div>
     </div>
 
@@ -119,5 +119,12 @@
     <script src="wizard-demo.js"></script>
     <script src="wizard-templates.js"></script>
     <script src="wizard-generators.js"></script>
+    <script>
+        // Set version badge from WIZARD_VERSION constant (single source of truth)
+        if (typeof WIZARD_VERSION !== 'undefined') {
+            var vb = document.getElementById('versionBadge');
+            if (vb) vb.textContent = 'v' + WIZARD_VERSION;
+        }
+    </script>
 </body>
 </html>
