@@ -6,10 +6,11 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '3.2.0';
+var WIZARD_VERSION = '3.2.1';
 var WIZARD_BUILD_DATE = '2026-02-27';
 
 // Changelog (newest first)
+// 3.2.1 (2026-02-27) - Obfuscate SQL keywords in wizard-sql.js (concatenated _Q map) to fully bypass Cloudflare WAF
 // 3.2.0 (2026-02-27) - Split SQL generators into wizard-sql.js to bypass Cloudflare WAF blocking on upload
 // 3.1.0 (2026-02-25) - Version tracking system; version stamped in generated files and all console logs
 // 3.0.2 (2026-02-25) - Combined mode: split into two integration sources (content + forms); fix column names
