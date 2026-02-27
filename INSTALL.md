@@ -25,11 +25,12 @@ For each: set the Connection to your Content database, enable **Get** + **Custom
 
 ### 2. Upload Files
 
-Go to **Admin > Forms**, create a new form, and upload all 7 files:
+Go to **Admin > Forms**, create a new form, and upload all 8 files:
 
 - [ ] `index.html`
 - [ ] `wizard.css`
 - [ ] `wizard-demo.js`
+- [ ] `wizard-sql.js`
 - [ ] `wizard-templates.js`
 - [ ] `wizard-generators.js`
 - [ ] `viewmodel.js`

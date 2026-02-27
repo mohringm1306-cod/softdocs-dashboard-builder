@@ -166,10 +166,12 @@ ORDER BY ps.[Name]
 
 1. Go to **Admin > Forms** and create a new form
 2. Name it whatever you like (e.g., "Dashboard Builder")
-3. Upload these 6 files:
+3. Upload these 8 files:
    * `index.html`
    * `wizard.css`
    * `wizard-demo.js`
+   * `wizard-sql.js`
+   * `wizard-templates.js`
    * `wizard-generators.js`
    * `viewmodel.js`
    * `configuration.js`
@@ -239,6 +241,7 @@ See [`SqlTester/README.md`](SqlTester/README.md) for setup instructions and work
 * **403 errors** — Check that the **Connection** on each source is set to your Etrieve Content database (not Etrieve Security or another connection). Then check **Privileges** — your users need **Get** access on every source.
 * **Source names don't match** — If you named your sources differently, update the names in `configuration.js` to match.
 * **Wizard won't save in the form editor** — Make sure you're using the latest files from this repo. Older versions used JavaScript syntax that Etrieve's editor doesn't accept.
+* **File upload blocked (403 Forbidden)** — Cloudflare WAF may block files containing SQL keywords. This is why the SQL generators are in a separate `wizard-sql.js` file. Make sure you're uploading all 8 files from this repo, not an older 3-file version.
 
 ---
 
