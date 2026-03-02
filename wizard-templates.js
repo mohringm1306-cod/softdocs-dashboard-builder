@@ -1153,7 +1153,9 @@ function renderSwimlanesStep() {
             { id: 1, name: 'In Progress', filters: isFormsMode
                 ? [{ fieldName: 'Form Status', sqlAlias: 'FormStatus', values: ['In Progress'] }] : [] },
             { id: 2, name: 'Completed', filters: isFormsMode
-                ? [{ fieldName: 'Form Status', sqlAlias: 'FormStatus', values: ['Completed'] }] : [] }
+                ? [{ fieldName: 'Form Status', sqlAlias: 'FormStatus', values: ['Completed'] }] : [] },
+            { id: 3, name: 'Error', filters: isFormsMode
+                ? [{ fieldName: 'Form Status', sqlAlias: 'FormStatus', values: ['Error'] }] : [] }
         ];
         saveDraft();
     }
@@ -1390,7 +1392,7 @@ function getFilterableFields() {
             id: 'form_status',
             name: 'Form Status',
             sqlAlias: 'FormStatus',
-            values: ['In Progress', 'Completed']
+            values: ['In Progress', 'Completed', 'Error']
         });
         // Add workflow steps as filterable
         const steps = getWorkflowSteps();
@@ -1433,7 +1435,7 @@ function getFilterableFields() {
             id: 'form_status',
             name: 'Form Status',
             sqlAlias: 'FormStatus',
-            values: ['In Progress', 'Completed']
+            values: ['In Progress', 'Completed', 'Error']
         });
 
         // Add workflow steps if selected

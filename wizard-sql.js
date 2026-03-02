@@ -233,9 +233,12 @@ function generateFormsSQL() {
         sql += ',\n   ' + _Q.RP + "(ps.Name, '_', ' ') " + _Q.AS + ' CurrentStepName';
     }
 
-    // FormStatus: computed from TaskQueue LEFT JOIN (NULL = Completed, else In Progress)
-    sql += ',\n   ' + _Q.CS + ' ' + _Q.WN + ' tq.TaskQueueID ' + _Q.IS + ' ' + _Q.NL +
-        ' ' + _Q.TN + " 'Completed' " + _Q.EL + " 'In Progress' " + _Q.EN + ' ' + _Q.AS + ' FormStatus';
+    // FormStatus: computed from TaskQueue LEFT JOIN
+    // NULL = Completed (no active task), 9999 = Error (package stuck/failed), else In Progress
+    sql += ',\n   ' + _Q.CS +
+        ' ' + _Q.WN + ' tq.TaskQueueID ' + _Q.IS + ' ' + _Q.NL + ' ' + _Q.TN + " 'Completed'" +
+        ' ' + _Q.WN + ' tq.[Status] = 9999 ' + _Q.TN + " 'Error'" +
+        ' ' + _Q.EL + " 'In Progress' " + _Q.EN + ' ' + _Q.AS + ' FormStatus';
 
     sql += ',\n' +
         "   '/central/submissions?packageId=' + " + _Q.CT + '(pd.PackageID ' + _Q.AS + ' ' + _Q.VC + '(50)) +\n' +
@@ -256,7 +259,7 @@ function generateFormsSQL() {
 
     sql += '\n' + _Q.WH + ' f.TemplateVersionID = ' + (template ? safeInt(template.id) : '/* pick a template */') + '\n' +
         '   ' + _Q.AN + ' f.IsDraft = 0\n' +
-        _Q.GB + ' f.FormID, f.Created, pd.PackageID, tq.TaskQueueID' + (hasWorkflow ? ', ps.Name' : '') + '\n' +
+        _Q.GB + ' f.FormID, f.Created, pd.PackageID, tq.TaskQueueID, tq.[Status]' + (hasWorkflow ? ', ps.Name' : '') + '\n' +
         _Q.OB + ' f.Created ' + _Q.DS;
 
     return sql;
