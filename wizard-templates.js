@@ -1382,9 +1382,15 @@ function toggleFilterGuide() {
 // Each field must have: id, name (display), values[], sqlAlias (actual SQL column name)
 function getFilterableFields() {
     if (State.mode === 'content') {
+        var contentFilterable = [];
+        // DocumentType is always in the SQL and always filterable
+        var docTypeValues = (State.selectedDocTypes || []).map(function(d) { return d.name; });
+        contentFilterable.push({ id: 'doc_type', name: 'Document Type', values: docTypeValues, sqlAlias: 'DocumentType' });
         const fields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
-        return fields.filter(f => State.selectedFields.includes(f.id))
-            .map(f => ({ id: f.id, name: f.name, values: f.values || [], sqlAlias: f.alias || f.name }));
+        fields.filter(f => State.selectedFields.includes(f.id)).forEach(function(f) {
+            contentFilterable.push({ id: f.id, name: f.name, values: f.values || [], sqlAlias: f.alias || f.name });
+        });
+        return contentFilterable;
     } else if (State.mode === 'forms') {
         var result = [];
         // FormStatus is always available (computed from TaskQueue LEFT JOIN)
@@ -1417,6 +1423,10 @@ function getFilterableFields() {
     } else if (State.mode === 'combined') {
         // Combined mode: merge document fields, form fields, and workflow steps
         const filterableFields = [];
+
+        // DocumentType is always in the content SQL and always filterable
+        var combinedDocTypeValues = (State.selectedDocTypes || []).map(function(d) { return d.name; });
+        filterableFields.push({ id: 'doc_type', name: 'Document Type', values: combinedDocTypeValues, sqlAlias: 'DocumentType' });
 
         // Add all selected document fields (values may be empty for live Etrieve data)
         const docFields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
