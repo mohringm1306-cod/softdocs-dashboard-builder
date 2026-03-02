@@ -41,7 +41,9 @@ var _Q = {
     NL:   'NUL'   + 'L',
     MN:   'MI'    + 'N',
     CNT:  'COU'   + 'NT',
-    SM:   'SU'    + 'M'
+    SM:   'SU'    + 'M',
+    IS:   'I'     + 'S',
+    EL:   'ELS'   + 'E'
 };
 
 function resetSQL() {
@@ -231,6 +233,10 @@ function generateFormsSQL() {
         sql += ',\n   ' + _Q.RP + "(ps.Name, '_', ' ') " + _Q.AS + ' CurrentStepName';
     }
 
+    // FormStatus: computed from TaskQueue LEFT JOIN (NULL = Completed, else In Progress)
+    sql += ',\n   ' + _Q.CS + ' ' + _Q.WN + ' tq.TaskQueueID ' + _Q.IS + ' ' + _Q.NL +
+        ' ' + _Q.TN + " 'Completed' " + _Q.EL + " 'In Progress' " + _Q.EN + ' ' + _Q.AS + ' FormStatus';
+
     sql += ',\n' +
         "   '/central/submissions?packageId=' + " + _Q.CT + '(pd.PackageID ' + _Q.AS + ' ' + _Q.VC + '(50)) +\n' +
         "   '&itemId=' + " + _Q.CT + '(f.FormID ' + _Q.AS + ' ' + _Q.VC + ") +\n" +
@@ -242,16 +248,15 @@ function generateFormsSQL() {
         _Q.LJ + ' reporting.central_flow_PackageDocument pd\n' +
         '   ' + _Q.ON + ' pd.SourceID = ' + _Q.CT + '(f.FormID ' + _Q.AS + ' ' + _Q.VC + '(50))';
 
-    if (hasWorkflow) {
-        sql += '\n' + _Q.LJ + ' reporting.central_flow_TaskQueue tq\n' +
-            '   ' + _Q.ON + ' tq.PackageId = pd.PackageID\n' +
-            _Q.LJ + ' reporting.central_flow_ProcessStep ps\n' +
-            '   ' + _Q.ON + ' tq.ProcessStepID = ps.ProcessStepId';
-    }
+    // Always include TaskQueue/ProcessStep JOINs (needed for FormStatus computation)
+    sql += '\n' + _Q.LJ + ' reporting.central_flow_TaskQueue tq\n' +
+        '   ' + _Q.ON + ' tq.PackageId = pd.PackageID\n' +
+        _Q.LJ + ' reporting.central_flow_ProcessStep ps\n' +
+        '   ' + _Q.ON + ' tq.ProcessStepID = ps.ProcessStepId';
 
     sql += '\n' + _Q.WH + ' f.TemplateVersionID = ' + (template ? safeInt(template.id) : '/* pick a template */') + '\n' +
         '   ' + _Q.AN + ' f.IsDraft = 0\n' +
-        _Q.GB + ' f.FormID, f.Created, pd.PackageID' + (hasWorkflow ? ', ps.Name' : '') + '\n' +
+        _Q.GB + ' f.FormID, f.Created, pd.PackageID, tq.TaskQueueID' + (hasWorkflow ? ', ps.Name' : '') + '\n' +
         _Q.OB + ' f.Created ' + _Q.DS;
 
     return sql;
@@ -281,7 +286,7 @@ function generateCombinedSQL() {
 function highlightSQL(sql) {
     var keywords = [_Q.SL, _Q.FR, _Q.WH, _Q.AN, 'O' + 'R', _Q.LJ.split(' ')[0], _Q.IJ.split(' ')[0], 'OUT' + 'ER', 'JO' + 'IN', _Q.ON,
                     _Q.AS, _Q.IN, 'NO' + 'T', _Q.NL, 'ORD' + 'ER', 'B' + 'Y', 'GRO' + 'UP', _Q.HV, _Q.CS, _Q.WN,
-                    _Q.TN, _Q.EN, _Q.MX, _Q.MN, _Q.CNT, _Q.SM, _Q.CT, _Q.VC, 'IN' + 'T', _Q.DS, _Q.AC];
+                    _Q.TN, _Q.EN, _Q.EL, _Q.IS, _Q.MX, _Q.MN, _Q.CNT, _Q.SM, _Q.CT, _Q.VC, 'IN' + 'T', _Q.DS, _Q.AC];
     var highlighted = sql;
     highlighted = highlighted.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     highlighted = highlighted.replace(/(--[^\n]*)/g, '<span class="comment">$1</span>');
@@ -324,6 +329,7 @@ function generateColumnDefinitions() {
             columns.push("        { field: '" + escapeJS(f.alias) + "', label: '" + escapeJS(f.name) + "', type: '" + escapeJS(f.type) + "' }");
         });
     } else if (State.mode === 'forms') {
+        columns.push("        { field: 'FormStatus', label: 'Status', type: 'text' }");
         var inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
         inputs.filter(function(i) { return State.selectedInputIds.includes(i.id); }).forEach(function(i) {
             columns.push("        { field: '" + escapeJS(i.label) + "', label: '" + escapeJS(i.label) + "', type: 'text' }");
@@ -358,6 +364,7 @@ function generateSplitColumnDefinitions() {
         contentCols.push("        { field: '" + escapeJS(f.alias) + "', label: '" + escapeJS(f.name) + "', type: '" + escapeJS(f.type) + "' }");
     });
     formsCols.push("        { field: 'SubmittedDate', label: 'Submitted', type: 'date' }");
+    formsCols.push("        { field: 'FormStatus', label: 'Status', type: 'text' }");
     var inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
     inputs.filter(function(i) { return State.selectedInputIds.includes(i.id) && i.id !== '__currentStepName__'; }).forEach(function(i) {
         formsCols.push("        { field: '" + escapeJS(i.label) + "', label: '" + escapeJS(i.label) + "', type: 'text' }");

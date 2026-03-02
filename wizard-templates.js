@@ -1147,9 +1147,13 @@ function renderSwimlanesStep() {
 
     // Initialize swimlanes with filter structure if empty
     if (State.swimlanes.length === 0) {
+        // In forms/combined mode, auto-set FormStatus filters on default swimlanes
+        var isFormsMode = (State.mode === 'forms' || State.mode === 'combined');
         State.swimlanes = [
-            { id: 1, name: 'In Progress', filters: [] },
-            { id: 2, name: 'Completed', filters: [] }
+            { id: 1, name: 'In Progress', filters: isFormsMode
+                ? [{ fieldName: 'Form Status', sqlAlias: 'FormStatus', values: ['In Progress'] }] : [] },
+            { id: 2, name: 'Completed', filters: isFormsMode
+                ? [{ fieldName: 'Form Status', sqlAlias: 'FormStatus', values: ['Completed'] }] : [] }
         ];
         saveDraft();
     }
@@ -1381,6 +1385,13 @@ function getFilterableFields() {
             .map(f => ({ id: f.id, name: f.name, values: f.values || [], sqlAlias: f.alias || f.name }));
     } else if (State.mode === 'forms') {
         var result = [];
+        // FormStatus is always available (computed from TaskQueue LEFT JOIN)
+        result.push({
+            id: 'form_status',
+            name: 'Form Status',
+            sqlAlias: 'FormStatus',
+            values: ['In Progress', 'Completed']
+        });
         // Add workflow steps as filterable
         const steps = getWorkflowSteps();
         var hasWorkflowField = State.selectedWorkflowSteps.length > 0 || State.selectedInputIds.includes('__currentStepName__');
@@ -1415,6 +1426,14 @@ function getFilterableFields() {
         const formInputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
         formInputs.filter(i => State.selectedInputIds.includes(i.id)).forEach(i => {
             filterableFields.push({ id: i.id, name: i.label, values: [], sqlAlias: i.label });
+        });
+
+        // FormStatus is always available for forms in combined mode
+        filterableFields.push({
+            id: 'form_status',
+            name: 'Form Status',
+            sqlAlias: 'FormStatus',
+            values: ['In Progress', 'Completed']
         });
 
         // Add workflow steps if selected

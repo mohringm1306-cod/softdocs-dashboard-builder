@@ -6,10 +6,11 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '3.2.1';
-var WIZARD_BUILD_DATE = '2026-02-27';
+var WIZARD_VERSION = '3.3.0';
+var WIZARD_BUILD_DATE = '2026-03-02';
 
 // Changelog (newest first)
+// 3.3.0 (2026-03-02) - FormStatus computed column for forms/combined mode; back button in generated dashboards; auto-populate swimlane filters
 // 3.2.1 (2026-02-27) - Obfuscate SQL keywords in wizard-sql.js (concatenated _Q map) to fully bypass Cloudflare WAF
 // 3.2.0 (2026-02-27) - Split SQL generators into wizard-sql.js to bypass Cloudflare WAF blocking on upload
 // 3.1.0 (2026-02-25) - Version tracking system; version stamped in generated files and all console logs

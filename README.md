@@ -2,6 +2,12 @@
 
 A wizard that builds dashboards for Softdocs Etrieve. No coding required — just pick a style, point it at your data, and download a ready-to-use dashboard.
 
+## What's New in v3.3.0
+
+- **FormStatus column** — Forms-mode dashboards now include a computed `FormStatus` field (`In Progress` or `Completed`). Default swimlanes are pre-filtered on this field, so "In Progress" and "Completed" groups work correctly out of the box. This fixes the issue where completed forms appeared in both swimlanes.
+- **Back button** — Generated dashboards now include a subtle "Back" button in the header bar for navigating away from the dashboard.
+- **Auto-populated swimlane filters** — When creating a Forms-mode dashboard, the default swimlane filters are automatically set to filter on `FormStatus`, saving setup time.
+
 ---
 
 ## What Is This?
