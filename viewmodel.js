@@ -90,14 +90,26 @@ define([
 
     /**
      * Load key fields for a given area
-     * Expected SQL: SELECT DISTINCT f.FieldID AS id, f.Name AS name, CASE WHEN dt.Name='Date' THEN 'date' ELSE 'text' END AS type, f.Name AS alias FROM Field f JOIN DataType dt ON f.DataTypeID=dt.DataTypeID JOIN DocumentTypeField dtf ON f.FieldID=dtf.FieldID JOIN CatalogDocumentType cdt ON dtf.DocumentTypeID=cdt.DocumentTypeID WHERE cdt.CatalogID=@CatalogID
+     * See Sources/3_WizardBuilder_GetKeyFields.sql for the full query.
+     * Expected columns: id, name, type (text|date|number|decimal|party), alias, partyTypeId
+     * The partyTypeId column (v3.3.3+) lets the JS auto-detect party fields even
+     * if the CASE statement in the SQL is missing or outdated.
      */
     function loadKeyFields(areaId) {
         areaId = String(areaId); // normalize cache key
         if (_cache.keyFields[areaId] !== undefined) return $.Deferred().resolve(_cache.keyFields[areaId]).promise();
         return integration.all(keyFieldsIntegrationName, { CatalogID: areaId }).then(function(data) {
             _cache.keyFields[areaId] = data.map(function(row) {
-                return { id: row.id || row.FieldID, name: row.name || row.Name, type: row.type || 'text', alias: row.alias || row.Name || '' };
+                var rawType = row.type || 'text';
+                // Fallback: if partyTypeId is present (not null/undefined/empty),
+                // force type to 'party' regardless of what the CASE returned.
+                // This catches cases where the SQL source is missing the
+                // PartyTypeID check or was copied from an older version.
+                var partyId = row.partyTypeId || row.PartyTypeID || row.partytypeid;
+                if (partyId != null && partyId !== '' && partyId !== 0) {
+                    rawType = 'party';
+                }
+                return { id: row.id || row.FieldID, name: row.name || row.Name, type: rawType, alias: row.alias || row.Name || '' };
             });
             return _cache.keyFields[areaId];
         });

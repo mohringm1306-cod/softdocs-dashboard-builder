@@ -926,13 +926,17 @@ function renderContentFieldsStep() {
     const fields = SimulatedData.keyFields[State.selectedArea.id] || [];
     const selectedCount = State.selectedFields.length;
 
-    const fieldsHtml = fields.map(f => `
+    var typeBadgeMap = { party: ['person', '#7c3aed'], date: ['calendar', '#0d6efd'], number: ['123', '#198754'], decimal: ['calculator', '#198754'] };
+    const fieldsHtml = fields.map(f => {
+        var badge = typeBadgeMap[f.type];
+        var badgeHtml = badge ? `<span style="margin-left:auto;font-size:0.7rem;color:${badge[1]};opacity:0.8;" title="${escapeHtml(f.type)} field"><i class="bi bi-${badge[0]}"></i></span>` : '';
+        return `
         <div class="field-item ${State.selectedFields.includes(f.id) ? 'selected' : ''}"
              onclick="toggleField(${f.id})">
             <input type="checkbox" ${State.selectedFields.includes(f.id) ? 'checked' : ''}>
-            <span class="field-name">${escapeHtml(f.name)}</span>
-        </div>
-    `).join('');
+            <span class="field-name">${escapeHtml(f.name)}</span>${badgeHtml}
+        </div>`;
+    }).join('');
 
     // Show selected fields as tags
     const selectedTags = State.selectedFields.map(id => {
@@ -956,6 +960,11 @@ function renderContentFieldsStep() {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
             <span class="selection-counter">
                 <i class="bi bi-check2-square"></i> ${selectedCount} columns selected
+            </span>
+            <span style="font-size:0.75rem;color:#888;">
+                <i class="bi bi-person" style="color:#7c3aed;"></i> Party
+                <i class="bi bi-calendar" style="color:#0d6efd;margin-left:8px;"></i> Date
+                <i class="bi bi-123" style="color:#198754;margin-left:8px;"></i> Number
             </span>
         </div>
 

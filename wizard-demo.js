@@ -6,10 +6,11 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '3.3.2';
+var WIZARD_VERSION = '3.3.3';
 var WIZARD_BUILD_DATE = '2026-03-02';
 
 // Changelog (newest first)
+// 3.3.3 (2026-03-02) - Party field auto-detection via PartyTypeID fallback; field type badges in column picker
 // 3.3.2 (2026-03-02) - DocumentType now filterable in content/combined modes; fix date column sorting (MM/DD/YYYY)
 // 3.3.1 (2026-03-02) - FormStatus now detects Error state (TaskQueue.Status=9999); default Error swimlane added
 // 3.3.0 (2026-03-02) - FormStatus computed column for forms/combined mode; back button in generated dashboards; auto-populate swimlane filters
@@ -73,10 +74,10 @@ var SimulatedData = {
     // Each field can have 'values' array for fields that are filterable
     keyFields: {
         2: [ // Student fields
-            { id: 2, name: 'First Name', type: 'party', alias: 'StudentFName' },
-            { id: 4, name: 'Last Name', type: 'party', alias: 'StudentLName' },
-            { id: 25, name: 'Student ID', type: 'party', alias: 'StudentID' },
-            { id: 9, name: 'Student Info Lookup', type: 'lookup', alias: 'StudentLookup' },
+            { id: 2, name: 'First Name', type: 'party', alias: 'StudentFName', partyTypeId: 1 },
+            { id: 4, name: 'Last Name', type: 'party', alias: 'StudentLName', partyTypeId: 1 },
+            { id: 25, name: 'Student ID', type: 'party', alias: 'StudentID', partyTypeId: 1 },
+            { id: 9, name: 'Student Info Lookup', type: 'text', alias: 'StudentLookup' },
             { id: 10, name: 'Document Date', type: 'date', alias: 'DocumentDate' },
             { id: 11, name: 'Term', type: 'text', alias: 'Term', values: ['Fall 2025', 'Spring 2026', 'Summer 2026', 'Fall 2026'] },
             { id: 18, name: 'Academic Year', type: 'text', alias: 'AcademicYear', values: ['2024-2025', '2025-2026', '2026-2027'] },
@@ -85,18 +86,18 @@ var SimulatedData = {
             { id: 504, name: 'FA Comments', type: 'text', alias: 'FAComments' }
         ],
         13: [ // Employee fields
-            { id: 2, name: 'First Name', type: 'party', alias: 'EmployeeFName' },
-            { id: 4, name: 'Last Name', type: 'party', alias: 'EmployeeLName' },
-            { id: 58, name: 'Employee ID', type: 'party', alias: 'EmployeeID' },
-            { id: 59, name: 'Employee Info Lookup', type: 'lookup', alias: 'EmployeeLookup' },
+            { id: 2, name: 'First Name', type: 'party', alias: 'EmployeeFName', partyTypeId: 2 },
+            { id: 4, name: 'Last Name', type: 'party', alias: 'EmployeeLName', partyTypeId: 2 },
+            { id: 58, name: 'Employee ID', type: 'party', alias: 'EmployeeID', partyTypeId: 2 },
+            { id: 59, name: 'Employee Info Lookup', type: 'text', alias: 'EmployeeLookup' },
             { id: 10, name: 'Document Date', type: 'date', alias: 'DocumentDate' },
             { id: 132, name: 'Document Owner', type: 'text', alias: 'DocOwner' },
             { id: 133, name: 'HR Status', type: 'text', alias: 'HRStatus', values: ['New', 'In Progress', 'Complete', 'Archived'] }
         ],
         44: [ // Health Sciences fields
-            { id: 2, name: 'First Name', type: 'party', alias: 'StudentFName' },
-            { id: 4, name: 'Last Name', type: 'party', alias: 'StudentLName' },
-            { id: 25, name: 'Student ID', type: 'party', alias: 'StudentID' },
+            { id: 2, name: 'First Name', type: 'party', alias: 'StudentFName', partyTypeId: 1 },
+            { id: 4, name: 'Last Name', type: 'party', alias: 'StudentLName', partyTypeId: 1 },
+            { id: 25, name: 'Student ID', type: 'party', alias: 'StudentID', partyTypeId: 1 },
             { id: 87, name: 'HS Program', type: 'text', alias: 'HSProgram', values: ['Nursing', 'Dental Hygiene', 'Radiologic Tech', 'Respiratory Care', 'Sonography'] },
             { id: 97, name: 'HS Status', type: 'text', alias: 'HSStatus', values: ['Applied', 'Documents Pending', 'Under Review', 'Interview Scheduled', 'Accepted', 'Waitlisted', 'Denied'] },
             { id: 98, name: 'Admission Decision', type: 'text', alias: 'AdmissionDecision', values: ['Pending', 'Accepted', 'Conditional Accept', 'Waitlisted', 'Denied'] },

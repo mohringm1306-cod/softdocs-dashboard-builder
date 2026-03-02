@@ -2,11 +2,14 @@
 
 A wizard that builds dashboards for Softdocs Etrieve. No coding required — just pick a style, point it at your data, and download a ready-to-use dashboard.
 
-## What's New in v3.3.0
+## What's New in v3.3.3
 
-- **FormStatus column** — Forms-mode dashboards now include a computed `FormStatus` field (`In Progress` or `Completed`). Default swimlanes are pre-filtered on this field, so "In Progress" and "Completed" groups work correctly out of the box. This fixes the issue where completed forms appeared in both swimlanes.
-- **Back button** — Generated dashboards now include a subtle "Back" button in the header bar for navigating away from the dashboard.
-- **Auto-populated swimlane filters** — When creating a Forms-mode dashboard, the default swimlane filters are automatically set to filter on `FormStatus`, saving setup time.
+- **Party field auto-detection** (v3.3.3) -- The wizard now returns `PartyTypeID` from the GetKeyFields source and auto-detects party fields (e.g. Student Info) on the JavaScript side. Even if the SQL CASE statement is missing or outdated, the wizard will generate the correct JOINs for party fields. Field type badges (party, date, number) now appear in the column picker.
+- **Error status detection** (v3.3.1) -- FormStatus now detects `Error` (TaskQueue.Status = 9999) in addition to In Progress and Completed. A third default Error swimlane is generated.
+- **Date sorting fix** (v3.3.2) -- Column sorting now correctly handles MM/DD/YYYY dates instead of treating them as text.
+- **DocumentType filterable** (v3.3.2) -- DocumentType is now offered as a filter in content and combined modes.
+- **FormStatus column** (v3.3.0) -- Forms-mode dashboards include a computed `FormStatus` field. Default swimlanes are pre-filtered on this field so "In Progress" and "Completed" groups work correctly out of the box.
+- **Back button** (v3.3.0) -- Generated dashboards include a "Back" button in the header bar for navigating away from the dashboard.
 
 ---
 
