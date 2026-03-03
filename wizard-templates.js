@@ -1393,7 +1393,9 @@ function getFilterableFields() {
     if (State.mode === 'content') {
         var contentFilterable = [];
         // DocumentType is always in the SQL and always filterable
-        var docTypeValues = (State.selectedDocTypes || []).map(function(d) { return d.name; });
+        // State.selectedDocTypes is an array of IDs; look up names from SimulatedData
+        var allDocTypes = SimulatedData.documentTypes[(State.selectedArea && State.selectedArea.id)] || [];
+        var docTypeValues = allDocTypes.filter(function(d) { return (State.selectedDocTypes || []).indexOf(d.id) !== -1; }).map(function(d) { return d.name; });
         contentFilterable.push({ id: 'doc_type', name: 'Document Type', values: docTypeValues, sqlAlias: 'DocumentType' });
         const fields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
         fields.filter(f => State.selectedFields.includes(f.id)).forEach(function(f) {
@@ -1434,7 +1436,9 @@ function getFilterableFields() {
         const filterableFields = [];
 
         // DocumentType is always in the content SQL and always filterable
-        var combinedDocTypeValues = (State.selectedDocTypes || []).map(function(d) { return d.name; });
+        // State.selectedDocTypes is an array of IDs; look up names from SimulatedData
+        var allCombinedDocTypes = SimulatedData.documentTypes[(State.selectedArea && State.selectedArea.id)] || [];
+        var combinedDocTypeValues = allCombinedDocTypes.filter(function(d) { return (State.selectedDocTypes || []).indexOf(d.id) !== -1; }).map(function(d) { return d.name; });
         filterableFields.push({ id: 'doc_type', name: 'Document Type', values: combinedDocTypeValues, sqlAlias: 'DocumentType' });
 
         // Add all selected document fields (values may be empty for live Etrieve data)

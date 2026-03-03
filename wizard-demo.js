@@ -6,10 +6,11 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '3.3.3';
-var WIZARD_BUILD_DATE = '2026-03-02';
+var WIZARD_VERSION = '3.3.4';
+var WIZARD_BUILD_DATE = '2026-03-03';
 
 // Changelog (newest first)
+// 3.3.4 (2026-03-03) - Fix DocumentType filter showing blank labels (was mapping IDs instead of names)
 // 3.3.3 (2026-03-02) - Party field auto-detection via PartyTypeID fallback; field type badges in column picker
 // 3.3.2 (2026-03-02) - DocumentType now filterable in content/combined modes; fix date column sorting (MM/DD/YYYY)
 // 3.3.1 (2026-03-02) - FormStatus now detects Error state (TaskQueue.Status=9999); default Error swimlane added
