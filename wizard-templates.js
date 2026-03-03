@@ -1008,6 +1008,26 @@ function renderFormFieldsStep() {
             <span class="field-name">Current Workflow Step</span>
             <span style="font-size:0.7rem;color:#888;margin-left:auto;">auto-joined</span>
         </div>`;
+        var assigneeSelected = State.selectedInputIds.includes('__assignedTo__');
+        virtualFieldHtml += `
+        <div class="field-item ${assigneeSelected ? 'selected' : ''}" style="border-left:3px solid #17a2b8;"
+             onclick="toggleInputId('__assignedTo__')">
+            <input type="checkbox" ${assigneeSelected ? 'checked' : ''}>
+            <i class="bi bi-person-badge" style="color:#17a2b8;"></i>
+            <span class="field-name">Current Assignee</span>
+            <span style="font-size:0.7rem;color:#888;margin-left:auto;">auto-joined</span>
+        </div>`;
+        if (assigneeSelected) {
+            virtualFieldHtml += `
+            <div style="padding:8px 12px;background:#f0f7fa;border-radius:6px;border-left:3px solid #17a2b8;">
+                <label style="font-size:0.8rem;color:#555;">TaskQueue column name for assignee:</label>
+                <input type="text" value="${escapeHtml(State.styleConfig.assigneeColumnName || '')}"
+                       placeholder="e.g. UserId, AssignedTo"
+                       oninput="State.styleConfig.assigneeColumnName = this.value; saveDraft();"
+                       style="width:100%;padding:6px 10px;border:1px solid #cde;border-radius:4px;margin-top:4px;font-size:0.85rem;">
+                <small style="color:#999;display:block;margin-top:4px;">Run <code>PROBE_TaskQueue_Columns.sql</code> as a GET source to discover the correct column name.</small>
+            </div>`;
+        }
     }
 
     const inputsHtml = inputs.map(inp => `
@@ -1066,7 +1086,7 @@ function selectAllFormFields() {
     const inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
     var steps = getWorkflowSteps();
     var allIds = inputs.map(i => i.id);
-    if (steps.length > 0) allIds.push('__currentStepName__');
+    if (steps.length > 0) { allIds.push('__currentStepName__'); allIds.push('__assignedTo__'); }
     if (State.selectedInputIds.length === allIds.length) {
         State.selectedInputIds = [];
     } else {
@@ -1151,6 +1171,28 @@ function toggleWorkflowStep(id) {
 }
 
 function renderSwimlanesStep() {
+    // Notes config panel (cross-cutting, available for any style)
+    var notesEnabled = State.notesConfig && State.notesConfig.enabled;
+    var notesPanelHtml = `
+    <div style="margin-bottom:20px;background:#f8f9fa;border-radius:8px;padding:15px 20px;border-left:3px solid #17a2b8;">
+        <h6 style="margin:0 0 10px;color:#333;"><i class="bi bi-pencil-square" style="color:#17a2b8;margin-right:6px;"></i>Optional Features</h6>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" ${notesEnabled ? 'checked' : ''}
+                   onchange="State.notesConfig.enabled = this.checked; saveDraft(); renderStep();">
+            <span>Enable Notes Column</span>
+            <span style="font-size:0.65rem;background:#17a2b8;color:white;padding:2px 6px;border-radius:3px;">Hybrid SQL</span>
+        </label>
+        ${notesEnabled ? `
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:#666;white-space:nowrap;">Column label:</label>
+            <input type="text" value="${escapeHtml(State.notesConfig.columnLabel || 'Notes')}"
+                   oninput="State.notesConfig.columnLabel = this.value; saveDraft();"
+                   style="padding:5px 10px;border:1px solid #ddd;border-radius:4px;width:180px;font-size:0.85rem;">
+        </div>
+        <small style="color:#999;margin-top:6px;display:block;">Requires on-prem SQL Server tables via Hybrid Server. Schema SQL is generated automatically.</small>
+        ` : ''}
+    </div>`;
+
     // Get filterable fields based on mode
     const filterableFields = getFilterableFields();
 
@@ -1425,6 +1467,15 @@ function getFilterableFields() {
                 values: stepValues
             });
         }
+        // Add assignee as filterable (no predefined values - user types filter text)
+        if (State.selectedInputIds.includes('__assignedTo__')) {
+            result.push({
+                id: 'assignee',
+                name: 'Assigned To',
+                sqlAlias: 'AssignedTo',
+                values: []
+            });
+        }
         // Add form input fields as filterable (user can type values manually)
         const inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
         inputs.filter(i => State.selectedInputIds.includes(i.id)).forEach(i => {
@@ -1473,6 +1524,16 @@ function getFilterableFields() {
                 name: 'Current Workflow Step',
                 sqlAlias: 'CurrentStepName',
                 values: stepVals
+            });
+        }
+
+        // Add assignee as filterable (no predefined values - user types filter text)
+        if (State.selectedInputIds.includes('__assignedTo__')) {
+            filterableFields.push({
+                id: 'assignee',
+                name: 'Assigned To',
+                sqlAlias: 'AssignedTo',
+                values: []
             });
         }
 

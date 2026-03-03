@@ -6,10 +6,11 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '3.3.4';
+var WIZARD_VERSION = '3.4.0';
 var WIZARD_BUILD_DATE = '2026-03-03';
 
 // Changelog (newest first)
+// 3.4.0 (2026-03-03) - Current Assignee virtual field (forms); Fillable Notes column (cross-cutting write-back)
 // 3.3.4 (2026-03-03) - Fix DocumentType filter showing blank labels (was mapping IDs instead of names)
 // 3.3.3 (2026-03-02) - Party field auto-detection via PartyTypeID fallback; field type badges in column picker
 // 3.3.2 (2026-03-02) - DocumentType now filterable in content/combined modes; fix date column sorting (MM/DD/YYYY)
@@ -289,7 +290,15 @@ var State = {
         cardLeadField: null,
         cardBudgetField: null,
         // Bulk Actions (style 12): reassign targets
-        reassignTargets: ['Get Quotes', 'Vendor Review', 'Budget Approval', 'Supervisor Approval', 'Procurement']
+        reassignTargets: ['Get Quotes', 'Vendor Review', 'Budget Approval', 'Supervisor Approval', 'Procurement'],
+        // Current Assignee: TaskQueue column name (discovered via probe)
+        assigneeColumnName: ''
+    },
+
+    // Notes column (cross-cutting write-back, any style)
+    notesConfig: {
+        enabled: false,
+        columnLabel: 'Notes'
     },
 
     // Security-first access control
@@ -497,6 +506,9 @@ function restoreDraft(draft) {
     State.customSQL = draft.customSQL;
     if (draft.styleConfig) {
         Object.assign(State.styleConfig, draft.styleConfig);
+    }
+    if (draft.notesConfig) {
+        State.notesConfig = draft.notesConfig;
     }
     if (draft.securityConfig) {
         Object.assign(State.securityConfig, draft.securityConfig);
@@ -748,8 +760,10 @@ function resetWizard() {
         ratingField: null, commentField: null, departmentField: null,
         committeeMembers: [{name:'Member A',color:'#e8f5e9'},{name:'Member B',color:'#e3f2fd'},{name:'Member C',color:'#fff3e0'}],
         cardTitleField: null, cardStatusField: null, cardLeadField: null, cardBudgetField: null,
-        reassignTargets: ['Get Quotes','Vendor Review','Budget Approval','Supervisor Approval','Procurement']
+        reassignTargets: ['Get Quotes','Vendor Review','Budget Approval','Supervisor Approval','Procurement'],
+        assigneeColumnName: ''
     };
+    State.notesConfig = { enabled: false, columnLabel: 'Notes' };
     State.securityConfig = {
         enabled: false, powerGroupId: '', powerGroupName: '', swimlaneGroups: []
     };

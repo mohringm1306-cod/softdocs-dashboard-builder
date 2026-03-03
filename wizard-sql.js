@@ -213,6 +213,8 @@ function generateFormsSQL() {
     }).join(',\n');
 
     var hasWorkflow = State.selectedWorkflowSteps.length > 0 || State.selectedInputIds.includes('__currentStepName__');
+    var hasAssignee = State.selectedInputIds.includes('__assignedTo__');
+    var assigneeColName = (State.styleConfig && State.styleConfig.assigneeColumnName) || '';
     var swimlaneConfig = generateSwimlaneConfig();
     var ver = (typeof WIZARD_VERSION !== 'undefined') ? WIZARD_VERSION : '?';
 
@@ -240,6 +242,11 @@ function generateFormsSQL() {
         ' ' + _Q.WN + ' tq.[Status] = 9999 ' + _Q.TN + " 'Error'" +
         ' ' + _Q.EL + " 'In Progress' " + _Q.EN + ' ' + _Q.AS + ' FormStatus';
 
+    // Assignee: raw column from TaskQueue (user-specified column name from probe)
+    if (hasAssignee && assigneeColName) {
+        sql += ',\n   tq.[' + escapeBracket(assigneeColName) + '] ' + _Q.AS + ' AssignedTo';
+    }
+
     sql += ',\n' +
         "   '/central/submissions?packageId=' + " + _Q.CT + '(pd.PackageID ' + _Q.AS + ' ' + _Q.VC + '(50)) +\n' +
         "   '&itemId=' + " + _Q.CT + '(f.FormID ' + _Q.AS + ' ' + _Q.VC + ") +\n" +
@@ -259,7 +266,7 @@ function generateFormsSQL() {
 
     sql += '\n' + _Q.WH + ' f.TemplateVersionID = ' + (template ? safeInt(template.id) : '/* pick a template */') + '\n' +
         '   ' + _Q.AN + ' f.IsDraft = 0\n' +
-        _Q.GB + ' f.FormID, f.Created, pd.PackageID, tq.TaskQueueID, tq.[Status]' + (hasWorkflow ? ', ps.Name' : '') + '\n' +
+        _Q.GB + ' f.FormID, f.Created, pd.PackageID, tq.TaskQueueID, tq.[Status]' + (hasWorkflow ? ', ps.Name' : '') + (hasAssignee && assigneeColName ? ', tq.[' + escapeBracket(assigneeColName) + ']' : '') + '\n' +
         _Q.OB + ' f.Created ' + _Q.DS;
 
     return sql;
@@ -331,6 +338,9 @@ function generateColumnDefinitions() {
         fields.filter(function(f) { return State.selectedFields.includes(f.id); }).forEach(function(f) {
             columns.push("        { field: '" + escapeJS(f.alias) + "', label: '" + escapeJS(f.name) + "', type: '" + escapeJS(f.type) + "' }");
         });
+        if (State.notesConfig && State.notesConfig.enabled) {
+            columns.push("        { field: '_note', label: '" + escapeJS(State.notesConfig.columnLabel || 'Notes') + "', type: 'notes' }");
+        }
     } else if (State.mode === 'forms') {
         columns.push("        { field: 'FormStatus', label: 'Status', type: 'text' }");
         var inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
@@ -339,6 +349,12 @@ function generateColumnDefinitions() {
         });
         if (State.selectedInputIds.includes('__currentStepName__')) {
             columns.push("        { field: 'CurrentStepName', label: 'Current Step', type: 'text' }");
+        }
+        if (State.selectedInputIds.includes('__assignedTo__')) {
+            columns.push("        { field: 'AssignedTo', label: 'Assigned To', type: 'text' }");
+        }
+        if (State.notesConfig && State.notesConfig.enabled) {
+            columns.push("        { field: '_note', label: '" + escapeJS(State.notesConfig.columnLabel || 'Notes') + "', type: 'notes' }");
         }
     } else if (State.mode === 'combined') {
         columns.push("        { field: 'RecordType', label: 'Type', type: 'text' }");
@@ -354,6 +370,12 @@ function generateColumnDefinitions() {
         if (State.selectedInputIds.includes('__currentStepName__')) {
             columns.push("        { field: 'CurrentStepName', label: 'Current Step', type: 'text' }");
         }
+        if (State.selectedInputIds.includes('__assignedTo__')) {
+            columns.push("        { field: 'AssignedTo', label: 'Assigned To', type: 'text' }");
+        }
+        if (State.notesConfig && State.notesConfig.enabled) {
+            columns.push("        { field: '_note', label: '" + escapeJS(State.notesConfig.columnLabel || 'Notes') + "', type: 'notes' }");
+        }
     }
     return columns.join(',\n');
 }
@@ -366,6 +388,9 @@ function generateSplitColumnDefinitions() {
     docFields.filter(function(f) { return State.selectedFields.includes(f.id); }).forEach(function(f) {
         contentCols.push("        { field: '" + escapeJS(f.alias) + "', label: '" + escapeJS(f.name) + "', type: '" + escapeJS(f.type) + "' }");
     });
+    if (State.notesConfig && State.notesConfig.enabled) {
+        contentCols.push("        { field: '_note', label: '" + escapeJS(State.notesConfig.columnLabel || 'Notes') + "', type: 'notes' }");
+    }
     formsCols.push("        { field: 'SubmittedDate', label: 'Submitted', type: 'date' }");
     formsCols.push("        { field: 'FormStatus', label: 'Status', type: 'text' }");
     var inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
@@ -374,6 +399,12 @@ function generateSplitColumnDefinitions() {
     });
     if (State.selectedInputIds.includes('__currentStepName__')) {
         formsCols.push("        { field: 'CurrentStepName', label: 'Current Step', type: 'text' }");
+    }
+    if (State.selectedInputIds.includes('__assignedTo__')) {
+        formsCols.push("        { field: 'AssignedTo', label: 'Assigned To', type: 'text' }");
+    }
+    if (State.notesConfig && State.notesConfig.enabled) {
+        formsCols.push("        { field: '_note', label: '" + escapeJS(State.notesConfig.columnLabel || 'Notes') + "', type: 'notes' }");
     }
     return { contentColumns: contentCols.join(',\n'), formsColumns: formsCols.join(',\n') };
 }

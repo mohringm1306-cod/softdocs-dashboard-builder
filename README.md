@@ -2,8 +2,12 @@
 
 A wizard that builds dashboards for Softdocs Etrieve. No coding required — just pick a style, point it at your data, and download a ready-to-use dashboard.
 
-## What's New in v3.3.3
+## What's New in v3.4.0
 
+- **Current Assignee column** (v3.4.0) -- New virtual field `__assignedTo__` reads from a user-specified TaskQueue column (e.g. `ActorId`). Check the assignee box in the field picker and enter the column name discovered via the new `PROBE_TaskQueue_Columns.sql` probe.
+- **Fillable Notes column** (v3.4.0) -- Enable an editable notes column that persists to on-prem SQL Server via Hybrid Server. Notes are loaded separately and merged client-side. Works with any dashboard style. Toggle it in the swimlanes step.
+- **Notes schema generation** (v3.4.0) -- When notes are enabled, the download package includes `schema.sql` with the Notes table and SaveNote/GetNotes stored procedures, plus integration setup instructions in the README.
+- **DocumentType filter blank labels fix** (v3.3.4) -- Fixed a bug where DocumentType filter checkboxes showed blank labels instead of the document type name.
 - **Party field auto-detection** (v3.3.3) -- The wizard now returns `PartyTypeID` from the GetKeyFields source and auto-detects party fields (e.g. Student Info) on the JavaScript side. Even if the SQL CASE statement is missing or outdated, the wizard will generate the correct JOINs for party fields. Field type badges (party, date, number) now appear in the column picker.
 - **Error status detection** (v3.3.1) -- FormStatus now detects `Error` (TaskQueue.Status = 9999) in addition to In Progress and Completed. A third default Error swimlane is generated.
 - **Date sorting fix** (v3.3.2) -- Column sorting now correctly handles MM/DD/YYYY dates instead of treating them as text.

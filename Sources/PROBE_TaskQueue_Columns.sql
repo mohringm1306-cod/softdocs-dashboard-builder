@@ -1,0 +1,35 @@
+-- ============================================================================
+-- Probe: Discover TaskQueue Column Names
+-- ============================================================================
+-- Purpose: Returns all columns from the TaskQueue table so you can identify
+--          the correct assignee column name for the wizard's "Current Assignee"
+--          virtual field.
+--
+-- Usage:
+--   1. Create a GET integration source in Etrieve Central
+--   2. Paste this query and run it
+--   3. Look at the column names returned (e.g., ActorId, LockedByUserId)
+--   4. Enter the appropriate column name in the wizard's assignee config
+--
+-- Known columns (discovered at COD, 2026-03-03):
+--   TaskQueueID       GUID    Primary key
+--   ActorId           GUID    ** Likely the assignee (current actor/user) **
+--   PackageId         GUID    Links to PackageDocument
+--   CreateUserId      GUID    Who created the task
+--   CreateDate        datetime
+--   LastUpdateUserId  GUID    Last modifier
+--   LastUpdateDate    datetime
+--   Status            int     3=Active, 9999=Error
+--   ProcessStepID     GUID    Current workflow step
+--   LockedByUserId    GUID    User who has the task locked
+--   ClusterID         int
+--   ActorFilterID     string
+--   SignerEmailAddress string  For e-sign workflows
+--   EsignEmailLastSentDate  (nullable)
+--
+-- NOTE: ActorId is a GUID, not a username. To resolve to a display name,
+--       you would need a JOIN to a user/identity table (schema TBD).
+-- ============================================================================
+
+SELECT TOP 1 *
+FROM reporting.central_flow_TaskQueue

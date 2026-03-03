@@ -50,6 +50,29 @@ All columns verified via live probing through COD Central integrations.
 
 **NOTE:** No `DateTime` type exists. Only `Date`.
 
+### Field Value Views (EAV indexed views on `FieldValue` + `DocumentFieldValue`)
+| View | Filter | Value Column |
+|------|--------|-------------|
+| `ivDocumentTextFieldValue` | `LoweredText IS NOT NULL` | `.Text` |
+| `ivDocumentDateFieldValue` | `Date IS NOT NULL` | `.Date` |
+| `ivDocumentNumberFieldValue` | `Number IS NOT NULL` | `.Number` |
+| `ivDocumentDecimalFieldValue` | `Decimal IS NOT NULL` | `.Decimal` |
+
+**NOTE:** No `ivDocumentLookupFieldValue` exists. Simple Lookup fields store text in `ivDocumentTextFieldValue`.
+
+### Party Fields (Field.PartyTypeID IS NOT NULL)
+Fields like "Student Info" are **party-association** fields. They do NOT store values in `FieldValue` — they link through the Party system:
+```
+Document → DocumentFieldPartyVersion (DocumentID + FieldID)
+         → PartyVersion (PartyVersionID) → .name = display name
+         → ivPartyTextFieldValue (PartyVersionID + FieldID) = sub-fields
+```
+| Table | Key Columns |
+|-------|-------------|
+| `DocumentFieldPartyVersion` | DocumentID, FieldID, PartyVersionID |
+| `PartyVersion` | PartyVersionID, name, PartyID |
+| `ivPartyTextFieldValue` | PartyVersionID, FieldID, Text |
+
 ### DocumentTypeField (join table)
 | Column | Type | Notes |
 |--------|------|-------|
@@ -134,7 +157,7 @@ All columns verified via live probing through COD Central integrations.
 |--------|------|-------|
 | PackageId | GUID | PK |
 | Name | string | |
-| Status | int | |
+| Status | int | 2=In Progress, 100=Complete (verified Hartford 2026-03-02) |
 | CreateUserId | GUID | |
 | CreateDate | datetime | |
 | LastUpdateDate | datetime | |
@@ -157,6 +180,28 @@ All columns verified via live probing through COD Central integrations.
 | SystemID | GUID | |
 | SubmittedByID | GUID | |
 | SubmissionDate | datetime | |
+
+### TaskQueue (full schema, verified COD 2026-03-03)
+| Column | Type | Notes |
+|--------|------|-------|
+| TaskQueueID | GUID | PK |
+| **ActorId** | GUID | **Current assignee (user GUID)** |
+| PackageId | GUID | FK to Package |
+| CreateUserId | GUID | Who created the task |
+| CreateDate | datetime | |
+| LastUpdateUserId | GUID | Last modifier |
+| LastUpdateDate | datetime | |
+| Status | int | 3=Active, 9999=Error (package stuck/failed) |
+| ProcessStepID | GUID | FK to ProcessStep (lowercase 'd') |
+| LockedByUserId | GUID | User who has the task locked |
+| ClusterID | int | |
+| ActorFilterID | string | |
+| SignerEmailAddress | string | For e-sign workflows |
+| EsignEmailLastSentDate | datetime/null | |
+
+**NOTE:** `ActorId` is a GUID, not a display name. Resolving to a username
+requires a JOIN to a user/identity table (schema TBD). The wizard uses this
+column for the "Current Assignee" virtual field.
 
 ## Key Relationships
 
