@@ -7,6 +7,21 @@
 
 console.log('Dashboard Builder Wizard v' + (typeof WIZARD_VERSION !== 'undefined' ? WIZARD_VERSION : '?') + ' - Template renderers loaded');
 
+// Normalize URL: auto-add https:// if the user omits or mistypes the scheme
+function normalizeUrl(val) {
+    val = (val || '').trim().replace(/\/+$/, '');
+    if (!val) return '';
+    // Already correct
+    if (/^https:\/\//i.test(val)) return val;
+    // Correct http:// to https://
+    if (/^http:\/\//i.test(val)) return 'https://' + val.substring(7);
+    // Strip common typos/partial schemes before re-adding https://
+    // Handles: htts://, htp://, htps://, https:, http:, https//, http//, ://, //, etc.
+    val = val.replace(/^h?t?t?p?s?:?\/?\/?\s*/i, '');
+    if (!val) return '';
+    return 'https://' + val;
+}
+
 // Initialize draft check on DOM ready
 document.addEventListener('DOMContentLoaded', checkForDraft);
 
@@ -217,20 +232,22 @@ function renderSetupStep() {
         <div class="form-group">
             <label><i class="bi bi-globe" style="margin-right:8px;color:var(--primary);"></i>Etrieve Central URL</label>
             <input type="text" class="form-control" id="centralUrl"
-                   placeholder="https://yoursite.etrieve.cloud"
+                   placeholder="yoursite.etrieve.cloud"
                    value="${escapeHtml(State.centralUrl)}"
-                   oninput="State.centralUrl = this.value.replace(/\\/+$/, ''); saveDraft();">
-            <small style="color:#666;">Your Etrieve Central domain. View buttons will link here to open form submissions.</small>
+                   oninput="State.centralUrl = this.value.replace(/\\/+$/, ''); saveDraft();"
+                   onblur="this.value = normalizeUrl(this.value); State.centralUrl = this.value; saveDraft();">
+            <small style="color:#666;">Your Etrieve Central domain. <code>https://</code> is added automatically if omitted.</small>
         </div>` : ''}
 
         ${State.mode === 'content' || State.mode === 'combined' ? `
         <div class="form-group">
             <label><i class="bi bi-archive" style="margin-right:8px;color:var(--primary);"></i>Etrieve Content URL</label>
             <input type="text" class="form-control" id="contentUrl"
-                   placeholder="https://yoursitecontent.etrieve.cloud"
+                   placeholder="yoursitecontent.etrieve.cloud"
                    value="${escapeHtml(State.contentUrl)}"
-                   oninput="State.contentUrl = this.value.replace(/\\/+$/, ''); saveDraft();">
-            <small style="color:#666;">Your Etrieve Content domain. View buttons will link here to open documents.</small>
+                   oninput="State.contentUrl = this.value.replace(/\\/+$/, ''); saveDraft();"
+                   onblur="this.value = normalizeUrl(this.value); State.contentUrl = this.value; saveDraft();">
+            <small style="color:#666;">Your Etrieve Content domain. <code>https://</code> is added automatically if omitted.</small>
         </div>` : ''}
 
         <div id="techNameDisplay" style="background:#f0f7f4;border-radius:10px;padding:15px 20px;border:1px solid #c3e6cb;display:${State.dashboardTitle && !State.advancedMode ? 'block' : 'none'};">
@@ -2429,39 +2446,7 @@ function closeDownloadModal() {
 // (which overrides these via function declaration hoisting when loaded second)
 
 
-// renderPreview() is defined in wizard-generators.js (loaded after this file)
-
-function generateFakePreviewData(columns) {
-    const fakeNames = ['John Smith', 'Maria Garcia', 'James Wilson', 'Sarah Johnson', 'Michael Brown'];
-    const fakeDates = ['01/15/2026', '01/14/2026', '01/13/2026', '01/12/2026', '01/11/2026'];
-    const fakeStatuses = ['Pending', 'Approved', 'In Review', 'Submitted', 'Complete'];
-    const fakeDepts = ['Financial Aid', 'Admissions', 'HR', 'IT', 'Marketing'];
-
-    return fakeNames.map((name, i) => {
-        const row = {};
-        columns.forEach((col, j) => {
-            const colLower = col.toLowerCase();
-            if (colLower.includes('name') || colLower.includes('requester')) {
-                row[col] = name;
-            } else if (colLower.includes('date')) {
-                row[col] = fakeDates[i];
-            } else if (colLower.includes('status') || colLower.includes('step')) {
-                row[col] = fakeStatuses[i];
-            } else if (colLower.includes('dept') || colLower.includes('department')) {
-                row[col] = fakeDepts[i];
-            } else if (colLower.includes('email')) {
-                row[col] = name.split(' ')[0].toLowerCase() + '@cod.edu';
-            } else if (colLower.includes('id')) {
-                row[col] = 'A' + (100000 + i * 1234);
-            } else if (col === '...') {
-                row[col] = '...';
-            } else {
-                row[col] = 'Data ' + (i + 1);
-            }
-        });
-        return row;
-    });
-}
+// renderPreview() and generateFakePreviewData() moved to wizard-preview*.js (v3.5.0)
 
 // ============================================================================
 // EXPANDABLE PREVIEW

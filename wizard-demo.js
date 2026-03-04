@@ -6,10 +6,11 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '3.4.0';
+var WIZARD_VERSION = '3.5.0';
 var WIZARD_BUILD_DATE = '2026-03-03';
 
 // Changelog (newest first)
+// 3.5.0 (2026-03-03) - Style-specific live previews (12 unique renderers in sub-files); URL auto-fill (https://)
 // 3.4.0 (2026-03-03) - Current Assignee virtual field (forms); Fillable Notes column (cross-cutting write-back)
 // 3.3.4 (2026-03-03) - Fix DocumentType filter showing blank labels (was mapping IDs instead of names)
 // 3.3.3 (2026-03-02) - Party field auto-detection via PartyTypeID fallback; field type badges in column picker
