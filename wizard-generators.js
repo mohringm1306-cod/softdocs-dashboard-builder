@@ -921,6 +921,7 @@ function generateIntegrationInstructions() {
 }
 function renderStyleStep() {
   var categories = ['Basic', 'Advanced', 'Specialized'];
+
   var html = '<div class="step-description">' +
       '<p><i class="bi bi-lightbulb" style="color:var(--accent);margin-right:8px;"></i>' +
       'Each style includes different features and layouts. Click one to see what it offers.</p></div>';
@@ -943,7 +944,7 @@ function renderStyleStep() {
     });
     html += '</div>';
 
-    // Infographic panel: show for selected style in this category
+    // Show infographic right after the category containing the selected style
     var selectedInCat = styles.find(function(s) { return s.id === State.selectedStyle; });
     if (selectedInCat) {
       html += renderStyleInfoGraphic(selectedInCat);
@@ -952,6 +953,7 @@ function renderStyleStep() {
 
   return html;
 }
+
 function renderStyleInfoGraphic(s) {
   var featuresHtml = (s.features || []).map(function(f) {
     return '<div class="style-info-feature"><i class="bi bi-check-circle-fill"></i> ' + escapeHtml(f) + '</div>';

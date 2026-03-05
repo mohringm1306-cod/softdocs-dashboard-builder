@@ -203,7 +203,7 @@ body {
     background: white;
     border-radius: 16px;
     box-shadow: var(--shadow-lg);
-    overflow: hidden;
+    overflow: visible;
 }
 
 .card-header {
@@ -211,6 +211,7 @@ body {
     color: white;
     padding: 25px 30px;
     transition: background 0.3s ease;
+    border-radius: 16px 16px 0 0;
 }
 
 .card-header h2 {
@@ -228,12 +229,14 @@ body {
 /* Two-column layout with preview */
 .wizard-layout {
     display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 30px;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
 }
 
 .wizard-main {
     min-width: 0;
+    min-height: 0;
+    align-self: start;
 }
 
 /* Live Preview Panel */
@@ -245,7 +248,9 @@ body {
     display: flex;
     flex-direction: column;
     max-height: 600px;
-    position: relative;
+    position: sticky;
+    top: 80px;
+    align-self: start;
 }
 
 .preview-header {
@@ -590,12 +595,15 @@ body {
     margin-bottom: 12px;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 768px) {
     .wizard-layout {
         grid-template-columns: 1fr;
     }
     .preview-panel {
         max-height: 350px;
+        position: relative;
+        top: auto;
+        align-self: auto;
     }
 }
 

@@ -325,15 +325,13 @@ function updateDashboardTitle(value) {
 
 function selectStyle(styleId) {
     State.selectedStyle = styleId;
+    // Preserve scroll position across re-render
+    var scrollY = window.scrollY || window.pageYOffset;
     renderProgress();
     renderStep();
     renderPreview();
     saveDraft();
-    // Scroll the infographic into view so the user sees expanded details
-    var infoPanel = document.getElementById('style-infographic');
-    if (infoPanel) {
-        infoPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    window.scrollTo(0, scrollY);
 }
 
 // ============================================================================
