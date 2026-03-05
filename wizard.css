@@ -762,7 +762,44 @@ body {
     font-size: 1.1rem;
 }
 
-/* SQL Required Badge */
+/* Style Badges (Cloud Only / Hybrid Server) */
+.badge-cloud-only {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #b1dfbb;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    margin-left: 4px;
+}
+.badge-cloud-only i { font-size: 0.65rem; }
+
+.badge-hybrid-required {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    color: #856404;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #f0d98c;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    margin-left: 4px;
+}
+.badge-hybrid-required i { font-size: 0.65rem; }
+
+/* Legacy alias */
 .badge-sql-required {
     display: inline-block;
     background: linear-gradient(135deg, #fff3cd, #ffeaa7);
@@ -776,6 +813,135 @@ body {
     letter-spacing: 0.5px;
     vertical-align: middle;
     margin-left: 4px;
+}
+
+/* Style Infographic Panel (expands below selected style) */
+.style-infographic {
+    background: linear-gradient(135deg, #f8f9fa, #eef1f5);
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 12px 0 16px;
+    overflow: hidden;
+    max-height: 600px;
+    opacity: 1;
+    transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+}
+.style-infographic.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding: 0 24px;
+    margin: 0;
+    border-color: transparent;
+}
+.style-info-cols {
+    display: flex;
+    gap: 32px;
+}
+.style-info-col {
+    flex: 1;
+    min-width: 0;
+}
+.style-info-section-header {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #555;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.style-info-section-header i {
+    font-size: 0.9rem;
+    color: var(--primary);
+}
+.style-info-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 0.82rem;
+    color: #333;
+    line-height: 1.4;
+}
+.style-info-feature i {
+    color: var(--success);
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 0.85rem;
+}
+.style-info-warnings-header {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #856404;
+    margin: 14px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.style-info-warnings-header i {
+    font-size: 0.9rem;
+    color: #e67e22;
+}
+.style-info-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 0.82rem;
+    color: #664d03;
+    line-height: 1.4;
+}
+.style-info-warning i {
+    color: #e67e22;
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 0.8rem;
+}
+.style-info-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 0.82rem;
+    color: #333;
+    line-height: 1.4;
+}
+.style-info-step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.style-info-examples {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid #dee2e6;
+    font-size: 0.78rem;
+    color: #777;
+    line-height: 1.4;
+}
+.style-info-examples strong {
+    color: #555;
+}
+
+/* Infographic responsive stacking */
+@media (max-width: 768px) {
+    .style-info-cols {
+        flex-direction: column;
+        gap: 16px;
+    }
 }
 
 /* Write-back warning banner */

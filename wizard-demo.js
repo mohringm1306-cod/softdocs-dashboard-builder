@@ -6,10 +6,11 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '3.5.0';
-var WIZARD_BUILD_DATE = '2026-03-03';
+var WIZARD_VERSION = '3.5.1';
+var WIZARD_BUILD_DATE = '2026-03-04';
 
 // Changelog (newest first)
+// 3.5.1 (2026-03-04) - Style selection UX overhaul: infographic panel expands on click showing features, warnings, setup steps; Cloud Only vs Hybrid Server badges
 // 3.5.0 (2026-03-03) - Style-specific live previews (12 unique renderers in sub-files); URL auto-fill (https://)
 // 3.4.0 (2026-03-03) - Current Assignee virtual field (forms); Fillable Notes column (cross-cutting write-back)
 // 3.3.4 (2026-03-03) - Fix DocumentType filter showing blank labels (was mapping IDs instead of names)
@@ -327,7 +328,15 @@ var DashboardStyles = [
         category: 'Basic',
         description: 'Collapsible swimlanes organized by status progression.',
         bestFor: 'Linear workflows: Received -> In Progress -> Complete',
-        examples: 'Opt-Out Forms, Parent Consent, FSSA Applications'
+        examples: 'Opt-Out Forms, Parent Consent, FSSA Applications',
+        requiresSQL: false,
+        features: [
+            'Collapsible swimlanes grouped by workflow status',
+            'Sortable columns, global search, per-swimlane CSV export',
+            'View button links directly to form or document in Etrieve'
+        ],
+        warnings: [],
+        setupSteps: ['Create cloud integration source', 'Upload dashboard files to Etrieve']
     },
     {
         id: 'request-type',
@@ -337,7 +346,15 @@ var DashboardStyles = [
         category: 'Basic',
         description: 'Groups items by request type or category instead of status.',
         bestFor: 'Multi-purpose forms with different request categories',
-        examples: 'Travel Requests, Program Applications'
+        examples: 'Travel Requests, Program Applications',
+        requiresSQL: false,
+        features: [
+            'Swimlanes organized by category or request type',
+            'Sortable columns, global search, per-swimlane CSV export',
+            'Color-coded type badges with item counts'
+        ],
+        warnings: [],
+        setupSteps: ['Create cloud integration source', 'Upload dashboard files to Etrieve']
     },
     {
         id: 'expandable',
@@ -347,7 +364,15 @@ var DashboardStyles = [
         category: 'Advanced',
         description: 'Click any row to expand and see additional detail fields below it.',
         bestFor: 'Budget requests, capital projects, detailed records',
-        examples: 'Budget Office Positions, Capital Requests, Facilities'
+        examples: 'Budget Office Positions, Capital Requests, Facilities',
+        requiresSQL: false,
+        features: [
+            'Click +/- to expand rows and see detail fields inline',
+            'You pick which fields show in the expanded detail area',
+            'Sortable columns, search, per-swimlane export'
+        ],
+        warnings: [],
+        setupSteps: ['Create cloud integration source', 'Upload dashboard files to Etrieve']
     },
     {
         id: 'alpha-split',
@@ -357,7 +382,15 @@ var DashboardStyles = [
         category: 'Basic',
         description: 'Auto-splits items by last name ranges for workload distribution.',
         bestFor: 'High-volume processing needing workload balancing',
-        examples: 'Financial Aid Documents, Student Records'
+        examples: 'Financial Aid Documents, Student Records',
+        requiresSQL: false,
+        features: [
+            'Automatically splits items into A-H, I-P, Q-Z (configurable)',
+            'Each range becomes its own swimlane with counts',
+            'Great for distributing work across multiple staff'
+        ],
+        warnings: [],
+        setupSteps: ['Create cloud integration source', 'Upload dashboard files to Etrieve']
     },
     {
         id: 'claims',
@@ -367,7 +400,20 @@ var DashboardStyles = [
         category: 'Advanced',
         description: 'Staff can claim items, see their personal stats, and filter by category. Color-coded badges show how long items have been waiting.',
         bestFor: 'Document processing queues with multiple staff',
-        examples: 'Transcript Dashboard, NIS Transcripts'
+        examples: 'Transcript Dashboard, NIS Transcripts',
+        requiresSQL: true,
+        features: [
+            'Staff click "Claim" to take ownership of items',
+            'Personal stats bar shows your claimed count vs total',
+            'Age badges show how long each item has been waiting',
+            'Quick-filter chips (All, High Priority, 30+ Days, etc.)'
+        ],
+        warnings: [
+            'This is interactive: staff claim and release items from the dashboard',
+            'Requires on-prem SQL Server to store who claimed what',
+            'Requires Hybrid Server connection between cloud and on-prem'
+        ],
+        setupSteps: ['Create cloud integration source', 'Run schema.sql on your on-prem SQL Server', 'Configure Hybrid Server connection', 'Create write-back integration sources in Etrieve']
     },
     {
         id: 'workflow-actions',
@@ -377,7 +423,20 @@ var DashboardStyles = [
         category: 'Advanced',
         description: 'Each workflow step gets its own color and action buttons (approve, deny, etc.) with confirmation dialogs.',
         bestFor: 'Multi-step approval processes where staff take action at each stage',
-        examples: 'Student Name Changes, Approval Workflows'
+        examples: 'Student Name Changes, Approval Workflows',
+        requiresSQL: true,
+        features: [
+            'Color-coded swimlane headers per workflow step',
+            'Approve / Deny / custom action buttons on every row',
+            'Confirmation dialog before any action executes',
+            'Action queue records who did what and when'
+        ],
+        warnings: [
+            'This is an interactive action system, not just a status viewer',
+            'If you just want to SEE workflow steps, use Simple Status instead',
+            'Requires on-prem SQL Server + Hybrid Server connection'
+        ],
+        setupSteps: ['Create cloud integration source', 'Run schema.sql on your on-prem SQL Server', 'Configure Hybrid Server connection', 'Create write-back integration sources in Etrieve']
     },
     {
         id: 'pdf-signatures',
@@ -387,7 +446,15 @@ var DashboardStyles = [
         category: 'Advanced',
         description: 'Expandable rows showing signature status and document details. Built for compliance and incident tracking.',
         bestFor: 'Forms with signatures, compliance documents, incident reports',
-        examples: 'EHSR Form 45, Incident Reports'
+        examples: 'EHSR Form 45, Incident Reports',
+        requiresSQL: false,
+        features: [
+            'Expandable rows show signature status and document details',
+            'PDF link opens rendered form directly in browser',
+            'Built for compliance tracking and incident management'
+        ],
+        warnings: [],
+        setupSteps: ['Create cloud integration source', 'Upload dashboard files to Etrieve']
     },
     {
         id: 'survey-analytics',
@@ -397,7 +464,15 @@ var DashboardStyles = [
         category: 'Specialized',
         description: 'Visual analytics with rating distributions, common themes from comments, and multiple view modes.',
         bestFor: 'Survey response analysis and reporting',
-        examples: 'SGC HR Feedback, Assessment Surveys'
+        examples: 'SGC HR Feedback, Assessment Surveys',
+        requiresSQL: false,
+        features: [
+            'Stats bar: total responses, department count, average rating',
+            'Toggle between table view and visual cards view',
+            'Color-coded rating badges (green/yellow/red)'
+        ],
+        warnings: [],
+        setupSteps: ['Create cloud integration source', 'Upload dashboard files to Etrieve']
     },
     {
         id: 'award-nominations',
@@ -407,7 +482,15 @@ var DashboardStyles = [
         category: 'Specialized',
         description: 'Expandable nomination details with category badges and voting.',
         bestFor: 'Employee recognition and award programs',
-        examples: 'Staff Awards, Faculty Recognition'
+        examples: 'Staff Awards, Faculty Recognition',
+        requiresSQL: false,
+        features: [
+            'Expandable rows show nominee details and justification',
+            'Color-coded category badges (Innovation, Leadership, etc.)',
+            'Sortable columns, search, per-swimlane export'
+        ],
+        warnings: [],
+        setupSteps: ['Create cloud integration source', 'Upload dashboard files to Etrieve']
     },
     {
         id: 'committee-voting',
@@ -417,7 +500,20 @@ var DashboardStyles = [
         category: 'Specialized',
         description: 'Named voter columns, document preview, vote buttons, and toast notifications.',
         bestFor: 'Committee decisions on appeals or applications',
-        examples: 'Visa Committee, Appeals Board, PD Appeals'
+        examples: 'Visa Committee, Appeals Board, PD Appeals',
+        requiresSQL: true,
+        features: [
+            'Named voter columns with color-coded headers',
+            'Vote buttons: Approve, Deny, Need More Info',
+            'Tracks who voted and shows vote status per member',
+            'Member slot auto-detection based on logged-in user'
+        ],
+        warnings: [
+            'Members vote directly from the dashboard',
+            'Requires on-prem SQL Server to store vote records',
+            'Requires Hybrid Server connection between cloud and on-prem'
+        ],
+        setupSteps: ['Create cloud integration source', 'Run schema.sql on your on-prem SQL Server', 'Configure Hybrid Server connection', 'Create write-back integration sources in Etrieve']
     },
     {
         id: 'cards-dashboard',
@@ -427,7 +523,15 @@ var DashboardStyles = [
         category: 'Specialized',
         description: 'Donut chart, progress bars, alert panel, and responsive card grid layout.',
         bestFor: 'Executive-level tracking with visual metrics',
-        examples: 'Strategic Plan Tracking, Project Portfolio, Initiative Dashboard'
+        examples: 'Strategic Plan Tracking, Project Portfolio, Initiative Dashboard',
+        requiresSQL: false,
+        features: [
+            'Status overview with color-coded breakdown',
+            'Card grid layout instead of table rows',
+            'Great for executive-level dashboards and portfolios'
+        ],
+        warnings: [],
+        setupSteps: ['Create cloud integration source', 'Upload dashboard files to Etrieve']
     },
     {
         id: 'bulk-actions',
@@ -437,7 +541,20 @@ var DashboardStyles = [
         category: 'Advanced',
         description: 'Bulk checkboxes, approve/deny/reassign, row action menus, and export selected.',
         bestFor: 'Approval queues with bulk operations',
-        examples: 'IT Equipment Requests, Procurement Reviews'
+        examples: 'IT Equipment Requests, Procurement Reviews',
+        requiresSQL: true,
+        features: [
+            'Checkboxes for selecting multiple items at once',
+            'Bulk Approve, Bulk Deny, and Reassign buttons',
+            'Per-row action menu with quick approve/deny',
+            'Export selected items to CSV'
+        ],
+        warnings: [
+            'This is interactive: staff approve/deny/reassign from the dashboard',
+            'Requires on-prem SQL Server to record decisions',
+            'Requires Hybrid Server connection between cloud and on-prem'
+        ],
+        setupSteps: ['Create cloud integration source', 'Run schema.sql on your on-prem SQL Server', 'Configure Hybrid Server connection', 'Create write-back integration sources in Etrieve']
     }
 ];
 

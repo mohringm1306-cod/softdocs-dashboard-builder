@@ -321,39 +321,7 @@ function updateDashboardTitle(value) {
 // ============================================================================
 // STYLE SELECTION STEP
 // ============================================================================
-
-function renderStyleStep() {
-    const categories = ['Basic', 'Advanced', 'Specialized'];
-    let html = `
-        <div class="step-description">
-            <p><i class="bi bi-lightbulb" style="color:var(--accent);margin-right:8px;"></i>
-            Each style includes different features and layouts. Pick the one that best matches your workflow.</p>
-        </div>
-    `;
-
-    categories.forEach(cat => {
-        const styles = DashboardStyles.filter(s => s.category === cat);
-        html += `<div class="style-category-label">${cat}</div>
-                 <div class="style-grid">`;
-        styles.forEach(s => {
-            const selected = State.selectedStyle === s.id;
-            html += `
-                <div class="style-select-card ${selected ? 'selected' : ''}" onclick="selectStyle('${escapeJSAttr(s.id)}')">
-                    <div class="style-select-icon"><i class="bi ${escapeHtml(s.icon)}"></i></div>
-                    <div class="style-select-info">
-                        <div class="style-select-name">${escapeHtml(s.name)}</div>
-                        <div class="style-select-desc">${escapeHtml(s.description)}</div>
-                        <div class="style-select-best"><strong>Best for:</strong> ${escapeHtml(s.bestFor)}</div>
-                    </div>
-                    ${selected ? '<div class="style-select-check"><i class="bi bi-check-circle-fill"></i></div>' : ''}
-                </div>
-            `;
-        });
-        html += '</div>';
-    });
-
-    return html;
-}
+// renderStyleStep() lives in wizard-generators.js (includes infographic panel, v3.5.1)
 
 function selectStyle(styleId) {
     State.selectedStyle = styleId;
@@ -361,6 +329,11 @@ function selectStyle(styleId) {
     renderStep();
     renderPreview();
     saveDraft();
+    // Scroll the infographic into view so the user sees expanded details
+    var infoPanel = document.getElementById('style-infographic');
+    if (infoPanel) {
+        infoPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 }
 
 // ============================================================================

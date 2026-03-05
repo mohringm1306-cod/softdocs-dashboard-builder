@@ -921,20 +921,68 @@ function generateIntegrationInstructions() {
 }
 function renderStyleStep() {
   var categories = ['Basic', 'Advanced', 'Specialized'];
-  var html = "\n        <div class=\"step-description\">\n            <p><i class=\"bi bi-lightbulb\" style=\"color:var(--accent);margin-right:8px;\"></i>\n            Each style includes different features and layouts. Pick the one that best matches your workflow.</p>\n        </div>\n    ";
-  categories.forEach(function (cat) {
-    var styles = DashboardStyles.filter(function (s) {
-      return s.category === cat;
-    });
-    html += "<div class=\"style-category-label\">".concat(cat, "</div>\n                 <div class=\"style-grid\">");
-    styles.forEach(function (s) {
+  var html = '<div class="step-description">' +
+      '<p><i class="bi bi-lightbulb" style="color:var(--accent);margin-right:8px;"></i>' +
+      'Each style includes different features and layouts. Click one to see what it offers.</p></div>';
+
+  categories.forEach(function(cat) {
+    var styles = DashboardStyles.filter(function(s) { return s.category === cat; });
+    html += '<div class="style-category-label">' + cat + '</div><div class="style-grid">';
+    styles.forEach(function(s) {
       var selected = State.selectedStyle === s.id;
-      var sqlBadge = getStyleBadgeHTML(s.id);
-      html += "\n                <div class=\"style-select-card ".concat(selected ? 'selected' : '', "\" onclick=\"selectStyle('").concat(escapeJS(s.id), "')\">\n                    <div class=\"style-select-icon\"><i class=\"bi ").concat(escapeHtml(s.icon), "\"></i></div>\n                    <div class=\"style-select-info\">\n                        <div class=\"style-select-name\">").concat(escapeHtml(s.name)).concat(sqlBadge ? ' ' + sqlBadge : '', "</div>\n                        <div class=\"style-select-desc\">").concat(escapeHtml(s.description), "</div>\n                        <div class=\"style-select-best\"><strong>Best for:</strong> ").concat(escapeHtml(s.bestFor), "</div>\n                    </div>\n                    ").concat(selected ? '<div class="style-select-check"><i class="bi bi-check-circle-fill"></i></div>' : '', "\n                </div>\n            ");
+      var badge = getStyleBadgeHTML(s.id);
+      html += '<div class="style-select-card' + (selected ? ' selected' : '') + '" onclick="selectStyle(\'' + escapeJS(s.id) + '\')">' +
+          '<div class="style-select-icon"><i class="bi ' + escapeHtml(s.icon) + '"></i></div>' +
+          '<div class="style-select-info">' +
+              '<div class="style-select-name">' + escapeHtml(s.name) + ' ' + badge + '</div>' +
+              '<div class="style-select-desc">' + escapeHtml(s.description) + '</div>' +
+              '<div class="style-select-best"><strong>Best for:</strong> ' + escapeHtml(s.bestFor) + '</div>' +
+          '</div>' +
+          (selected ? '<div class="style-select-check"><i class="bi bi-check-circle-fill"></i></div>' : '') +
+      '</div>';
     });
     html += '</div>';
+
+    // Infographic panel: show for selected style in this category
+    var selectedInCat = styles.find(function(s) { return s.id === State.selectedStyle; });
+    if (selectedInCat) {
+      html += renderStyleInfoGraphic(selectedInCat);
+    }
   });
+
   return html;
+}
+function renderStyleInfoGraphic(s) {
+  var featuresHtml = (s.features || []).map(function(f) {
+    return '<div class="style-info-feature"><i class="bi bi-check-circle-fill"></i> ' + escapeHtml(f) + '</div>';
+  }).join('');
+
+  var warningsHtml = '';
+  if (s.warnings && s.warnings.length > 0) {
+    warningsHtml = '<div class="style-info-warnings-header"><i class="bi bi-exclamation-triangle-fill"></i> Before You Choose</div>' +
+      s.warnings.map(function(w) {
+        return '<div class="style-info-warning"><i class="bi bi-exclamation-triangle"></i> ' + escapeHtml(w) + '</div>';
+      }).join('');
+  }
+
+  var stepsHtml = (s.setupSteps || []).map(function(step, i) {
+    return '<div class="style-info-step"><span class="style-info-step-num">' + (i + 1) + '</span> ' + escapeHtml(step) + '</div>';
+  }).join('');
+
+  return '<div class="style-infographic" id="style-infographic">' +
+      '<div class="style-info-cols">' +
+          '<div class="style-info-col">' +
+              '<div class="style-info-section-header"><i class="bi bi-check2-square"></i> What You Get</div>' +
+              featuresHtml +
+              warningsHtml +
+          '</div>' +
+          '<div class="style-info-col">' +
+              '<div class="style-info-section-header"><i class="bi bi-tools"></i> Setup Required</div>' +
+              stepsHtml +
+              '<div class="style-info-examples"><strong>Examples:</strong> ' + escapeHtml(s.examples || '') + '</div>' +
+          '</div>' +
+      '</div>' +
+  '</div>';
 }
 function _buildBaseGenerateStep() {
   var sql = State.customSQL || generateSQL();
@@ -1158,11 +1206,11 @@ function generateDashboardFiles() {
   return files;
 }
 function getStyleBadgeHTML(styleId) {
-  var writeBackStyles = ['claims', 'committee-voting', 'workflow-actions', 'bulk-actions'];
-  if (writeBackStyles.indexOf(styleId) !== -1) {
-    return '<span class="badge-sql-required" title="Requires on-prem SQL Server via Hybrid Server">SQL Required</span>';
+  var styleDef = DashboardStyles.find(function(s) { return s.id === styleId; });
+  if (styleDef && styleDef.requiresSQL) {
+    return '<span class="badge-hybrid-required" title="Requires on-prem SQL Server + Hybrid Server"><i class="bi bi-hdd-network"></i> Hybrid Server</span>';
   }
-  return '';
+  return '<span class="badge-cloud-only" title="Cloud-only, no on-prem server needed"><i class="bi bi-cloud-check"></i> Cloud Only</span>';
 }
 console.log('Dashboard Builder Wizard v' + (typeof WIZARD_VERSION !== 'undefined' ? WIZARD_VERSION : '?') + ' - Style generators + write-back SQL loaded');
 if (typeof define === 'function' && define.amd) {
