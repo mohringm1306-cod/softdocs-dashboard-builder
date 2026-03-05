@@ -1,33 +1,32 @@
 # Softdocs Dashboard Builder
 
-A wizard that builds dashboards for Softdocs Etrieve. No coding required — just pick a style, point it at your data, and download a ready-to-use dashboard.
+A wizard that builds dashboards for Softdocs Etrieve. No coding required. Pick a style, point it at your data, and download a ready-to-use dashboard.
 
-## What's New in v3.4.0
+## What's New in v4.0
 
-- **Current Assignee column** (v3.4.0) -- New virtual field `__assignedTo__` reads from a user-specified TaskQueue column (e.g. `ActorId`). Check the assignee box in the field picker and enter the column name discovered via the new `PROBE_TaskQueue_Columns.sql` probe.
-- **Fillable Notes column** (v3.4.0) -- Enable an editable notes column that persists to on-prem SQL Server via Hybrid Server. Notes are loaded separately and merged client-side. Works with any dashboard style. Toggle it in the swimlanes step.
-- **Notes schema generation** (v3.4.0) -- When notes are enabled, the download package includes `schema.sql` with the Notes table and SaveNote/GetNotes stored procedures, plus integration setup instructions in the README.
-- **DocumentType filter blank labels fix** (v3.3.4) -- Fixed a bug where DocumentType filter checkboxes showed blank labels instead of the document type name.
-- **Party field auto-detection** (v3.3.3) -- The wizard now returns `PartyTypeID` from the GetKeyFields source and auto-detects party fields (e.g. Student Info) on the JavaScript side. Even if the SQL CASE statement is missing or outdated, the wizard will generate the correct JOINs for party fields. Field type badges (party, date, number) now appear in the column picker.
-- **Error status detection** (v3.3.1) -- FormStatus now detects `Error` (TaskQueue.Status = 9999) in addition to In Progress and Completed. A third default Error swimlane is generated.
-- **Date sorting fix** (v3.3.2) -- Column sorting now correctly handles MM/DD/YYYY dates instead of treating them as text.
-- **DocumentType filterable** (v3.3.2) -- DocumentType is now offered as a filter in content and combined modes.
-- **FormStatus column** (v3.3.0) -- Forms-mode dashboards include a computed `FormStatus` field. Default swimlanes are pre-filtered on this field so "In Progress" and "Completed" groups work correctly out of the box.
-- **Back button** (v3.3.0) -- Generated dashboards include a "Back" button in the header bar for navigating away from the dashboard.
+- **Style infographics** -- Click any dashboard style and an info panel expands showing what you get, warnings (for styles that need on-prem SQL), and numbered setup steps. Makes the difference between cloud-only and hybrid styles obvious before you commit.
+- **Cloud Only / Hybrid Server badges** -- Green badges for styles that run entirely in the cloud. Amber badges for styles that require on-prem SQL Server and Hybrid Server.
+- **Style-specific live previews** -- The preview panel now shows a realistic mockup of each style with fake data (swimlanes, action buttons, vote columns, charts, etc.) instead of a generic placeholder.
+- **Sticky preview panel** -- The preview follows you as you scroll through long wizard steps.
+- **URL auto-fill** -- Instance URL fields auto-correct typos and add `https://` on blur.
+- **Current Assignee column** -- Virtual field that reads the assigned user from a TaskQueue column (e.g. `ActorId`).
+- **Fillable Notes column** -- Editable notes column that persists to on-prem SQL via Hybrid Server. Works with any style.
+- **Party field auto-detection** -- Wizard auto-detects party fields via `PartyTypeID` fallback and generates correct JOINs.
+- **FormStatus + Error detection** -- Computed status field with In Progress, Completed, and Error (TaskQueue.Status = 9999).
 
 ---
 
 ## What Is This?
 
-This wizard helps you build dashboards for Etrieve Content and Central Forms. Dashboards let you **track, filter, and export** data — quickly and visually — without altering any stored records.
+This wizard helps you build dashboards for Etrieve Content and Central Forms. Dashboards let you **track, filter, and export** data quickly and visually without altering any stored records.
 
 **You get:**
 
-* 12 dashboard styles — status boards, claims trackers, voting panels, bulk actions, and more
-* 3 data modes — Document Lookup, Form Tracker, or Combined
+* 12 dashboard styles (8 cloud-only, 4 hybrid with on-prem SQL)
+* 3 data modes: Document Lookup, Form Tracker, or Combined
 * Live preview as you build
 * One-click download of everything you need
-* Auto-save — close the browser and pick up where you left off
+* Auto-save: close the browser and pick up where you left off
 
 ---
 
@@ -41,9 +40,9 @@ Go to **Central > Admin > Sources** and click **Add New Source**.
 
 For each source below:
 
-1. **General Settings** tab — Set the **Name** (copy it exactly) and set **Connection** to your Etrieve Content database connection
-2. **Actions** tab — Turn on **Get**, turn on **Custom Action**, and paste the SQL into the **Query Editor**. If a parameter is listed, add it under **Source Keys**
-3. **Privileges** tab — Add your users and give them **Get** access
+1. **General Settings** tab -- Set the **Name** (copy it exactly) and set **Connection** to your Etrieve Content database connection
+2. **Actions** tab -- Turn on **Get**, turn on **Custom Action**, and paste the SQL into the **Query Editor**. If a parameter is listed, add it under **Source Keys**
+3. **Privileges** tab -- Add your users and give them **Get** access
 4. Click **Save**
 
 Repeat for all 6 sources, then move on to Step 2.
@@ -179,13 +178,17 @@ ORDER BY ps.[Name]
 
 1. Go to **Admin > Forms** and create a new form
 2. Name it whatever you like (e.g., "Dashboard Builder")
-3. Upload these 8 files:
+3. Upload all 12 files:
    * `index.html`
    * `wizard.css`
    * `wizard-demo.js`
    * `wizard-sql.js`
    * `wizard-templates.js`
    * `wizard-generators.js`
+   * `wizard-preview.js`
+   * `wizard-preview-basic.js`
+   * `wizard-preview-advanced.js`
+   * `wizard-preview-specialized.js`
    * `viewmodel.js`
    * `configuration.js`
 
@@ -197,15 +200,15 @@ ORDER BY ps.[Name]
 2. Go to **Sources** (under the form's settings)
 3. Find each of the 6 sources and check **Get** for all of them
 
-It should look like this — all 6 sources associated with Get checked:
+It should look like this, all 6 sources associated with Get checked:
 
 ```
-WizardBuilder_GetAreas          ☑ Get
-WizardBuilder_GetDocTypes       ☑ Get
-WizardBuilder_GetFormInputs     ☑ Get
-WizardBuilder_GetFormTemplates  ☑ Get
-WizardBuilder_GetKeyFields      ☑ Get
-WizardBuilder_GetWorkflowSteps  ☑ Get
+WizardBuilder_GetAreas          [x] Get
+WizardBuilder_GetDocTypes       [x] Get
+WizardBuilder_GetFormInputs     [x] Get
+WizardBuilder_GetFormTemplates  [x] Get
+WizardBuilder_GetKeyFields      [x] Get
+WizardBuilder_GetWorkflowSteps  [x] Get
 ```
 
 ---
@@ -214,9 +217,9 @@ WizardBuilder_GetWorkflowSteps  ☑ Get
 
 Open the form in Etrieve. You'll see three options:
 
-* **Document Lookup** — dashboards for scanned documents
-* **Form Tracker** — dashboards for form submissions
-* **Combined View** — both together
+* **Document Lookup** -- dashboards for scanned documents
+* **Form Tracker** -- dashboards for form submissions
+* **Combined View** -- both together
 
 Pick one, walk through the wizard, and download your finished dashboard. Upload those files as a new form and you're live.
 
@@ -224,37 +227,60 @@ Pick one, walk through the wizard, and download your finished dashboard. Upload 
 
 ## Dashboard Styles
 
-| Style | What It's For |
-|-------|---------------|
-| Simple Status | Color-coded lanes grouped by status |
-| Request Type | Grouped by request or form type |
-| Expandable | Click a row to see details |
-| Alpha Split | Tabs by last name (A-H, I-P, Q-Z) |
-| Claims | Claim/unclaim items with age tracking |
-| Workflow Actions | Approve/deny buttons per workflow step |
-| PDF Signatures | Track document signature status |
-| Survey Analytics | Charts and stats for survey data |
-| Award Nominations | Track nominations by category |
-| Committee Voting | Vote columns with approve/deny/abstain |
-| Cards Dashboard | Card layout with status counts |
-| Bulk Actions | Checkboxes for bulk approve/deny/reassign |
+| Style | Infrastructure | What It's For |
+|-------|---------------|---------------|
+| Simple Status | Cloud Only | Color-coded lanes grouped by status |
+| Request Type | Cloud Only | Grouped by request or form type |
+| Alpha Split | Cloud Only | Tabs by last name (A-H, I-P, Q-Z) |
+| Expandable Detail | Cloud Only | Click a row to see details |
+| PDF + Signatures | Cloud Only | Track document signature status |
+| Survey Analytics | Cloud Only | Charts and stats for survey data |
+| Award Nominations | Cloud Only | Track nominations by category |
+| Executive Cards | Cloud Only | Card layout with status counts |
+| Claims System | Hybrid Server | Claim/unclaim items with age tracking |
+| Workflow Actions | Hybrid Server | Approve/deny buttons per workflow step |
+| Committee Voting | Hybrid Server | Vote columns with approve/deny/abstain |
+| IT Equipment Review | Hybrid Server | Checkboxes for bulk approve/deny/reassign |
+
+**Cloud Only** styles work entirely through Etrieve's cloud integration sources. No on-prem server needed.
+
+**Hybrid Server** styles require an on-prem SQL Server and Hybrid Server connection for write-back operations (saving actions, votes, claims, etc.).
 
 ---
 
 ## SQL Tester Tool
 
-The `SqlTester/` folder contains a standalone SQL testing form you can deploy alongside the wizard. It lets you paste any SQL into an integration source and instantly see the results — useful for testing queries, probing your schema, and diagnosing workflow issues.
+The `SqlTester/` folder contains a standalone SQL testing form you can deploy alongside the wizard. It lets you paste any SQL into an integration source and instantly see the results. Useful for testing queries, probing your schema, and diagnosing workflow issues.
 
 See [`SqlTester/README.md`](SqlTester/README.md) for setup instructions and workflow diagnostic probes.
 
 ---
 
+## File Inventory
+
+| File | Purpose |
+|------|---------|
+| `index.html` | Wizard shell (loads all JS/CSS, step container, preview panel) |
+| `wizard.css` | All wizard styling (steps, cards, infographics, preview) |
+| `wizard-demo.js` | Version tracking, simulated data, DashboardStyles metadata, State |
+| `wizard-sql.js` | SQL generation (obfuscated keywords to bypass Cloudflare WAF) |
+| `wizard-templates.js` | UI rendering (step content, field pickers, swimlane builder) |
+| `wizard-generators.js` | File generation (viewmodel.js, configuration.js, index.html, schema.sql) |
+| `wizard-preview.js` | Preview coordinator (shared primitives, main dispatcher) |
+| `wizard-preview-basic.js` | Preview renderers: Simple Status, Request Type, Alpha Split |
+| `wizard-preview-advanced.js` | Preview renderers: Expandable, Claims, Workflow Actions, PDF, Bulk |
+| `wizard-preview-specialized.js` | Preview renderers: Survey, Committee Voting, Cards, Awards |
+| `viewmodel.js` | Bootstrap viewmodel (loads wizard when form opens in Etrieve) |
+| `configuration.js` | Integration source name mappings |
+
+---
+
 ## Something Not Working?
 
-* **403 errors** — Check that the **Connection** on each source is set to your Etrieve Content database (not Etrieve Security or another connection). Then check **Privileges** — your users need **Get** access on every source.
-* **Source names don't match** — If you named your sources differently, update the names in `configuration.js` to match.
-* **Wizard won't save in the form editor** — Make sure you're using the latest files from this repo. Older versions used JavaScript syntax that Etrieve's editor doesn't accept.
-* **File upload blocked (403 Forbidden)** — Cloudflare WAF may block files containing SQL keywords. This is why the SQL generators are in a separate `wizard-sql.js` file. Make sure you're uploading all 8 files from this repo, not an older 3-file version.
+* **403 errors** -- Check that the **Connection** on each source is set to your Etrieve Content database (not Etrieve Security or another connection). Then check **Privileges** -- your users need **Get** access on every source.
+* **Source names don't match** -- If you named your sources differently, update the names in `configuration.js` to match.
+* **Wizard won't save in the form editor** -- Make sure you're using the latest files from this repo. Older versions used JavaScript syntax that Etrieve's editor doesn't accept.
+* **File upload blocked (403 Forbidden)** -- Cloudflare WAF may block files containing SQL keywords. The SQL generators are in a separate `wizard-sql.js` file with obfuscated keywords for this reason. Make sure you're uploading all 12 files from this repo.
 
 ---
 

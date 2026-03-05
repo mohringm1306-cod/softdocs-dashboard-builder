@@ -25,7 +25,7 @@ For each: set the Connection to your Content database, enable **Get** + **Custom
 
 ### 2. Upload Files
 
-Go to **Admin > Forms**, create a new form, and upload all 8 files:
+Go to **Admin > Forms**, create a new form, and upload all 12 files:
 
 - [ ] `index.html`
 - [ ] `wizard.css`
@@ -33,6 +33,10 @@ Go to **Admin > Forms**, create a new form, and upload all 8 files:
 - [ ] `wizard-sql.js`
 - [ ] `wizard-templates.js`
 - [ ] `wizard-generators.js`
+- [ ] `wizard-preview.js`
+- [ ] `wizard-preview-basic.js`
+- [ ] `wizard-preview-advanced.js`
+- [ ] `wizard-preview-specialized.js`
 - [ ] `viewmodel.js`
 - [ ] `configuration.js`
 
@@ -46,4 +50,4 @@ Open the form in Etrieve. Pick a mode, walk through the wizard, save the generat
 
 ---
 
-**Something not working?** See [Troubleshooting](README.md#troubleshooting) in the README.
+**Something not working?** See [Troubleshooting](README.md#something-not-working) in the README.
