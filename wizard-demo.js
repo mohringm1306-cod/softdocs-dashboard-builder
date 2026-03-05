@@ -6,11 +6,12 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '3.5.1';
+var WIZARD_VERSION = '4.0';
 var WIZARD_BUILD_DATE = '2026-03-04';
 
 // Changelog (newest first)
-// 3.5.1 (2026-03-04) - Style selection UX overhaul: infographic panel expands on click showing features, warnings, setup steps; Cloud Only vs Hybrid Server badges
+// 4.0   (2026-03-04) - Style selection UX overhaul: infographic panel expands on click showing features, warnings, setup steps; Cloud Only vs Hybrid Server badges; style-specific live previews (12 unique renderers); URL auto-fill
+// --- v3.x ---
 // 3.5.0 (2026-03-03) - Style-specific live previews (12 unique renderers in sub-files); URL auto-fill (https://)
 // 3.4.0 (2026-03-03) - Current Assignee virtual field (forms); Fillable Notes column (cross-cutting write-back)
 // 3.3.4 (2026-03-03) - Fix DocumentType filter showing blank labels (was mapping IDs instead of names)
