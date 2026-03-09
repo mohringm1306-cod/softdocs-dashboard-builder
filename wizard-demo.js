@@ -304,6 +304,11 @@ var State = {
         columnLabel: 'Notes'
     },
 
+    // Hybrid Server config (used in schema.sql generation)
+    hybridConfig: {
+        databaseName: ''
+    },
+
     // Security-first access control
     // When enabled, data is only loaded if the user belongs to the power group.
     // Non-power users get a filtered integration call (per-swimlane) so unauthorized
@@ -629,6 +634,9 @@ function restoreDraft(draft) {
     if (draft.notesConfig) {
         State.notesConfig = draft.notesConfig;
     }
+    if (draft.hybridConfig) {
+        Object.assign(State.hybridConfig, draft.hybridConfig);
+    }
     if (draft.securityConfig) {
         Object.assign(State.securityConfig, draft.securityConfig);
     }
@@ -883,6 +891,7 @@ function resetWizard() {
         assigneeColumnName: ''
     };
     State.notesConfig = { enabled: false, columnLabel: 'Notes' };
+    State.hybridConfig = { databaseName: '' };
     State.securityConfig = {
         enabled: false, powerGroupId: '', powerGroupName: '', swimlaneGroups: []
     };

@@ -409,10 +409,15 @@ function needsWriteBack() {
 function generateSchemaSQL() {
   var s = State.selectedStyle;
   var sql = '';
-  if (s === 'claims') sql = generateSchema_claims();
-  else if (s === 'committee-voting') sql = generateSchema_voting();
-  else if (s === 'workflow-actions') sql = generateSchema_workflowActions();
-  else if (s === 'bulk-actions') sql = generateSchema_bulkActions();
+  // Prepend USE [database] if the user specified their integration database
+  var dbName = (State.hybridConfig && State.hybridConfig.databaseName) ? State.hybridConfig.databaseName.trim() : '';
+  if (dbName) {
+    sql += 'USE [' + dbName.replace(/[\[\]]/g, '') + ']\nGO\n\n';
+  }
+  if (s === 'claims') sql += generateSchema_claims();
+  else if (s === 'committee-voting') sql += generateSchema_voting();
+  else if (s === 'workflow-actions') sql += generateSchema_workflowActions();
+  else if (s === 'bulk-actions') sql += generateSchema_bulkActions();
   // Notes schema appended to any style (cross-cutting feature)
   if (State.notesConfig && State.notesConfig.enabled) {
     sql += generateSchema_notes();
@@ -971,6 +976,21 @@ function renderStyleInfoGraphic(s) {
     return '<div class="style-info-step"><span class="style-info-step-num">' + (i + 1) + '</span> ' + escapeHtml(step) + '</div>';
   }).join('');
 
+  var dbInputHtml = '';
+  if (s.requiresSQL) {
+    var dbVal = (State.hybridConfig && State.hybridConfig.databaseName) ? escapeHtml(State.hybridConfig.databaseName) : '';
+    dbInputHtml = '<div class="style-info-db-input">' +
+        '<label style="font-size:0.8rem;font-weight:600;color:#555;display:block;margin-bottom:4px;">' +
+            '<i class="bi bi-database"></i> Your Integration Database Name' +
+        '</label>' +
+        '<input type="text" value="' + dbVal + '" placeholder="e.g. etIntegrations" ' +
+            'oninput="State.hybridConfig.databaseName = this.value; saveDraft();" ' +
+            'style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;width:100%;max-width:280px;font-size:0.85rem;">' +
+        '<small style="color:#888;display:block;margin-top:4px;">The Initial Catalog from your Hybrid Server connection string. ' +
+            'Used as <code>USE [database]</code> at the top of schema.sql so tables land in the right place.</small>' +
+    '</div>';
+  }
+
   return '<div class="style-infographic" id="style-infographic">' +
       '<div class="style-info-cols">' +
           '<div class="style-info-col">' +
@@ -981,6 +1001,7 @@ function renderStyleInfoGraphic(s) {
           '<div class="style-info-col">' +
               '<div class="style-info-section-header"><i class="bi bi-tools"></i> Setup Required</div>' +
               stepsHtml +
+              dbInputHtml +
               '<div class="style-info-examples"><strong>Examples:</strong> ' + escapeHtml(s.examples || '') + '</div>' +
           '</div>' +
       '</div>' +
