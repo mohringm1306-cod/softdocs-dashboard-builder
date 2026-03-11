@@ -242,9 +242,9 @@ function generateFormsSQL() {
         ' ' + _Q.WN + ' tq.[Status] = 9999 ' + _Q.TN + " 'Error'" +
         ' ' + _Q.EL + " 'In Progress' " + _Q.EN + ' ' + _Q.AS + ' FormStatus';
 
-    // Assignee: raw column from TaskQueue (user-specified column name from probe)
+    // Assignee: resolve ActorId GUID to display name via Actor table
     if (hasAssignee && assigneeColName) {
-        sql += ',\n   tq.[' + escapeBracket(assigneeColName) + '] ' + _Q.AS + ' AssignedTo';
+        sql += ',\n   actor.[Name] ' + _Q.AS + ' AssignedTo';
     }
 
     sql += ',\n' +
@@ -264,9 +264,15 @@ function generateFormsSQL() {
         _Q.LJ + ' reporting.central_flow_ProcessStep ps\n' +
         '   ' + _Q.ON + ' tq.ProcessStepID = ps.ProcessStepId';
 
+    // Actor JOIN: resolves TaskQueue.ActorId GUID to a display name
+    if (hasAssignee && assigneeColName) {
+        sql += '\n' + _Q.LJ + ' reporting.central_flow_Actor actor\n' +
+            '   ' + _Q.ON + ' tq.[' + escapeBracket(assigneeColName) + '] = actor.ActorId';
+    }
+
     sql += '\n' + _Q.WH + ' f.TemplateVersionID = ' + (template ? safeInt(template.id) : '/* pick a template */') + '\n' +
         '   ' + _Q.AN + ' f.IsDraft = 0\n' +
-        _Q.GB + ' f.FormID, f.Created, pd.PackageID, tq.TaskQueueID, tq.[Status]' + (hasWorkflow ? ', ps.Name' : '') + (hasAssignee && assigneeColName ? ', tq.[' + escapeBracket(assigneeColName) + ']' : '') + '\n' +
+        _Q.GB + ' f.FormID, f.Created, pd.PackageID, tq.TaskQueueID, tq.[Status]' + (hasWorkflow ? ', ps.Name' : '') + (hasAssignee && assigneeColName ? ', actor.[Name]' : '') + '\n' +
         _Q.OB + ' f.Created ' + _Q.DS;
 
     return sql;

@@ -208,7 +208,7 @@ function generateReadme() {
   // Assignee documentation for forms mode
   if (State.selectedInputIds && State.selectedInputIds.includes('__assignedTo__')) {
     var colName = (State.styleConfig && State.styleConfig.assigneeColumnName) || 'ActorId';
-    writeBackSection += "### Assignee Column\n\nThe **Assigned To** column reads `tq.[" + colName + "]` from the TaskQueue table.\nThis value may be a GUID (e.g., `ActorId`) rather than a display name. To resolve\nGUIDs to usernames, you would need an additional JOIN to a user/identity table.\n\n**Discovery:** Run `PROBE_TaskQueue_Columns.sql` as a GET integration source to\nsee all available TaskQueue columns in your environment.\n\n";
+    writeBackSection += "### Assignee Column\n\nThe **Assigned To** column resolves `tq.[" + colName + "]` from the TaskQueue table\nto a display name via `LEFT JOIN reporting.central_flow_Actor`. The generated SQL\njoins on `actor.ActorId` and selects `actor.[Name] AS AssignedTo`.\n\n";
   }
   var dataSourceNotes = '';
   if (State.mode === 'content') {
