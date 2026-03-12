@@ -9,7 +9,8 @@ A wizard that builds dashboards for Softdocs Etrieve. No coding required. Pick a
 - **Style-specific live previews** -- The preview panel now shows a realistic mockup of each style with fake data (swimlanes, action buttons, vote columns, charts, etc.) instead of a generic placeholder.
 - **Sticky preview panel** -- The preview follows you as you scroll through long wizard steps.
 - **URL auto-fill** -- Instance URL fields auto-correct typos and add `https://` on blur.
-- **Current Assignee column** -- Virtual field that reads the assigned user from a TaskQueue column (e.g. `ActorId`).
+- **Current Assignee column** -- Virtual field that resolves the TaskQueue `ActorId` GUID to a display name via the Actor table. No extra integration needed.
+- **Integration database name field** -- Hybrid Server styles now ask for your database name and generate `USE [database]` at the top of schema.sql so tables land in the right place.
 - **Fillable Notes column** -- Editable notes column that persists to on-prem SQL via Hybrid Server. Works with any style.
 - **Party field auto-detection** -- Wizard auto-detects party fields via `PartyTypeID` fallback and generates correct JOINs.
 - **FormStatus + Error detection** -- Computed status field with In Progress, Completed, and Error (TaskQueue.Status = 9999).
@@ -90,10 +91,14 @@ SELECT DISTINCT
     f.FieldID           AS id,
     f.[Name]            AS name,
     CASE
-        WHEN dt.[Name] = 'Date' THEN 'date'
+        WHEN f.PartyTypeID IS NOT NULL          THEN 'party'
+        WHEN dt.[Name] = 'Date'                 THEN 'date'
+        WHEN dt.[Name] = 'Number'               THEN 'number'
+        WHEN dt.[Name] IN ('Money', 'Decimal')  THEN 'decimal'
         ELSE 'text'
     END                 AS type,
-    f.[Name]            AS alias
+    f.[Name]            AS alias,
+    f.PartyTypeID       AS partyTypeId
 FROM [dbo].[Field] f
 INNER JOIN [dbo].[DataType] dt
     ON f.DataTypeID = dt.DataTypeID
@@ -148,7 +153,8 @@ ORDER BY iv.InputID
 Add source key: `@TemplateID` (Integer)
 
 Returns ALL workflow steps for the process linked to a template (not just steps with
-active queue entries). Requires at least one form submission to discover the ProcessID.
+active queue entries). Uses the Package table to find the most recent ProcessID, which
+is more reliable than the TaskQueue approach.
 
 ```sql
 SELECT DISTINCT
@@ -156,17 +162,15 @@ SELECT DISTINCT
     ps.[Name]                       AS name,
     REPLACE(ps.[Name], '_', ' ')    AS displayName
 FROM reporting.central_flow_ProcessStep ps
-WHERE ps.ProcessID IN (
-    -- Find the ProcessID(s) linked to this template via TaskQueue chain
-    SELECT DISTINCT ps2.ProcessID
-    FROM reporting.central_flow_ProcessStep ps2
-    INNER JOIN reporting.central_flow_TaskQueue tq
-        ON tq.ProcessStepID = ps2.ProcessStepId
+WHERE ps.ProcessID = (
+    SELECT TOP 1 pkg.ProcessID
+    FROM reporting.central_forms_TemplateVersion tv
     INNER JOIN reporting.central_flow_PackageDocument pd
-        ON tq.PackageId = pd.PackageID
-    INNER JOIN reporting.central_forms_TemplateVersion tv
         ON pd.SourceTypeCode = tv.Code
+    INNER JOIN reporting.central_flow_Package pkg
+        ON pd.PackageID = pkg.PackageId
     WHERE tv.TemplateID = @TemplateID
+    ORDER BY pkg.CreateDate DESC
 )
     AND ps.IsDeleted = 0
 ORDER BY ps.[Name]
@@ -245,14 +249,6 @@ Pick one, walk through the wizard, and download your finished dashboard. Upload 
 **Cloud Only** styles work entirely through Etrieve's cloud integration sources. No on-prem server needed.
 
 **Hybrid Server** styles require an on-prem SQL Server and Hybrid Server connection for write-back operations (saving actions, votes, claims, etc.).
-
----
-
-## SQL Tester Tool
-
-The `SqlTester/` folder contains a standalone SQL testing form you can deploy alongside the wizard. It lets you paste any SQL into an integration source and instantly see the results. Useful for testing queries, probing your schema, and diagnosing workflow issues.
-
-See [`SqlTester/README.md`](SqlTester/README.md) for setup instructions and workflow diagnostic probes.
 
 ---
 

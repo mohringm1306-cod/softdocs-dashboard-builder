@@ -199,9 +199,24 @@ Document → DocumentFieldPartyVersion (DocumentID + FieldID)
 | SignerEmailAddress | string | For e-sign workflows |
 | EsignEmailLastSentDate | datetime/null | |
 
-**NOTE:** `ActorId` is a GUID, not a display name. Resolving to a username
-requires a JOIN to a user/identity table (schema TBD). The wizard uses this
-column for the "Current Assignee" virtual field.
+**NOTE:** `ActorId` is a GUID. Resolve to a display name via the Actor table (see below).
+
+### Actor (verified Hartford 2026-03-11)
+| Column | Type | Notes |
+|--------|------|-------|
+| ActorId | GUID | PK, matches TaskQueue.ActorId |
+| CreateUserId | GUID | |
+| CreateDate | datetime | |
+| ActorTypeID | int | e.g. 5 = system actor |
+| ClusterID | int | |
+| **Name** | string | **Display name (use this for "Assigned To")** |
+| LoginID | string | e.g. user@domain or system placeholder |
+| Email | string | |
+| IsDeletedFromSecurity | boolean | |
+| UserID | int | |
+
+**JOIN pattern:** `LEFT JOIN reporting.central_flow_Actor actor ON tq.ActorId = actor.ActorId`
+then use `actor.[Name] AS AssignedTo` in SELECT.
 
 ## Key Relationships
 
@@ -221,4 +236,5 @@ Central Flow (NO direct Template link):
 
   PackageDocument.PackageID = TaskQueue.PackageId      (current step only)
   TaskQueue.ProcessStepID = ProcessStep.ProcessStepId
+  TaskQueue.ActorId = Actor.ActorId                    (assignee name)
 ```
