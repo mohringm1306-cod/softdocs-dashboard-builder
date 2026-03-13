@@ -1086,18 +1086,18 @@ function _buildBaseGenerateStep() {
                     <li>Click <strong>Download Dashboard</strong> below</li>\
                     <li>In Etrieve Central, go to <strong>Admin &gt; Integrations &gt; Sources</strong>, click <strong>Add Source</strong></li>\
                     <li>Set type to <strong>Custom GET</strong> and name it exactly: <code>' + escapeHtml(State.sourceName) + '</code></li>\
+                    <li>Set <strong>Connection</strong> to your Etrieve Content database connection</li>\
                     <li>Paste the contents of <code>integration-query.sql</code> as the query</li>\
-                    <li>Leave the <strong>Schema</strong> field blank (do not enter anything)</li>\
+                    <li>Leave <strong>Schema</strong> and <strong>Personal Identifier</strong> blank</li>\
                     <li>Go to <strong>Admin &gt; Forms</strong>, create a new form, and upload the 3 files (index.html, configuration.js, viewmodel.js)</li>\
                     <li>Connect the source: open the form, go to <strong>Sources</strong>, find <code>' + escapeHtml(State.sourceName) + '</code>, and check <strong>Get</strong></li>\
-                    <li>Make sure <strong>Run on Load</strong> is <em>off</em> for the source (the dashboard calls it on demand)</li>\
                 </ol>\
             </div>\
             <div class="info-box" style="background:rgba(220,53,69,0.06);margin-top:15px;">\
                 <h4><i class="bi bi-exclamation-triangle" style="color:#dc3545;"></i> Common Mistakes</h4>\
                 <ul style="line-height:2;margin:10px 0 0 0;padding-left:20px;">\
                     <li><strong>Source name must match exactly.</strong> The name in Etrieve must be identical to what is in configuration.js: <code>' + escapeHtml(State.sourceName) + '</code></li>\
-                    <li><strong>Leave Schema blank.</strong> Do not enter a schema name when creating the integration source.</li>\
+                    <li><strong>Leave Schema and Personal Identifier blank.</strong> Do not enter anything in these fields.</li>\
                     <li><strong>Connect the source to the dashboard.</strong> After creating the source, make sure it is linked to the dashboard form.</li>\
                 </ul>\
             </div>\
@@ -1134,7 +1134,7 @@ function _buildBaseGenerateStep() {
                 <li>They\'ll connect the source to the form (form settings &gt; Sources &gt; check Get)</li>\
             </ol>\
             <div style="background:rgba(220,53,69,0.06);border-radius:8px;padding:12px 16px;margin-top:12px;">\
-                <small><i class="bi bi-exclamation-triangle" style="color:#dc3545;"></i> <strong>Important for your admin:</strong> The integration source name must match exactly, and the Schema field must be left blank. See the included README for full setup steps.</small>\
+                <small><i class="bi bi-exclamation-triangle" style="color:#dc3545;"></i> <strong>Important for your admin:</strong> The integration source name must match exactly, and the Schema and Personal Identifier fields must be left blank. See the included README for full setup steps.</small>\
             </div>\
         </div>\
         <div class="advanced-toggle" style="margin-top:20px;">\

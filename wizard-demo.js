@@ -1083,28 +1083,25 @@ function toggleSetupGuide() {
 function buildSetupGuideHTML() {
     return '<button class="setup-guide-close" onclick="toggleSetupGuide()" title="Close">&times;</button>' +
         '<h3><i class="bi bi-book"></i> Deploying Your Generated Dashboard</h3>' +
-        '<p class="guide-subtitle">After the wizard generates your files, follow these steps to get the dashboard live in Etrieve.</p>' +
+        '<p class="guide-subtitle">After the wizard generates your files, here is the general process. The generate step has detailed instructions specific to your dashboard.</p>' +
 
         // Step 1
         '<h4><span class="step-number">1</span> Create the Integration Source</h4>' +
-        '<p>Go to <strong>Central &gt; Admin &gt; Sources</strong> and click <strong>Add New Source</strong>.</p>' +
+        '<p>Go to <strong>Admin &gt; Integrations &gt; Sources</strong> and click <strong>Add Source</strong>.</p>' +
         '<ol>' +
-            '<li>Set the <strong>Name</strong> to exactly what the wizard tells you (it shows the name on the generate step)</li>' +
+            '<li>Set the <strong>Name</strong> to exactly what the wizard tells you on the generate step</li>' +
+            '<li>Set type to <strong>Custom GET</strong></li>' +
             '<li>Set <strong>Connection</strong> to your Etrieve Content database connection</li>' +
-            '<li>On the <strong>Actions</strong> tab: turn on <strong>Get</strong>, turn on <strong>Custom Action</strong>, paste the generated SQL into the <strong>Query Editor</strong></li>' +
-            '<li><strong>Leave the Schema field blank</strong> (do not type anything in it)</li>' +
-            '<li>On the <strong>Privileges</strong> tab: add your users and give them <strong>Get</strong> access</li>' +
-            '<li>Click <strong>Save</strong></li>' +
+            '<li>Paste the contents of <code>integration-query.sql</code> as the query</li>' +
+            '<li>Leave <strong>Schema</strong> and <strong>Personal Identifier</strong> blank</li>' +
         '</ol>' +
         '<div class="guide-tip"><strong>Name must match exactly.</strong> ' +
-        'If the wizard says <code>MyDashboard_GetData</code>, the source name must be <code>MyDashboard_GetData</code>, not <code>mydashboard_getdata</code>. ' +
-        'The Schema field must stay blank. Filling it in causes 500 errors.</div>' +
+        'The source name in Etrieve must be identical to what the wizard generated. Case matters.</div>' +
 
         // Step 2
         '<h4><span class="step-number">2</span> Upload the Dashboard Files</h4>' +
         '<ol>' +
             '<li>Go to <strong>Admin &gt; Forms</strong> and create a new form</li>' +
-            '<li>Name it whatever you like (e.g., "HR Document Lookup")</li>' +
             '<li>Upload the 3 generated files: <code>index.html</code>, <code>configuration.js</code>, <code>viewmodel.js</code></li>' +
         '</ol>' +
 
@@ -1112,22 +1109,14 @@ function buildSetupGuideHTML() {
         '<h4><span class="step-number">3</span> Connect the Source to the Form</h4>' +
         '<ol>' +
             '<li>Open the form you just created</li>' +
-            '<li>Go to <strong>Sources</strong> (under the form\'s settings)</li>' +
+            '<li>Go to <strong>Sources</strong></li>' +
             '<li>Find the source you created in Step 1 and check <strong>Get</strong></li>' +
-            '<li>Make sure <strong>Run on Load</strong> is <em>off</em> (the dashboard calls the source on demand)</li>' +
         '</ol>' +
 
         // Step 4
-        '<h4><span class="step-number">4</span> Set Permissions</h4>' +
-        '<p>On the form\'s <strong>Permissions</strong> tab, add the users or groups who should see this dashboard.</p>' +
-
-        // Step 5
-        '<h4><span class="step-number">5</span> Open and Verify</h4>' +
+        '<h4><span class="step-number">4</span> Open and Verify</h4>' +
         '<p>Open the form in Etrieve. You should see your dashboard with real data. If you get a blank page or errors, check that the source name matches exactly and the source is connected with Get enabled.</p>' +
-
-        // Hybrid note
-        '<div class="guide-tip"><strong>Hybrid/write-back styles</strong> (Workflow Actions, Committee Voting, etc.) need additional setup: ' +
-        'on-prem SQL schema, Hybrid Server connection, and write-back sources. The generated README covers those steps in detail.</div>';
+        '<p>Access is controlled through <strong>Security &gt; Roles</strong> by an admin.</p>';
 }
 
 function updateModeIndicator() {
