@@ -932,7 +932,11 @@ function renderStyleStep() {
       'Each style includes different features and layouts. Click one to see what it offers.</p></div>';
 
   categories.forEach(function(cat) {
-    var styles = DashboardStyles.filter(function(s) { return s.category === cat; });
+    var currentMode = State.mode || 'forms';
+    var styles = DashboardStyles.filter(function(s) {
+      return s.category === cat && (!s.modes || s.modes.indexOf(currentMode) >= 0);
+    });
+    if (styles.length === 0) return;
     html += '<div class="style-category-label">' + cat + '</div><div class="style-grid">';
     styles.forEach(function(s) {
       var selected = State.selectedStyle === s.id;
