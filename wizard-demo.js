@@ -6,7 +6,7 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '4.0';
+var WIZARD_VERSION = '4.1';
 var WIZARD_BUILD_DATE = '2026-03-04';
 
 // Changelog (newest first)
@@ -933,6 +933,95 @@ function startWizard() {
     State.currentStep = 0;
     renderProgress();
     renderStep();
+}
+
+// ============================================================================
+// ADMIN SETUP GUIDE
+// ============================================================================
+
+function toggleSetupGuide() {
+    var panel = document.getElementById('setupGuide');
+    if (!panel) return;
+    if (panel.style.display === 'none') {
+        panel.innerHTML = buildSetupGuideHTML();
+        panel.style.display = 'block';
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+function buildSetupGuideHTML() {
+    return '<button class="setup-guide-close" onclick="toggleSetupGuide()" title="Close">&times;</button>' +
+        '<h3><i class="bi bi-book"></i> Admin Setup Guide</h3>' +
+        '<p class="guide-subtitle">Everything you need to get the Dashboard Builder running in Etrieve. Takes about 15 minutes.</p>' +
+
+        // Step 1
+        '<h4><span class="step-number">1</span> Create 6 Data Sources</h4>' +
+        '<p>Go to <strong>Central &gt; Admin &gt; Sources</strong> and click <strong>Add New Source</strong>. For each source:</p>' +
+        '<ol>' +
+            '<li>Set the <strong>Name</strong> (copy it exactly, character for character)</li>' +
+            '<li>Set <strong>Connection</strong> to your Etrieve Content database connection</li>' +
+            '<li>On the <strong>Actions</strong> tab: turn on <strong>Get</strong>, turn on <strong>Custom Action</strong>, paste the SQL into the <strong>Query Editor</strong></li>' +
+            '<li>If a parameter is listed, add it under <strong>Source Keys</strong></li>' +
+            '<li><strong>Leave the Schema field blank</strong> (do not type anything in it)</li>' +
+            '<li>On the <strong>Privileges</strong> tab: add your users and give them <strong>Get</strong> access</li>' +
+            '<li>Click <strong>Save</strong></li>' +
+        '</ol>' +
+
+        '<div class="guide-tip"><strong>Important:</strong> The source name must match exactly. ' +
+        'If you name it <code>WizardBuilder_getAreas</code> instead of <code>WizardBuilder_GetAreas</code>, the wizard will not find it. ' +
+        'The Schema field must stay blank. Filling it in (even with something that seems right) causes 500 errors.</div>' +
+
+        '<div class="source-grid">' +
+            buildSourceBlock('WizardBuilder_GetAreas', 'No source keys needed.',
+                'SELECT\n    CatalogID       AS id,\n    [Name]          AS name\nFROM [dbo].[Catalog]\nORDER BY [Name]') +
+            buildSourceBlock('WizardBuilder_GetDocTypes', 'Source key: <code>@CatalogID</code> (Integer)',
+                'SELECT\n    dt.DocumentTypeID   AS id,\n    dt.[Name]           AS name,\n    dt.[Name]           AS code\nFROM [dbo].[DocumentType] dt\nINNER JOIN [dbo].[CatalogDocumentType] cdt\n    ON dt.DocumentTypeID = cdt.DocumentTypeID\nWHERE cdt.CatalogID = @CatalogID\nORDER BY dt.[Name]') +
+            buildSourceBlock('WizardBuilder_GetKeyFields', 'Source key: <code>@CatalogID</code> (Integer)',
+                'SELECT DISTINCT\n    f.FieldID           AS id,\n    f.[Name]            AS name,\n    CASE\n        WHEN f.PartyTypeID IS NOT NULL          THEN \'party\'\n        WHEN dt.[Name] = \'Date\'                 THEN \'date\'\n        WHEN dt.[Name] = \'Number\'               THEN \'number\'\n        WHEN dt.[Name] IN (\'Money\', \'Decimal\')  THEN \'decimal\'\n        ELSE \'text\'\n    END                 AS type,\n    f.[Name]            AS alias,\n    f.PartyTypeID       AS partyTypeId\nFROM [dbo].[Field] f\nINNER JOIN [dbo].[DataType] dt\n    ON f.DataTypeID = dt.DataTypeID\nINNER JOIN [dbo].[DocumentTypeField] dtf\n    ON f.FieldID = dtf.FieldID\nINNER JOIN [dbo].[CatalogDocumentType] cdt\n    ON dtf.DocumentTypeID = cdt.DocumentTypeID\nWHERE cdt.CatalogID = @CatalogID\nORDER BY f.[Name]') +
+            buildSourceBlock('WizardBuilder_GetFormTemplates', 'No source keys needed.',
+                'SELECT\n    tv.TemplateVersionID    AS id,\n    t.[Name]                AS name,\n    t.TemplateID            AS templateId\nFROM reporting.central_forms_Template t\nINNER JOIN reporting.central_forms_TemplateVersion tv\n    ON t.TemplateID = tv.TemplateID\nWHERE tv.IsPublished = 1\nORDER BY t.[Name]') +
+            buildSourceBlock('WizardBuilder_GetFormInputs', 'Source key: <code>@TemplateVersionID</code> (Integer)',
+                'SELECT DISTINCT\n    iv.InputID  AS id,\n    iv.InputID  AS label\nFROM reporting.central_forms_InputValue iv\nINNER JOIN reporting.central_forms_Form f\n    ON iv.FormID = f.FormID\nWHERE f.TemplateVersionID = @TemplateVersionID\n    AND f.IsDraft = 0\nORDER BY iv.InputID') +
+            buildSourceBlock('WizardBuilder_GetWorkflowSteps', 'Source key: <code>@TemplateID</code> (Integer)',
+                'SELECT DISTINCT\n    ps.ProcessStepId                AS id,\n    ps.[Name]                       AS name,\n    REPLACE(ps.[Name], \'_\', \' \')    AS displayName\nFROM reporting.central_flow_ProcessStep ps\nWHERE ps.ProcessID = (\n    SELECT TOP 1 pkg.ProcessID\n    FROM reporting.central_forms_TemplateVersion tv\n    INNER JOIN reporting.central_flow_PackageDocument pd\n        ON pd.SourceTypeCode = tv.Code\n    INNER JOIN reporting.central_flow_Package pkg\n        ON pd.PackageID = pkg.PackageId\n    WHERE tv.TemplateID = @TemplateID\n    ORDER BY pkg.CreateDate DESC\n)\n    AND ps.IsDeleted = 0\nORDER BY ps.[Name]') +
+        '</div>' +
+
+        // Step 2
+        '<h4><span class="step-number">2</span> Upload the Wizard Files</h4>' +
+        '<ol>' +
+            '<li>Go to <strong>Admin &gt; Forms</strong> and create a new form</li>' +
+            '<li>Name it whatever you like (e.g., "Dashboard Builder")</li>' +
+            '<li>Upload all 12 files: <code>index.html</code>, <code>wizard.css</code>, <code>wizard-demo.js</code>, <code>wizard-sql.js</code>, ' +
+                '<code>wizard-templates.js</code>, <code>wizard-generators.js</code>, <code>wizard-preview.js</code>, ' +
+                '<code>wizard-preview-basic.js</code>, <code>wizard-preview-advanced.js</code>, <code>wizard-preview-specialized.js</code>, ' +
+                '<code>viewmodel.js</code>, <code>configuration.js</code></li>' +
+        '</ol>' +
+
+        // Step 3
+        '<h4><span class="step-number">3</span> Connect the Sources to the Form</h4>' +
+        '<ol>' +
+            '<li>Open the form you just created</li>' +
+            '<li>Go to <strong>Sources</strong> (under the form\'s settings)</li>' +
+            '<li>Find each of the 6 sources and check <strong>Get</strong> for all of them</li>' +
+        '</ol>' +
+        '<div class="guide-tip"><strong>All 6 sources must be connected</strong> with Get checked, or the wizard cannot load your areas, doc types, fields, templates, inputs, or workflow steps.</div>' +
+
+        // Step 4
+        '<h4><span class="step-number">4</span> Open and Go</h4>' +
+        '<p>Open the form in Etrieve. You\'ll see three options: Document Lookup, Form Tracker, or Combined View. Pick one, walk through the wizard, and download your finished dashboard.</p>' +
+        '<p>Upload those downloaded files as a <strong>new form</strong> (your actual dashboard) and you\'re live.</p>';
+}
+
+function buildSourceBlock(name, keysHtml, sql) {
+    // Escape HTML entities in SQL for safe display in <pre>
+    var safeSql = sql.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return '<div class="source-block">' +
+        '<h5>' + name + '</h5>' +
+        '<div class="source-keys">' + keysHtml + '</div>' +
+        '<pre>' + safeSql + '</pre>' +
+    '</div>';
 }
 
 function updateModeIndicator() {

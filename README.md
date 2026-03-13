@@ -2,6 +2,11 @@
 
 A wizard that builds dashboards for Softdocs Etrieve. No coding required. Pick a style, point it at your data, and download a ready-to-use dashboard.
 
+## What's New in v4.1
+
+- **Built-in Admin Setup Guide** -- Click the "Setup Guide" button in the header (or the link on the welcome screen) to see all 6 SQL source definitions, file upload instructions, and source-to-form connection steps right inside the wizard. No more switching to GitHub to find the docs.
+- **Improved deployment instructions** -- The generate step and downloaded README now include explicit steps for connecting the source to the form and turning off Run on Load. Based on real first-deployment feedback.
+
 ## What's New in v4.0
 
 - **Style infographics** -- Click any dashboard style and an info panel expands showing what you get, warnings (for styles that need on-prem SQL), and numbered setup steps. Makes the difference between cloud-only and hybrid styles obvious before you commit.

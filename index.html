@@ -26,9 +26,15 @@
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
             <span id="modeIndicator"></span>
+            <button class="setup-guide-btn" onclick="toggleSetupGuide()" title="Admin Setup Guide">
+                <i class="bi bi-book"></i> <span>Setup Guide</span>
+            </button>
             <span class="badge" id="versionBadge">v4.0</span>
         </div>
     </div>
+
+    <!-- Admin Setup Guide (collapsible) -->
+    <div id="setupGuide" class="setup-guide" style="display:none;"></div>
 
     <!-- Main Container (matches wizard-demo.html structure) -->
     <div class="main-container">
@@ -73,6 +79,10 @@
                             <p>Documents and forms together in one dashboard</p>
                         </div>
                     </div>
+                    <p class="setup-guide-hint">
+                        <i class="bi bi-info-circle"></i>
+                        First time setting up? <a href="#" onclick="toggleSetupGuide(); return false;">Open the Admin Setup Guide</a> for step-by-step instructions.
+                    </p>
                 </div>
 
                 <!-- Step Content with Preview (populated by JS) -->
