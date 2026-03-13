@@ -316,6 +316,9 @@ function highlightSQL(sql) {
 }
 
 function downloadDashboard() {
+    // Save to history so user can re-edit later
+    if (typeof saveToHistory === 'function') saveToHistory();
+
     var files = generateDashboardFiles();
     if (typeof JSZip === 'undefined') {
         showDownloadModal(files);

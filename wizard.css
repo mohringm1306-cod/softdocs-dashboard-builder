@@ -2682,3 +2682,79 @@ small {
     cursor: pointer;
 }
 .setup-guide-hint a:hover { color: var(--primary-dark); }
+
+/* ============================================================================
+   DASHBOARD HISTORY
+   ============================================================================ */
+
+.history-panel {
+    margin-top: 30px;
+    padding-top: 24px;
+    border-top: 1px solid #e9ecef;
+}
+.history-panel h3 {
+    font-size: 1.1rem;
+    color: #495057;
+    margin: 0 0 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.history-panel .history-subtitle {
+    color: #888;
+    font-size: 0.85rem;
+    margin: 0 0 14px 0;
+}
+.history-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+.history-card {
+    position: relative;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.history-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+}
+.history-card-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 20px;
+}
+.history-card-meta {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 4px;
+}
+.history-card-time {
+    font-size: 0.75rem;
+    color: #999;
+    margin-top: 4px;
+}
+.history-delete {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+.history-delete:hover {
+    color: #dc3545;
+}

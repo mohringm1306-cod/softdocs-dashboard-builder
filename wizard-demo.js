@@ -6,10 +6,12 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '4.1';
-var WIZARD_BUILD_DATE = '2026-03-04';
+var WIZARD_VERSION = '4.2';
+var WIZARD_BUILD_DATE = '2026-03-13';
 
 // Changelog (newest first)
+// 4.2   (2026-03-13) - Dashboard history (localStorage), streamlined setup guide, style mode filtering
+// 4.1   (2026-03-13) - Built-in admin setup guide, improved deployment instructions
 // 4.0   (2026-03-04) - Style selection UX overhaul: infographic panel expands on click showing features, warnings, setup steps; Cloud Only vs Hybrid Server badges; style-specific live previews (12 unique renderers); URL auto-fill
 // --- v3.x ---
 // 3.5.0 (2026-03-03) - Style-specific live previews (12 unique renderers in sub-files); URL auto-fill (https://)
@@ -622,6 +624,115 @@ function clearDraft() {
     }
 }
 
+// ============================================================================
+// DASHBOARD HISTORY (localStorage)
+// ============================================================================
+
+var HISTORY_KEY = 'dashboardBuilderHistory';
+var MAX_HISTORY = 20;
+
+function saveToHistory() {
+    try {
+        var entry = {
+            id: Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
+            dashboardTitle: State.dashboardTitle || 'Untitled',
+            sourceName: State.sourceName || '',
+            mode: State.mode,
+            selectedStyle: State.selectedStyle,
+            savedAt: new Date().toISOString(),
+            state: Object.assign({}, State)
+        };
+        var history = getHistory();
+        // Replace if same sourceName exists
+        history = history.filter(function(h) { return h.sourceName !== entry.sourceName || !entry.sourceName; });
+        history.unshift(entry);
+        if (history.length > MAX_HISTORY) history = history.slice(0, MAX_HISTORY);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    } catch (e) {
+        console.warn('Could not save to history:', e);
+    }
+}
+
+function getHistory() {
+    try {
+        var raw = localStorage.getItem(HISTORY_KEY);
+        if (!raw) return [];
+        return JSON.parse(raw);
+    } catch (e) {
+        return [];
+    }
+}
+
+function deleteHistoryEntry(id) {
+    try {
+        var history = getHistory().filter(function(h) { return h.id !== id; });
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        renderHistoryPanel();
+    } catch (e) {
+        console.warn('Could not delete history entry:', e);
+    }
+}
+
+function loadHistoryEntry(id) {
+    var history = getHistory();
+    var entry = history.find(function(h) { return h.id === id; });
+    if (!entry || !entry.state) return;
+
+    // Close any draft modal
+    var modal = document.getElementById('draftModal');
+    if (modal) modal.remove();
+
+    // Restore state from history
+    restoreDraft(entry.state);
+    applyModeTheme(State.mode);
+
+    document.getElementById('modeSelection').style.display = 'none';
+    document.getElementById('stepContent').style.display = 'block';
+    document.getElementById('progressSection').style.display = 'block';
+    document.getElementById('cardFooter').style.display = 'flex';
+    updateModeIndicator();
+    renderProgress();
+    renderStep();
+    showToast('Loaded "' + escapeHtml(entry.dashboardTitle) + '"', 'success');
+}
+
+function renderHistoryPanel() {
+    var container = document.getElementById('historyPanel');
+    if (!container) return;
+    var history = getHistory();
+    if (history.length === 0) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    var modeLabels = { content: 'Document', forms: 'Form', combined: 'Combined' };
+    var styleMap = {};
+    if (typeof DashboardStyles !== 'undefined') {
+        DashboardStyles.forEach(function(s) { styleMap[s.id] = s.name; });
+    }
+
+    var html = '<h3><i class="bi bi-clock-history"></i> Your Dashboards</h3>' +
+        '<p class="history-subtitle">Click to re-open and edit a previous dashboard.</p>' +
+        '<div class="history-grid">';
+
+    history.forEach(function(entry) {
+        var modeLabel = modeLabels[entry.mode] || 'Unknown';
+        var styleName = styleMap[entry.selectedStyle] || '';
+        var timeStr = formatDraftTime(entry.savedAt);
+        html += '<div class="history-card" onclick="loadHistoryEntry(\'' + entry.id + '\')">' +
+            '<button class="history-delete" onclick="event.stopPropagation(); deleteHistoryEntry(\'' + entry.id + '\')" title="Remove">&times;</button>' +
+            '<div class="history-card-title">' + escapeHtml(entry.dashboardTitle) + '</div>' +
+            '<div class="history-card-meta">' + escapeHtml(modeLabel) + (styleName ? ' &middot; ' + escapeHtml(styleName) : '') + '</div>' +
+            '<div class="history-card-time">' + escapeHtml(timeStr) + '</div>' +
+        '</div>';
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+    container.style.display = 'block';
+}
+
 function restoreDraft(draft) {
     // Restore all state properties
     State.mode = draft.mode;
@@ -716,12 +827,13 @@ function formatDraftTime(isoString) {
     return date.toLocaleDateString();
 }
 
-// Check for draft on page load
+// Check for draft and render history on page load
 function checkForDraft() {
     const draft = loadDraft();
     if (draft && draft.mode) {
         showDraftModal(draft);
     }
+    renderHistoryPanel();
 }
 
 function showDraftModal(draft) {
@@ -931,6 +1043,9 @@ function resetWizard() {
     document.querySelectorAll('.mode-card').forEach(card => {
         card.classList.remove('selected');
     });
+
+    // Refresh history panel
+    renderHistoryPanel();
 }
 
 function startWizard() {
@@ -954,10 +1069,12 @@ function startWizard() {
 function toggleSetupGuide() {
     var panel = document.getElementById('setupGuide');
     if (!panel) return;
-    if (panel.style.display === 'none') {
-        panel.innerHTML = buildSetupGuideHTML();
+    if (panel.style.display === 'none' || !panel.style.display) {
+        if (!panel.dataset.built) {
+            panel.innerHTML = buildSetupGuideHTML();
+            panel.dataset.built = '1';
+        }
         panel.style.display = 'block';
-        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
         panel.style.display = 'none';
     }
@@ -965,75 +1082,52 @@ function toggleSetupGuide() {
 
 function buildSetupGuideHTML() {
     return '<button class="setup-guide-close" onclick="toggleSetupGuide()" title="Close">&times;</button>' +
-        '<h3><i class="bi bi-book"></i> Admin Setup Guide</h3>' +
-        '<p class="guide-subtitle">Everything you need to get the Dashboard Builder running in Etrieve. Takes about 15 minutes.</p>' +
+        '<h3><i class="bi bi-book"></i> Deploying Your Generated Dashboard</h3>' +
+        '<p class="guide-subtitle">After the wizard generates your files, follow these steps to get the dashboard live in Etrieve.</p>' +
 
         // Step 1
-        '<h4><span class="step-number">1</span> Create 6 Data Sources</h4>' +
-        '<p>Go to <strong>Central &gt; Admin &gt; Sources</strong> and click <strong>Add New Source</strong>. For each source:</p>' +
+        '<h4><span class="step-number">1</span> Create the Integration Source</h4>' +
+        '<p>Go to <strong>Central &gt; Admin &gt; Sources</strong> and click <strong>Add New Source</strong>.</p>' +
         '<ol>' +
-            '<li>Set the <strong>Name</strong> (copy it exactly, character for character)</li>' +
+            '<li>Set the <strong>Name</strong> to exactly what the wizard tells you (it shows the name on the generate step)</li>' +
             '<li>Set <strong>Connection</strong> to your Etrieve Content database connection</li>' +
-            '<li>On the <strong>Actions</strong> tab: turn on <strong>Get</strong>, turn on <strong>Custom Action</strong>, paste the SQL into the <strong>Query Editor</strong></li>' +
-            '<li>If a parameter is listed, add it under <strong>Source Keys</strong></li>' +
+            '<li>On the <strong>Actions</strong> tab: turn on <strong>Get</strong>, turn on <strong>Custom Action</strong>, paste the generated SQL into the <strong>Query Editor</strong></li>' +
             '<li><strong>Leave the Schema field blank</strong> (do not type anything in it)</li>' +
             '<li>On the <strong>Privileges</strong> tab: add your users and give them <strong>Get</strong> access</li>' +
             '<li>Click <strong>Save</strong></li>' +
         '</ol>' +
-
-        '<div class="guide-tip"><strong>Important:</strong> The source name must match exactly. ' +
-        'If you name it <code>WizardBuilder_getAreas</code> instead of <code>WizardBuilder_GetAreas</code>, the wizard will not find it. ' +
-        'The Schema field must stay blank. Filling it in (even with something that seems right) causes 500 errors.</div>' +
-
-        '<div class="source-grid">' +
-            buildSourceBlock('WizardBuilder_GetAreas', 'No source keys needed.',
-                'SELECT\n    CatalogID       AS id,\n    [Name]          AS name\nFROM [dbo].[Catalog]\nORDER BY [Name]') +
-            buildSourceBlock('WizardBuilder_GetDocTypes', 'Source key: <code>@CatalogID</code> (Integer)',
-                'SELECT\n    dt.DocumentTypeID   AS id,\n    dt.[Name]           AS name,\n    dt.[Name]           AS code\nFROM [dbo].[DocumentType] dt\nINNER JOIN [dbo].[CatalogDocumentType] cdt\n    ON dt.DocumentTypeID = cdt.DocumentTypeID\nWHERE cdt.CatalogID = @CatalogID\nORDER BY dt.[Name]') +
-            buildSourceBlock('WizardBuilder_GetKeyFields', 'Source key: <code>@CatalogID</code> (Integer)',
-                'SELECT DISTINCT\n    f.FieldID           AS id,\n    f.[Name]            AS name,\n    CASE\n        WHEN f.PartyTypeID IS NOT NULL          THEN \'party\'\n        WHEN dt.[Name] = \'Date\'                 THEN \'date\'\n        WHEN dt.[Name] = \'Number\'               THEN \'number\'\n        WHEN dt.[Name] IN (\'Money\', \'Decimal\')  THEN \'decimal\'\n        ELSE \'text\'\n    END                 AS type,\n    f.[Name]            AS alias,\n    f.PartyTypeID       AS partyTypeId\nFROM [dbo].[Field] f\nINNER JOIN [dbo].[DataType] dt\n    ON f.DataTypeID = dt.DataTypeID\nINNER JOIN [dbo].[DocumentTypeField] dtf\n    ON f.FieldID = dtf.FieldID\nINNER JOIN [dbo].[CatalogDocumentType] cdt\n    ON dtf.DocumentTypeID = cdt.DocumentTypeID\nWHERE cdt.CatalogID = @CatalogID\nORDER BY f.[Name]') +
-            buildSourceBlock('WizardBuilder_GetFormTemplates', 'No source keys needed.',
-                'SELECT\n    tv.TemplateVersionID    AS id,\n    t.[Name]                AS name,\n    t.TemplateID            AS templateId\nFROM reporting.central_forms_Template t\nINNER JOIN reporting.central_forms_TemplateVersion tv\n    ON t.TemplateID = tv.TemplateID\nWHERE tv.IsPublished = 1\nORDER BY t.[Name]') +
-            buildSourceBlock('WizardBuilder_GetFormInputs', 'Source key: <code>@TemplateVersionID</code> (Integer)',
-                'SELECT DISTINCT\n    iv.InputID  AS id,\n    iv.InputID  AS label\nFROM reporting.central_forms_InputValue iv\nINNER JOIN reporting.central_forms_Form f\n    ON iv.FormID = f.FormID\nWHERE f.TemplateVersionID = @TemplateVersionID\n    AND f.IsDraft = 0\nORDER BY iv.InputID') +
-            buildSourceBlock('WizardBuilder_GetWorkflowSteps', 'Source key: <code>@TemplateID</code> (Integer)',
-                'SELECT DISTINCT\n    ps.ProcessStepId                AS id,\n    ps.[Name]                       AS name,\n    REPLACE(ps.[Name], \'_\', \' \')    AS displayName\nFROM reporting.central_flow_ProcessStep ps\nWHERE ps.ProcessID = (\n    SELECT TOP 1 pkg.ProcessID\n    FROM reporting.central_forms_TemplateVersion tv\n    INNER JOIN reporting.central_flow_PackageDocument pd\n        ON pd.SourceTypeCode = tv.Code\n    INNER JOIN reporting.central_flow_Package pkg\n        ON pd.PackageID = pkg.PackageId\n    WHERE tv.TemplateID = @TemplateID\n    ORDER BY pkg.CreateDate DESC\n)\n    AND ps.IsDeleted = 0\nORDER BY ps.[Name]') +
-        '</div>' +
+        '<div class="guide-tip"><strong>Name must match exactly.</strong> ' +
+        'If the wizard says <code>MyDashboard_GetData</code>, the source name must be <code>MyDashboard_GetData</code>, not <code>mydashboard_getdata</code>. ' +
+        'The Schema field must stay blank. Filling it in causes 500 errors.</div>' +
 
         // Step 2
-        '<h4><span class="step-number">2</span> Upload the Wizard Files</h4>' +
+        '<h4><span class="step-number">2</span> Upload the Dashboard Files</h4>' +
         '<ol>' +
             '<li>Go to <strong>Admin &gt; Forms</strong> and create a new form</li>' +
-            '<li>Name it whatever you like (e.g., "Dashboard Builder")</li>' +
-            '<li>Upload all 12 files: <code>index.html</code>, <code>wizard.css</code>, <code>wizard-demo.js</code>, <code>wizard-sql.js</code>, ' +
-                '<code>wizard-templates.js</code>, <code>wizard-generators.js</code>, <code>wizard-preview.js</code>, ' +
-                '<code>wizard-preview-basic.js</code>, <code>wizard-preview-advanced.js</code>, <code>wizard-preview-specialized.js</code>, ' +
-                '<code>viewmodel.js</code>, <code>configuration.js</code></li>' +
+            '<li>Name it whatever you like (e.g., "HR Document Lookup")</li>' +
+            '<li>Upload the 3 generated files: <code>index.html</code>, <code>configuration.js</code>, <code>viewmodel.js</code></li>' +
         '</ol>' +
 
         // Step 3
-        '<h4><span class="step-number">3</span> Connect the Sources to the Form</h4>' +
+        '<h4><span class="step-number">3</span> Connect the Source to the Form</h4>' +
         '<ol>' +
             '<li>Open the form you just created</li>' +
             '<li>Go to <strong>Sources</strong> (under the form\'s settings)</li>' +
-            '<li>Find each of the 6 sources and check <strong>Get</strong> for all of them</li>' +
+            '<li>Find the source you created in Step 1 and check <strong>Get</strong></li>' +
+            '<li>Make sure <strong>Run on Load</strong> is <em>off</em> (the dashboard calls the source on demand)</li>' +
         '</ol>' +
-        '<div class="guide-tip"><strong>All 6 sources must be connected</strong> with Get checked, or the wizard cannot load your areas, doc types, fields, templates, inputs, or workflow steps.</div>' +
 
         // Step 4
-        '<h4><span class="step-number">4</span> Open and Go</h4>' +
-        '<p>Open the form in Etrieve. You\'ll see three options: Document Lookup, Form Tracker, or Combined View. Pick one, walk through the wizard, and download your finished dashboard.</p>' +
-        '<p>Upload those downloaded files as a <strong>new form</strong> (your actual dashboard) and you\'re live.</p>';
-}
+        '<h4><span class="step-number">4</span> Set Permissions</h4>' +
+        '<p>On the form\'s <strong>Permissions</strong> tab, add the users or groups who should see this dashboard.</p>' +
 
-function buildSourceBlock(name, keysHtml, sql) {
-    // Escape HTML entities in SQL for safe display in <pre>
-    var safeSql = sql.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return '<div class="source-block">' +
-        '<h5>' + name + '</h5>' +
-        '<div class="source-keys">' + keysHtml + '</div>' +
-        '<pre>' + safeSql + '</pre>' +
-    '</div>';
+        // Step 5
+        '<h4><span class="step-number">5</span> Open and Verify</h4>' +
+        '<p>Open the form in Etrieve. You should see your dashboard with real data. If you get a blank page or errors, check that the source name matches exactly and the source is connected with Get enabled.</p>' +
+
+        // Hybrid note
+        '<div class="guide-tip"><strong>Hybrid/write-back styles</strong> (Workflow Actions, Committee Voting, etc.) need additional setup: ' +
+        'on-prem SQL schema, Hybrid Server connection, and write-back sources. The generated README covers those steps in detail.</div>';
 }
 
 function updateModeIndicator() {
