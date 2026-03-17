@@ -247,10 +247,9 @@ function generateFormsSQL() {
         sql += ',\n   actor.[Name] ' + _Q.AS + ' AssignedTo';
     }
 
-    sql += ',\n' +
-        "   '/central/submissions?packageId=' + " + _Q.CT + '(pd.PackageID ' + _Q.AS + ' ' + _Q.VC + '(50)) +\n' +
-        "   '&itemId=' + " + _Q.CT + '(f.FormID ' + _Q.AS + ' ' + _Q.VC + ") +\n" +
-        "   '&focusMode=true' " + _Q.AS + ' url';
+    // URL: use the Url that Etrieve populates on PackageDocument
+    // (works for both active and completed workflow items)
+    sql += ',\n   pd.Url ' + _Q.AS + ' url';
 
     sql += '\n' + _Q.FR + ' reporting.central_forms_Form f\n' +
         _Q.LJ + ' reporting.central_forms_InputValue iv\n' +

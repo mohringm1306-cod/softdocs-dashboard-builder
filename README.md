@@ -5,8 +5,9 @@ A wizard that builds dashboards for Softdocs Etrieve. No coding required. Pick a
 ## What's New in v4.2
 
 - **Dashboard history** -- Every dashboard you download is saved to your browser. The welcome screen shows a "Your Dashboards" section where you can click any previous dashboard to re-open and edit it. Delete old ones with the X button.
-- **Streamlined Setup Guide** -- The guide now focuses on deploying your generated dashboard (create source, upload files, connect, set permissions) instead of repeating the 6 wizard source definitions you already have. Opens and closes cleanly from the header button.
+- **Streamlined Setup Guide** -- The guide now focuses on deploying your generated dashboard (create source, upload files, connect) instead of repeating the 6 wizard source definitions you already have. Opens and closes cleanly from the header button.
 - **Style mode filtering** -- Document Lookup mode only shows the 6 styles that work with content. Form-dependent styles (Workflow Actions, Committee Voting, etc.) are hidden unless you pick Form Tracker or Combined.
+- **Fixed View button for completed workflow items** -- View links now use the URL that Etrieve populates on PackageDocument, which works for both active and completed items. Previously, completed items would spin forever because the constructed URL used parameters Etrieve does not support.
 
 ## What's New in v4.1
 
