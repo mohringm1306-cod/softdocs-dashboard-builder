@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AA First Class Upgrade Pricing Analysis — ORD ↔ DEN</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary: #0078d2;
+            --primary-dark: #005fa3;
+            --primary-light: #4da3e8;
+            --accent: #c8102e;
+            --gold: #f0b323;
+            --silver: #a7a8aa;
+            --success: #28a745;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            --light: #f5f7fa;
+            --dark: #1a1a2e;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.12);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--light);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 24px 32px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow-lg);
+        }
+        .header i { font-size: 2rem; }
+        .header h1 { font-size: 1.5rem; font-weight: 600; }
+        .header .subtitle { opacity: 0.85; font-size: 0.9rem; margin-top: 2px; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+        /* Flight summary cards */
+        .flight-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .flight-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+        }
+        .flight-card .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 2px;
+        }
+        .flight-card .route {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .flight-card .route i { color: var(--primary); font-size: 1rem; }
+        .flight-card .details {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+        .flight-card .details span { display: flex; align-items: center; gap: 4px; }
+        .flight-card .details i { font-size: 0.8rem; color: var(--primary); }
+
+        /* Current fare banner */
+        .current-fare {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .current-fare .fare-item { text-align: center; }
+        .current-fare .fare-item .amount { font-size: 1.5rem; font-weight: 700; color: var(--gold); }
+        .current-fare .fare-item .desc { font-size: 0.75rem; opacity: 0.7; text-transform: uppercase; }
+
+        /* Upgrade options grid */
+        .upgrade-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .upgrade-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .upgrade-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+        .upgrade-card .card-header {
+            padding: 16px 20px;
+            color: white;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .upgrade-card .card-header i { font-size: 1.3rem; }
+        .upgrade-card .card-body { padding: 20px; }
+        .upgrade-card .price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .upgrade-card .price-row:last-child { border-bottom: none; }
+        .upgrade-card .price-row .price-label { font-size: 0.85rem; color: #666; }
+        .upgrade-card .price-row .price-value { font-weight: 700; font-size: 1rem; }
+        .upgrade-card .total-row {
+            margin-top: 12px;
+            padding: 12px 0 0;
+            border-top: 2px solid var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .upgrade-card .total-row .total-label { font-weight: 600; font-size: 0.95rem; }
+        .upgrade-card .total-row .total-value { font-weight: 800; font-size: 1.4rem; }
+
+        .bg-cash { background: linear-gradient(135deg, #0078d2, #005fa3); }
+        .bg-miles { background: linear-gradient(135deg, #7c3aed, #5b21b6); }
+        .bg-sticker { background: linear-gradient(135deg, #0d9488, #115e59); }
+        .text-cash { color: var(--primary); }
+        .text-miles { color: #7c3aed; }
+        .text-sticker { color: #0d9488; }
+
+        /* Slider controls */
+        .controls {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+        .controls h3 {
+            font-size: 1rem;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .controls h3 i { color: var(--primary); }
+        .slider-group { margin-bottom: 14px; }
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #555;
+            margin-bottom: 4px;
+        }
+        .slider-group label .val { font-weight: 700; color: var(--dark); }
+        .slider-group input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary);
+        }
+
+        /* Comparison bar */
+        .comparison {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+        .comparison h3 { font-size: 1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .comparison h3 i { color: var(--primary); }
+        .bar-group { margin-bottom: 14px; }
+        .bar-group .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+        .bar-group .bar-label .bar-name { font-weight: 600; }
+        .bar-group .bar-label .bar-amount { font-weight: 700; }
+        .bar-track {
+            height: 28px;
+            background: #e9ecef;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: 14px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            font-size: 0.75rem;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Notes section */
+        .notes {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 24px;
+            box-shadow: var(--shadow);
+        }
+        .notes h3 { font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .notes h3 i { color: var(--accent); }
+        .notes ul { padding-left: 20px; }
+        .notes li { font-size: 0.85rem; color: #555; margin-bottom: 6px; }
+        .notes li strong { color: #333; }
+        .notes .source-links { margin-top: 14px; padding-top: 14px; border-top: 1px solid #eee; }
+        .notes .source-links a { color: var(--primary); font-size: 0.8rem; display: block; margin-bottom: 4px; text-decoration: none; }
+        .notes .source-links a:hover { text-decoration: underline; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-best { background: #d4edda; color: #155724; }
+        .badge-mid { background: #fff3cd; color: #856404; }
+        .badge-high { background: #f8d7da; color: #721c24; }
+
+        @media (max-width: 700px) {
+            .flight-summary { grid-template-columns: 1fr; }
+            .upgrade-grid { grid-template-columns: 1fr; }
+            .current-fare { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <i class="bi bi-airplane-engines"></i>
+    <div>
+        <h1>First Class Upgrade Pricing Analysis</h1>
+        <div class="subtitle">AA 1647 &amp; AA 1744 — ORD ↔ DEN — May 17–22, 2026 — MOHRING/MICHAEL</div>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- Flight Cards -->
+    <div class="flight-summary">
+        <div class="flight-card">
+            <div class="label">Outbound — Sun, May 17</div>
+            <div class="route">ORD <i class="bi bi-arrow-right"></i> DEN</div>
+            <div class="details">
+                <span><i class="bi bi-clock"></i> Departs 8:05 AM</span>
+                <span><i class="bi bi-clock-fill"></i> Arrives 9:57 AM</span>
+                <span><i class="bi bi-airplane"></i> AA 1647 · A319</span>
+                <span><i class="bi bi-hourglass-split"></i> 2h 52m · 886 mi</span>
+                <span><i class="bi bi-person-badge"></i> Seat 18-F</span>
+                <span><i class="bi bi-ticket-perforated"></i> Economy [N]</span>
+            </div>
+        </div>
+        <div class="flight-card">
+            <div class="label">Return — Fri, May 22</div>
+            <div class="route">DEN <i class="bi bi-arrow-right"></i> ORD</div>
+            <div class="details">
+                <span><i class="bi bi-clock"></i> Departs 12:27 PM</span>
+                <span><i class="bi bi-clock-fill"></i> Arrives 4:10 PM</span>
+                <span><i class="bi bi-airplane"></i> AA 1744 · 738</span>
+                <span><i class="bi bi-hourglass-split"></i> 2h 43m · 886 mi</span>
+                <span><i class="bi bi-person-badge"></i> Seat 15-F</span>
+                <span><i class="bi bi-ticket-perforated"></i> Economy [G]</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Fare -->
+    <div class="current-fare">
+        <div class="fare-item">
+            <div class="desc">Air Fare</div>
+            <div class="amount">$358.14</div>
+        </div>
+        <div class="fare-item">
+            <div class="desc">Taxes &amp; Fees</div>
+            <div class="amount">$57.66</div>
+        </div>
+        <div class="fare-item">
+            <div class="desc">Service Fee</div>
+            <div class="amount">$7.00</div>
+        </div>
+        <div class="fare-item">
+            <div class="desc">Total Paid (Economy)</div>
+            <div class="amount" style="font-size:1.8rem;">$422.80</div>
+        </div>
+    </div>
+
+    <!-- Dynamic Controls -->
+    <div class="controls">
+        <h3><i class="bi bi-sliders"></i> Adjust Estimates (AA uses dynamic pricing)</h3>
+        <div class="slider-group">
+            <label>
+                Cash upgrade per segment
+                <span class="val" id="cashPerSegLabel">$175</span>
+            </label>
+            <input type="range" id="cashPerSeg" min="75" max="500" step="5" value="175" oninput="recalc()">
+        </div>
+        <div class="slider-group">
+            <label>
+                Miles upgrade per segment
+                <span class="val" id="milesPerSegLabel">14,000</span>
+            </label>
+            <input type="range" id="milesPerSeg" min="5000" max="40000" step="500" value="14000" oninput="recalc()">
+        </div>
+        <div class="slider-group">
+            <label>
+                Value of 1 AAdvantage mile (cents)
+                <span class="val" id="mileValLabel">1.2¢</span>
+            </label>
+            <input type="range" id="mileVal" min="0.5" max="2.5" step="0.1" value="1.2" oninput="recalc()">
+        </div>
+    </div>
+
+    <!-- Upgrade Option Cards -->
+    <div class="upgrade-grid">
+        <!-- Cash Instant Upgrade -->
+        <div class="upgrade-card">
+            <div class="card-header bg-cash">
+                <i class="bi bi-cash-stack"></i>
+                Cash Instant Upgrade
+                <span class="badge badge-mid" id="cashBadge">MODERATE</span>
+            </div>
+            <div class="card-body">
+                <div class="price-row">
+                    <span class="price-label">Outbound (ORD→DEN, ~2h52m)</span>
+                    <span class="price-value text-cash" id="cashOut">$175</span>
+                </div>
+                <div class="price-row">
+                    <span class="price-label">Return (DEN→ORD, ~2h43m)</span>
+                    <span class="price-value text-cash" id="cashRet">$175</span>
+                </div>
+                <div class="total-row">
+                    <span class="total-label">Total Upgrade Cost</span>
+                    <span class="total-value text-cash" id="cashTotal">$350</span>
+                </div>
+                <div class="total-row" style="border-top:1px dashed #ccc; padding-top:8px; margin-top:8px;">
+                    <span class="total-label">Total Trip (Economy + Upgrade)</span>
+                    <span class="total-value" style="color:var(--dark);" id="cashTripTotal">$772.80</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Miles Instant Upgrade -->
+        <div class="upgrade-card">
+            <div class="card-header bg-miles">
+                <i class="bi bi-gem"></i>
+                Miles Instant Upgrade
+                <span class="badge badge-mid" id="milesBadge">MODERATE</span>
+            </div>
+            <div class="card-body">
+                <div class="price-row">
+                    <span class="price-label">Outbound (ORD→DEN)</span>
+                    <span class="price-value text-miles" id="milesOut">14,000 mi</span>
+                </div>
+                <div class="price-row">
+                    <span class="price-label">Return (DEN→ORD)</span>
+                    <span class="price-value text-miles" id="milesRet">14,000 mi</span>
+                </div>
+                <div class="total-row">
+                    <span class="total-label">Total Miles Needed</span>
+                    <span class="total-value text-miles" id="milesTotal">28,000 mi</span>
+                </div>
+                <div class="total-row" style="border-top:1px dashed #ccc; padding-top:8px; margin-top:8px;">
+                    <span class="total-label">Equivalent Cash Value</span>
+                    <span class="total-value" style="color:var(--dark);" id="milesEquiv">$336</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 500-Mile Stickers -->
+        <div class="upgrade-card">
+            <div class="card-header bg-sticker">
+                <i class="bi bi-ticket-detailed"></i>
+                500-Mile Upgrade Stickers
+                <span class="badge badge-best" id="stickerBadge">BEST VALUE</span>
+            </div>
+            <div class="card-body">
+                <div class="price-row">
+                    <span class="price-label">Stickers needed per segment</span>
+                    <span class="price-value text-sticker">2 × $40</span>
+                </div>
+                <div class="price-row">
+                    <span class="price-label">Outbound (886mi ÷ 500 = 2)</span>
+                    <span class="price-value text-sticker">$80</span>
+                </div>
+                <div class="price-row">
+                    <span class="price-label">Return (886mi ÷ 500 = 2)</span>
+                    <span class="price-value text-sticker">$80</span>
+                </div>
+                <div class="total-row">
+                    <span class="total-label">Total (4 stickers)</span>
+                    <span class="total-value text-sticker">$160</span>
+                </div>
+                <div class="total-row" style="border-top:1px dashed #ccc; padding-top:8px; margin-top:8px;">
+                    <span class="total-label">Total Trip (Economy + Stickers)</span>
+                    <span class="total-value" style="color:var(--dark);">$582.80</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Comparison -->
+    <div class="comparison">
+        <h3><i class="bi bi-bar-chart"></i> Visual Comparison — Total Trip Cost</h3>
+        <div class="bar-group">
+            <div class="bar-label">
+                <span class="bar-name">Economy (Current)</span>
+                <span class="bar-amount">$422.80</span>
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill" id="barEcon" style="width:0%; background:var(--silver);"></div>
+            </div>
+        </div>
+        <div class="bar-group">
+            <div class="bar-label">
+                <span class="bar-name"><i class="bi bi-ticket-detailed" style="color:#0d9488"></i> First via 500-Mile Stickers</span>
+                <span class="bar-amount" id="barStickerAmt">$582.80</span>
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill" id="barSticker" style="width:0%; background:linear-gradient(90deg,#0d9488,#14b8a6);"></div>
+            </div>
+        </div>
+        <div class="bar-group">
+            <div class="bar-label">
+                <span class="bar-name"><i class="bi bi-cash-stack" style="color:#0078d2"></i> First via Cash Upgrade</span>
+                <span class="bar-amount" id="barCashAmt">$772.80</span>
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill" id="barCash" style="width:0%; background:linear-gradient(90deg,#0078d2,#4da3e8);"></div>
+            </div>
+        </div>
+        <div class="bar-group">
+            <div class="bar-label">
+                <span class="bar-name"><i class="bi bi-gem" style="color:#7c3aed"></i> First via Miles (cash equivalent)</span>
+                <span class="bar-amount" id="barMilesAmt">$758.80</span>
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill" id="barMiles" style="width:0%; background:linear-gradient(90deg,#7c3aed,#a78bfa);"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="notes">
+        <h3><i class="bi bi-info-circle"></i> Important Notes</h3>
+        <ul>
+            <li><strong>Dynamic pricing:</strong> AA uses dynamic pricing for instant upgrades. The actual price will only appear when you check via the AA app or aa.com after booking. Prices change based on demand, date proximity, and seat availability.</li>
+            <li><strong>$50/hour rule of thumb:</strong> Industry guidance suggests ~$50/hour is a fair price for a domestic first-class upgrade. For your ~2.75-hour flights, that's roughly <strong>$137/segment</strong>.</li>
+            <li><strong>500-mile stickers:</strong> Require AAdvantage Gold or Platinum status to earn for free. Anyone can purchase them at $40 each. You need <strong>2 per segment</strong> (ceil 886mi ÷ 500). Subject to availability — not guaranteed.</li>
+            <li><strong>Fare class matters:</strong> Your outbound is booked in fare class <strong>N</strong> and return in <strong>G</strong>. Both are eligible economy fares for upgrade. However, N fares are deep-discount and may have lower upgrade priority.</li>
+            <li><strong>Zendesk Relate timing:</strong> May 17–22 coincides with the conference, so Denver flights may have higher-than-usual demand, pushing upgrade prices upward.</li>
+            <li><strong>Confirmation: OGVPRK</strong> — Log in to aa.com with this PNR to see your actual instant upgrade offer.</li>
+            <li><strong>Non-refundable:</strong> Your itinerary notes "NON REFUNDABLE ITINERARY SUBJECT TO FEES PLUS AN INCREASE IN FARE" — upgrade purchases are also typically non-refundable.</li>
+        </ul>
+        <div class="source-links">
+            <strong style="font-size:0.8rem; color:#888;">Sources:</strong>
+            <a href="https://thepointsguy.com/airline/how-much-pay-upgrade/" target="_blank">The Points Guy — How Much Should You Pay for an Upgrade?</a>
+            <a href="https://upgradedpoints.com/travel/airlines/500-mile-upgrades-american-airlines/" target="_blank">Upgraded Points — 500-Mile Upgrades on AA</a>
+            <a href="https://onemileatatime.com/guides/american-airlines-instant-cash-mileage-upgrade/" target="_blank">OMAAT — AA Instant Cash & Mileage Upgrade Offers</a>
+            <a href="https://www.nerdwallet.com/travel/learn/your-guide-to-american-airlines-upgrades" target="_blank">NerdWallet — AA Upgrades Guide</a>
+            <a href="https://10xtravel.com/american-airlines-upgrade/" target="_blank">10xTravel — AA Upgrade to First Class</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ECONOMY_TOTAL = 422.80;
+    const STICKER_TOTAL = 160; // 4 stickers × $40
+    const FLIGHT_MILES = 886;
+    const STICKERS_PER_SEG = Math.ceil(FLIGHT_MILES / 500); // 2
+
+    function recalc() {
+        const cashPerSeg = +document.getElementById('cashPerSeg').value;
+        const milesPerSeg = +document.getElementById('milesPerSeg').value;
+        const mileVal = +document.getElementById('mileVal').value;
+
+        // Labels
+        document.getElementById('cashPerSegLabel').textContent = '$' + cashPerSeg;
+        document.getElementById('milesPerSegLabel').textContent = milesPerSeg.toLocaleString();
+        document.getElementById('mileValLabel').textContent = mileVal.toFixed(1) + '¢';
+
+        // Cash card
+        const cashRoundTrip = cashPerSeg * 2;
+        const cashTrip = ECONOMY_TOTAL + cashRoundTrip;
+        document.getElementById('cashOut').textContent = '$' + cashPerSeg;
+        document.getElementById('cashRet').textContent = '$' + cashPerSeg;
+        document.getElementById('cashTotal').textContent = '$' + cashRoundTrip;
+        document.getElementById('cashTripTotal').textContent = '$' + cashTrip.toFixed(2);
+
+        // Miles card
+        const milesRoundTrip = milesPerSeg * 2;
+        const milesEquiv = (milesRoundTrip * mileVal) / 100;
+        const milesTrip = ECONOMY_TOTAL + milesEquiv;
+        document.getElementById('milesOut').textContent = milesPerSeg.toLocaleString() + ' mi';
+        document.getElementById('milesRet').textContent = milesPerSeg.toLocaleString() + ' mi';
+        document.getElementById('milesTotal').textContent = milesRoundTrip.toLocaleString() + ' mi';
+        document.getElementById('milesEquiv').textContent = '$' + milesEquiv.toFixed(0);
+
+        // Badges
+        setBadge('cashBadge', cashRoundTrip);
+        setBadge('milesBadge', milesEquiv);
+
+        // Comparison bars
+        const stickerTrip = ECONOMY_TOTAL + STICKER_TOTAL;
+        const maxVal = Math.max(cashTrip, stickerTrip, milesTrip) * 1.1;
+
+        animateBar('barEcon', (ECONOMY_TOTAL / maxVal) * 100);
+        animateBar('barSticker', (stickerTrip / maxVal) * 100);
+        animateBar('barCash', (cashTrip / maxVal) * 100);
+        animateBar('barMiles', (milesTrip / maxVal) * 100);
+
+        document.getElementById('barCashAmt').textContent = '$' + cashTrip.toFixed(2);
+        document.getElementById('barMilesAmt').textContent = '$' + milesTrip.toFixed(2) + ' equiv';
+        document.getElementById('barStickerAmt').textContent = '$' + stickerTrip.toFixed(2);
+    }
+
+    function setBadge(id, cost) {
+        const el = document.getElementById(id);
+        if (cost <= 200) {
+            el.textContent = 'BEST VALUE';
+            el.className = 'badge badge-best';
+        } else if (cost <= 400) {
+            el.textContent = 'MODERATE';
+            el.className = 'badge badge-mid';
+        } else {
+            el.textContent = 'EXPENSIVE';
+            el.className = 'badge badge-high';
+        }
+    }
+
+    function animateBar(id, pct) {
+        document.getElementById(id).style.width = Math.min(pct, 100) + '%';
+    }
+
+    // Init
+    recalc();
+</script>
+
+</body>
+</html>
