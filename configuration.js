@@ -2,11 +2,11 @@
  * Dashboard Builder Wizard 3.0 - Etrieve Integration Configuration
  *
  * These integration source names must match the sources you create in:
- *   Etrieve Central → Admin Settings → Sources
+ *   Etrieve Central -> Admin Settings -> Sources
  *
  * Each source connects to a SQL query via your Hybrid Server connection.
  * After creating each source, connect it to this form under:
- *   Form Settings → Connect → Available Sources → Check "Get"
+ *   Form Settings -> Connect -> Available Sources -> Check "Get"
  *
  * All queries are SELECT-only (read-only). No data is modified.
  */
@@ -14,7 +14,7 @@
 // ============================================================================
 // INTEGRATION 1: Get Areas/Catalogs
 // ============================================================================
-// Step: "Select Folder" — populates the area picker
+// Step: "Select Folder" - populates the area picker
 // Parameter: (none)
 //
 // SQL:
@@ -29,7 +29,7 @@ var areasIntegrationName = 'WizardBuilder_GetAreas';
 // ============================================================================
 // INTEGRATION 2: Get Document Types for an Area
 // ============================================================================
-// Step: "Select Document Types" — populates the doc type checkboxes
+// Step: "Select Document Types" - populates the doc type checkboxes
 // Parameter: @CatalogID (from selected area)
 //
 // SQL:
@@ -48,7 +48,7 @@ var docTypesIntegrationName = 'WizardBuilder_GetDocTypes';
 // ============================================================================
 // INTEGRATION 3: Get Key Fields for an Area
 // ============================================================================
-// Step: "Select Columns" (content mode) — populates the field checkboxes
+// Step: "Select Columns" (content mode) - populates the field checkboxes
 // Parameter: @CatalogID (from selected area)
 //
 // The 'type' column is critical: the wizard uses it to decide between
@@ -82,7 +82,7 @@ var keyFieldsIntegrationName = 'WizardBuilder_GetKeyFields';
 // ============================================================================
 // INTEGRATION 4: Get Form Templates
 // ============================================================================
-// Step: "Select Form" — populates the form template picker
+// Step: "Select Form" - populates the form template picker
 // Parameter: (none)
 //
 // Returns TemplateVersionID as 'id' (used for form input queries)
@@ -104,7 +104,7 @@ var formTemplatesIntegrationName = 'WizardBuilder_GetFormTemplates';
 // ============================================================================
 // INTEGRATION 5: Get Form Input Fields
 // ============================================================================
-// Step: "Select Columns" (forms mode) — populates the field checkboxes
+// Step: "Select Columns" (forms mode) - populates the field checkboxes
 // Parameter: @TemplateVersionID (from selected template's id)
 //
 // Discovers actual InputIDs from submitted form data (IsDraft=0).
@@ -126,30 +126,30 @@ var formInputsIntegrationName = 'WizardBuilder_GetFormInputs';
 // ============================================================================
 // INTEGRATION 6: Get Workflow Steps for a Form Template
 // ============================================================================
-// Step: "Select Workflow Steps" -- populates the workflow step checkboxes
+// Step: "Select Workflow Steps" - populates the workflow step checkboxes
 // Parameter: @TemplateID (from selected template's templateId)
 //
 // Chain: Template -> TemplateVersion.Code -> PackageDocument.SourceTypeCode
-//        -> Package.PackageId -> Package.ProcessID -> ProcessStep
-// Uses Package table (NOT TaskQueue) so ALL steps are returned regardless
-// of whether forms are currently parked at that step.
+//        -> TaskQueue -> ProcessStep
+// Process has NO TemplateID column. The link goes through PackageDocument.
 // ProcessStepId (lowercase 'd'), NO StepOrder column.
 //
-// SQL (finds most-recent ProcessID via Package, returns ALL steps):
+// SQL (subquery approach - finds ProcessID, then returns ALL steps):
 //   SELECT DISTINCT
 //       ps.ProcessStepId AS id,
 //       ps.[Name] AS name,
 //       REPLACE(ps.[Name], '_', ' ') AS displayName
 //   FROM reporting.central_flow_ProcessStep ps
-//   WHERE ps.ProcessID = (
-//       SELECT TOP 1 pkg.ProcessID
+//   WHERE ps.ProcessID IN (
+//       SELECT DISTINCT ps2.ProcessID
 //       FROM reporting.central_forms_TemplateVersion tv
 //       INNER JOIN reporting.central_flow_PackageDocument pd
 //           ON pd.SourceTypeCode = tv.Code
-//       INNER JOIN reporting.central_flow_Package pkg
-//           ON pd.PackageID = pkg.PackageId
+//       INNER JOIN reporting.central_flow_TaskQueue tq
+//           ON tq.PackageId = pd.PackageID
+//       INNER JOIN reporting.central_flow_ProcessStep ps2
+//           ON tq.ProcessStepID = ps2.ProcessStepId
 //       WHERE tv.TemplateID = @TemplateID
-//       ORDER BY pkg.CreateDate DESC
 //   )
 //       AND ps.IsDeleted = 0
 //   ORDER BY ps.[Name]

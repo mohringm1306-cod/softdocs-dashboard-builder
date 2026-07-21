@@ -11,7 +11,7 @@
 function generateFakePreviewData(columns, rowCount) {
     var fakeNames = ['John Smith', 'Maria Garcia', 'James Wilson', 'Sarah Johnson', 'Michael Brown', 'Emily Davis', 'Robert Lee', 'Ana Martinez'];
     var fakeDates = ['01/15/2026', '01/14/2026', '01/13/2026', '01/12/2026', '01/11/2026', '12/28/2025', '12/15/2025', '11/30/2025'];
-    var fakeStatuses = ['Pending', 'Approved', 'In Review', 'Submitted', 'Complete', 'Denied', 'On Hold', 'Cancelled'];
+    var fakeStatuses = ['Pending', 'Approved', 'In Review', 'Submitted', 'Complete', 'Denied', 'On Hold', 'Canceled'];
     var fakeDepts = ['Financial Aid', 'Admissions', 'HR', 'IT', 'Marketing', 'Facilities', 'Registrar', 'Student Life'];
     var fakeEmails = ['jsmith', 'mgarcia', 'jwilson', 'sjohnson', 'mbrown', 'edavis', 'rlee', 'amartinez'];
     var count = rowCount || 5;
@@ -171,6 +171,13 @@ function previewHeader(title, subtitle, styleDef) {
 function renderPreview() {
     var container = document.getElementById('previewContent');
     if (!container) return;
+
+    // Reflect the user's chosen brand colors (mockups below use var(--primary/--accent)).
+    if (State.colors) {
+        container.style.setProperty('--primary', State.colors.primary || '#006341');
+        container.style.setProperty('--primary-dark', State.colors.primaryDark || '#004d35');
+        container.style.setProperty('--accent', State.colors.accent || '#f4b41a');
+    }
 
     var title = State.dashboardTitle || 'My Dashboard';
     var style = State.selectedStyle || 'simple-status';

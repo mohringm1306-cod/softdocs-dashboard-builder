@@ -2,17 +2,30 @@
 
 A wizard that builds dashboards for Softdocs Etrieve. No coding required. Pick a style, point it at your data, and download a ready-to-use dashboard.
 
+## What's New in v4.4
+
+- **Overview chart** -- Generated dashboards now show a collapsible bar chart of item counts per swimlane at the top. It is drawn as inline SVG (no external chart library, so it loads inside Etrieve) and updates live as you search or filter.
+- **Date-range filter** -- A From / To date filter in the dashboard toolbar. Form Tracker dashboards filter on the submitted date; Document dashboards use a selected date field. Combined dashboards omit it, because documents have no submitted date and would all be filtered out.
+- **Pre-flight review** -- The final wizard step now flags common mistakes before you download: a required field left unmapped (for example, a Survey with no rating field, or Executive Cards with no title), multiple catch-all swimlanes that would each show every row, no data columns selected, or a missing source name. The checks are advisory; you can still download.
+- **Import / Export build files** -- Save the current build to a portable `.json` file from the finish step or the My Dashboards panel, then re-open it later, on another computer, or hand it to a teammate. Previously a saved build lived only in the browser it was created in.
+- **Under the hood** -- Survey and Executive Cards now resolve field mappings to the real SQL column (they could render blank before), and Combined-mode field pickers include form inputs, labeled "(form)" to tell them apart from same-named document fields.
+
+## What's New in v4.3
+
+- **No more duplicate cards** -- Forms with more than one workflow package (resubmissions) or parallel / multi-signer steps now show as ONE row. The query collapses each form to its latest package and current task.
+- **Submitted date shows and sorts** -- The `SubmittedDate` column now appears on Form Tracker dashboards and the default "newest first" sort targets it (previously it pointed at a column that did not exist).
+- **Clean uploads** -- Removed non-ASCII characters (arrows, em dashes) from generated files that could trip the Cloudflare WAF during upload to Etrieve.
+- **CSV export is injection-safe** -- Exported cells starting with `=`, `+`, `-`, or `@` are escaped so they cannot run as formulas when opened in Excel.
+- **Assigned To needs no setup** -- Resolves the current assignee's name automatically (`TaskQueue.ActorId` joined to `central_flow_Actor`). The old "run a probe query to find the column" step is gone.
+- **Accurate setup steps** -- Instructions now match the Softdocs Connect Administrator Guide: Admin Settings > Sources, Add New Source (Database), the Actions tab (Get + Custom + Query Editor), the Privileges tab, and the form's Connect tab. Removed references to a non-existent "Test" button and a "Custom GET" source type.
+
 ## What's New in v4.2
 
-- **Dashboard history** -- Every dashboard you download is saved to your browser. The welcome screen shows a "Your Dashboards" section where you can click any previous dashboard to re-open and edit it. Delete old ones with the X button.
-- **Streamlined Setup Guide** -- The guide now focuses on deploying your generated dashboard (create source, upload files, connect) instead of repeating the 6 wizard source definitions you already have. Opens and closes cleanly from the header button.
-- **Style mode filtering** -- Document Lookup mode only shows the 6 styles that work with content. Form-dependent styles (Workflow Actions, Committee Voting, etc.) are hidden unless you pick Form Tracker or Combined.
-- **Fixed View button for completed workflow items** -- View links now use the URL that Etrieve populates on PackageDocument, which works for both active and completed items. Previously, completed items would spin forever because the constructed URL used parameters Etrieve does not support.
-
-## What's New in v4.1
-
-- **Built-in Admin Setup Guide** -- Click the "Setup Guide" button in the header (or the link on the welcome screen) for step-by-step deployment instructions right inside the wizard.
-- **Improved deployment instructions** -- The generate step and downloaded README now include explicit steps for connecting the source to the form and turning off Run on Load. Based on real first-deployment feedback.
+- **Workflow Actions + Bulk Actions are now cloud-only** -- Approve/Deny buttons now call the Etrieve Central Flow API directly (Lock + PutWorkQueue). No SQL Server, Hybrid Server, or polling agent needed. Based on the Softdocs "Approve Packages in Your Inbox" utility pattern.
+- **Reassign feature** -- Bulk Actions reassign still uses Hybrid Server if configured, but is now optional. Approve/Deny work without it.
+- **Bug fix: _cell() infinite recursion** -- Fixed stack overflow in every generated dashboard caused by `_cell()` calling itself (v4.1 regression).
+- **Bug fix: Preview crash** -- Fixed preview renderer crashing when workflow actions are objects instead of strings.
+- **Workflow step SQL synced** -- `WizardBuilder_GetWorkflowSteps` now uses the Package table approach (more reliable than TaskQueue for step discovery).
 
 ## What's New in v4.0
 
@@ -35,11 +48,14 @@ This wizard helps you build dashboards for Etrieve Content and Central Forms. Da
 
 **You get:**
 
-* 12 dashboard styles (8 cloud-only, 4 hybrid with on-prem SQL)
+* 12 dashboard styles (10 cloud-only, 2 hybrid with on-prem SQL)
 * 3 data modes: Document Lookup, Form Tracker, or Combined
+* Built-in dashboard controls: text search, date-range filter, an overview chart, sortable columns, and per-swimlane CSV export
+* User-selectable dashboard colors (not just COD green)
+* Pre-flight review that catches common mistakes before download
 * Live preview as you build
 * One-click download of everything you need
-* Auto-save: close the browser and pick up where you left off
+* Auto-save plus import / export build files, so a build can move between browsers or teammates
 
 ---
 
@@ -49,7 +65,7 @@ Three things: create the data sources, upload the files, and connect them. Takes
 
 ### Step 1: Create 6 Data Sources
 
-Go to **Central > Admin > Sources** and click **Add New Source**.
+Go to **Admin Settings > Sources** and click **Add New Source** (Source Type: **Database**).
 
 For each source below:
 
@@ -192,7 +208,7 @@ ORDER BY ps.[Name]
 
 ### Step 2: Upload the Wizard Files
 
-1. Go to **Admin > Forms** and create a new form
+1. Go to **Admin Settings > Forms** and create a new form
 2. Name it whatever you like (e.g., "Dashboard Builder")
 3. Upload all 12 files:
    * `index.html`
@@ -213,7 +229,7 @@ ORDER BY ps.[Name]
 ### Step 3: Connect the Sources to the Form
 
 1. Open the form you just created
-2. Go to **Sources** (under the form's settings)
+2. Go to the **Connect** tab (under the form's settings)
 3. Find each of the 6 sources and check **Get** for all of them
 
 It should look like this, all 6 sources associated with Get checked:
@@ -254,13 +270,13 @@ Pick one, walk through the wizard, and download your finished dashboard. Upload 
 | Award Nominations | Cloud Only | Track nominations by category |
 | Executive Cards | Cloud Only | Card layout with status counts |
 | Claims System | Hybrid Server | Claim/unclaim items with age tracking |
-| Workflow Actions | Hybrid Server | Approve/deny buttons per workflow step |
+| Workflow Actions | Cloud Only | Approve/deny buttons per workflow step (Central Flow API) |
 | Committee Voting | Hybrid Server | Vote columns with approve/deny/abstain |
-| IT Equipment Review | Hybrid Server | Checkboxes for bulk approve/deny/reassign |
+| Bulk Approvals | Cloud Only | Checkboxes for bulk approve/deny (Central Flow API); reassign optional via Hybrid |
 
-**Cloud Only** styles work entirely through Etrieve's cloud integration sources. No on-prem server needed.
+**Cloud Only** styles work entirely through Etrieve's cloud integration sources. No on-prem server needed. Workflow Actions and Bulk Actions (approve/deny) use the Central Flow API directly.
 
-**Hybrid Server** styles require an on-prem SQL Server and Hybrid Server connection for write-back operations (saving actions, votes, claims, etc.).
+**Hybrid Server** styles require an on-prem SQL Server and Hybrid Server connection for write-back operations (saving votes, claims, etc.). The Bulk Actions reassign feature optionally uses Hybrid Server if configured.
 
 ---
 
@@ -285,7 +301,7 @@ Pick one, walk through the wizard, and download your finished dashboard. Upload 
 
 ## Something Not Working?
 
-* **403 errors** -- Check that the **Connection** on each source is set to your Etrieve Content database (not Etrieve Security or another connection). Then check **Privileges** -- your users need **Get** access on every source.
+* **403 / NotAuthorized errors** -- Your users need **Get** on each source's **Privileges** tab, and the form's **Connect** tab must have **Get** checked for the source. Also confirm each source's **Connection** points at your Etrieve Content / Central Forms database (not Etrieve Security or another connection).
 * **Source names don't match** -- If you named your sources differently, update the names in `configuration.js` to match.
 * **Wizard won't save in the form editor** -- Make sure you're using the latest files from this repo. Older versions used JavaScript syntax that Etrieve's editor doesn't accept.
 * **File upload blocked (403 Forbidden)** -- Cloudflare WAF may block files containing SQL keywords. The SQL generators are in a separate `wizard-sql.js` file with obfuscated keywords for this reason. Make sure you're uploading all 12 files from this repo.

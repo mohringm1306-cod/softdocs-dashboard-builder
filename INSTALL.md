@@ -12,7 +12,7 @@ Full instructions with screenshots are in the [README](README.md). This is the s
 
 ### 1. Create Integration Sources
 
-Go to **Central > Admin > Sources** and create these 6 sources. SQL for each is in the `Sources/` folder.
+Go to **Admin Settings > Sources** and create these 6 sources (Source Type: **Database**). SQL for each is in the `Sources/` folder.
 
 - [ ] `WizardBuilder_GetAreas` (no source keys)
 - [ ] `WizardBuilder_GetDocTypes` (source key: `@CatalogID`, Integer)
@@ -25,7 +25,7 @@ For each: set the Connection to your Content database, enable **Get** + **Custom
 
 ### 2. Upload Files
 
-Go to **Admin > Forms**, create a new form, and upload all 12 files:
+Go to **Admin Settings > Forms**, create a new form, and upload all 12 files:
 
 - [ ] `index.html`
 - [ ] `wizard.css`
@@ -42,7 +42,7 @@ Go to **Admin > Forms**, create a new form, and upload all 12 files:
 
 ### 3. Connect Sources to Form
 
-Open the form's settings, go to **Sources**, and check **Get** for all 6 `WizardBuilder_*` sources.
+Open the form's settings, go to the **Connect** tab, and check **Get** for all 6 `WizardBuilder_*` sources.
 
 ### 4. Open and Go
 

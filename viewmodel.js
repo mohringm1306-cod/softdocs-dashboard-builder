@@ -6,12 +6,12 @@
  * to fetch areas, doc types, form templates, and input fields.
  *
  * REQUIRED INTEGRATION SOURCES (see configuration.js for names):
- *   - wizardGetAreas          (GET) → Returns Catalog areas
- *   - wizardGetDocTypes       (GET) → Returns doc types for a CatalogID
- *   - wizardGetKeyFields      (GET) → Returns key fields for a CatalogID
- *   - wizardGetFormTemplates  (GET) → Returns form templates
- *   - wizardGetFormInputs     (GET) → Returns input fields for a TemplateVersionID
- *   - wizardGetWorkflowSteps  (GET) → Returns workflow steps for a TemplateID
+ *   - wizardGetAreas          (GET) -> Returns Catalog areas
+ *   - wizardGetDocTypes       (GET) -> Returns doc types for a CatalogID
+ *   - wizardGetKeyFields      (GET) -> Returns key fields for a CatalogID
+ *   - wizardGetFormTemplates  (GET) -> Returns form templates
+ *   - wizardGetFormInputs     (GET) -> Returns input fields for a TemplateVersionID
+ *   - wizardGetWorkflowSteps  (GET) -> Returns workflow steps for a TemplateID
  */
 
 define([
@@ -35,7 +35,7 @@ define([
     console.log('[WizardBuilder] All scripts loaded via RequireJS');
 
     // ========================================================================
-    // SAFE TOAST — fallback in case showToast somehow isn't available
+    // SAFE TOAST - fallback in case showToast somehow isn't available
     // ========================================================================
     function safeToast(msg, type) {
         if (typeof showToast === 'function') {
@@ -46,7 +46,7 @@ define([
     }
 
     // ========================================================================
-    // DATA ADAPTER — Bridges Etrieve integration.all() → SimulatedData shape
+    // DATA ADAPTER - Bridges Etrieve integration.all() -> SimulatedData shape
     // ========================================================================
 
     // Cache for loaded data so we don't re-fetch
@@ -146,7 +146,7 @@ define([
 
     /**
      * Load workflow steps for a given template
-     * Chain: Template → TemplateVersion.Code → PackageDocument.SourceTypeCode → TaskQueue → ProcessStep
+     * Chain: Template -> TemplateVersion.Code -> PackageDocument.SourceTypeCode -> TaskQueue -> ProcessStep
      * Expected SQL returns: id, name, displayName
      * NOTE: ProcessStepId (lowercase 'd'), no StepOrder column exists
      */
@@ -203,7 +203,7 @@ define([
     }
 
     // ========================================================================
-    // ETRIEVE LIFECYCLE — Scripts loaded via RequireJS (no $.getScript needed)
+    // ETRIEVE LIFECYCLE - Scripts loaded via RequireJS (no $.getScript needed)
     // ========================================================================
 
     vm.onLoad = function(source, inputValues) {
@@ -227,8 +227,8 @@ define([
 
         var results = { areas: false, templates: false };
 
-        // Wrap each promise so it always resolves (never rejects) — ensures $.when waits for BOTH
-        // IMPORTANT: Use single .then(ok, err) form — jQuery < 3.0 doesn't swallow rejections
+        // Wrap each promise so it always resolves (never rejects) - ensures $.when waits for BOTH
+        // IMPORTANT: Use single .then(ok, err) form - jQuery < 3.0 doesn't swallow rejections
         // with .then(ok).then(null, err) two-call chains.
         var areasPromise = loadAreas().then(function(data) {
             results.areas = true;
@@ -268,7 +268,7 @@ define([
                 safeToast('Form templates not available. Document Lookup mode still works.', 'error');
             }
 
-            // Trigger wizard initialization — DOMContentLoaded has already fired
+            // Trigger wizard initialization - DOMContentLoaded has already fired
             // by the time RequireJS runs, so call checkForDraft manually
             if (typeof checkForDraft === 'function') {
                 checkForDraft();
@@ -296,7 +296,7 @@ define([
                 var loading = $('.loading');
                 if (loading.length) loading.show();
 
-                // Single-call .then(ok, err) — jQuery < 3.0 safe (avoids .fail() on transformed promise)
+                // Single-call .then(ok, err) - jQuery < 3.0 safe (avoids .fail() on transformed promise)
                 $.when(loadDocTypes(areaId), loadKeyFields(areaId)).then(function() {
                     // Update SimulatedData with newly loaded data
                     window.SimulatedData.documentTypes[areaId] = _cache.documentTypes[areaId];
@@ -326,13 +326,13 @@ define([
                 if (template) {
                     tId = template.templateId;
                 } else {
-                    console.warn('[VM selectTemplate] Template not found in cache for id:', templateId, '— workflow steps may not load correctly');
+                    console.warn('[VM selectTemplate] Template not found in cache for id:', templateId, '- workflow steps may not load correctly');
                     tId = templateId; // fallback: best-effort, may be wrong ID type
                 }
                 var loading = $('.loading');
                 if (loading.length) loading.show();
 
-                // Single-call .then(ok, err) — jQuery < 3.0 safe (avoids .fail() on transformed promise)
+                // Single-call .then(ok, err) - jQuery < 3.0 safe (avoids .fail() on transformed promise)
                 $.when(loadFormInputs(tvId), loadWorkflowSteps(tId)).then(function() {
                     console.log('[VM selectTemplate] Loaded formInputIds for', tvId, ':', (_cache.formInputIds[tvId] || []).length, 'inputs');
                     console.log('[VM selectTemplate] keepSelections:', keepSelections, 'current selectedInputIds:', window.State ? window.State.selectedInputIds.length : 'N/A');

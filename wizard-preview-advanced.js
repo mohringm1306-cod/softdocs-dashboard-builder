@@ -146,7 +146,9 @@ function previewWorkflowActions(columns, swimlanes) {
         var rowCount = idx === 0 ? 3 : 2;
         var data = generateFakePreviewData(displayCols, rowCount);
         var color = stepColors[idx % stepColors.length];
-        var actions = (State.styleConfig.workflowActions || {})[sl.name] || ['Approve', 'Deny'];
+        var rawActions = (State.styleConfig.workflowActions || {})[sl.name] || ['Approve', 'Deny'];
+        // Normalize: actions can be strings ('Approve') or objects ({label, icon, btnStyle})
+        var actions = rawActions.map(function(a) { return typeof a === 'string' ? a : (a.label || 'Action'); });
 
         var thHtml = displayCols.map(function(col) {
             return '<th class="preview-sortable-th">' + escapeHtml(col) +

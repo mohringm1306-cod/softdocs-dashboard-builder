@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Dashboard Builder Wizard - Template Renderers
  * Step rendering, live preview, download modal, and UI template functions.
  * Split from wizard-demo.js to avoid Cloudflare WAF false-positive on upload.
@@ -33,11 +33,11 @@ document.addEventListener('DOMContentLoaded', checkForDraft);
 var ContentStepsBase = [
     { id: 'setup', title: 'Setup', icon: 'bi-gear' },
     // style step inserted here by getSteps()
-    { id: 'area', title: 'Area', icon: 'bi-folder' },
-    { id: 'docTypes', title: 'Documents', icon: 'bi-file-earmark' },
+    { id: 'area', title: 'Folder', icon: 'bi-folder' },
+    { id: 'docTypes', title: 'Doc Types', icon: 'bi-file-earmark' },
     { id: 'fields', title: 'Fields', icon: 'bi-list-ul' },
     // style-specific steps inserted here by getSteps()
-    { id: 'swimlanes', title: 'Groups', icon: 'bi-layout-three-columns' },
+    { id: 'swimlanes', title: 'Swimlanes', icon: 'bi-layout-three-columns' },
     { id: 'generate', title: 'Finish', icon: 'bi-download' }
 ];
 
@@ -48,21 +48,21 @@ var FormsStepsBase = [
     { id: 'fields', title: 'Fields', icon: 'bi-input-cursor-text' },
     { id: 'workflow', title: 'Workflow', icon: 'bi-diagram-3' },
     // style-specific steps inserted here
-    { id: 'swimlanes', title: 'Groups', icon: 'bi-layout-three-columns' },
+    { id: 'swimlanes', title: 'Swimlanes', icon: 'bi-layout-three-columns' },
     { id: 'generate', title: 'Finish', icon: 'bi-download' }
 ];
 
 var CombinedStepsBase = [
     { id: 'setup', title: 'Setup', icon: 'bi-gear' },
     // style step inserted here
-    { id: 'area', title: 'Documents', icon: 'bi-folder' },
+    { id: 'area', title: 'Folder', icon: 'bi-folder' },
     { id: 'docTypes', title: 'Doc Types', icon: 'bi-file-earmark' },
     { id: 'docFields', title: 'Doc Fields', icon: 'bi-list-ul' },
     { id: 'template', title: 'Forms', icon: 'bi-ui-checks' },
     { id: 'formFields', title: 'Form Fields', icon: 'bi-input-cursor-text' },
     { id: 'workflow', title: 'Workflow', icon: 'bi-diagram-3' },
     // style-specific steps inserted here
-    { id: 'swimlanes', title: 'Groups', icon: 'bi-layout-three-columns' },
+    { id: 'swimlanes', title: 'Swimlanes', icon: 'bi-layout-three-columns' },
     { id: 'generate', title: 'Finish', icon: 'bi-download' }
 ];
 
@@ -97,15 +97,22 @@ function renderProgress() {
         `Step ${State.currentStep + 1} of ${steps.length}`;
     document.getElementById('progressFill').style.width = percent + '%';
 
-    // Render step dots
-    let dotsHtml = steps.map((s, i) => `
-        <div class="progress-step ${i === State.currentStep ? 'active' : ''} ${i < State.currentStep ? 'completed' : ''}">
+    // Render step dots. Any step already reached is clickable so users can jump around.
+    const maxReached = Math.max(State.maxStepReached || 0, State.currentStep);
+    let dotsHtml = steps.map((s, i) => {
+        const reachable = i <= maxReached;
+        const cls = 'progress-step' + (i === State.currentStep ? ' active' : '') + (i < State.currentStep ? ' completed' : '') + (reachable ? ' reachable' : '');
+        const attrs = reachable
+            ? `onclick="goToStep(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goToStep(${i});}" role="button" tabindex="0" title="Go to: ${escapeHtml(s.title)}" style="cursor:pointer;"`
+            : 'style="cursor:default;"';
+        return `
+        <div class="${cls}" ${attrs}>
             <div class="step-dot">
                 ${i < State.currentStep ? '<i class="bi bi-check"></i>' : (i + 1)}
             </div>
             <span class="step-label">${escapeHtml(s.title)}</span>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
     document.getElementById('progressSteps').innerHTML = dotsHtml;
 }
 
@@ -145,7 +152,7 @@ function renderStep() {
         'committeeConfig': { title: 'Committee Members', desc: 'Define the voting committee members and their column colors' },
         'cardsConfig': { title: 'Card Layout', desc: 'Map fields to the card title, status, lead, and budget' },
         'bulkConfig': { title: 'Bulk Actions', desc: 'Configure reassignment targets and bulk operations' },
-        'swimlanes': { title: 'Organize Your View', desc: 'Group items into sections like "In Progress" and "Completed"' },
+        'swimlanes': { title: 'Organize Your View', desc: 'Sort items into swimlanes like "In Progress" and "Completed"' },
         'securityConfig': { title: 'Access Control', desc: 'Optionally restrict data loading to authorized groups (security-first model)' },
         'generate': { title: 'All Done!', desc: 'Your dashboard is ready to download' }
     };
@@ -195,9 +202,14 @@ function renderStep() {
             <i class="bi bi-arrow-left"></i> Back
         </button>
         ${isLast ? `
-            <button class="btn btn-success" onclick="downloadDashboard()">
-                <i class="bi bi-files"></i> Get Dashboard Files
-            </button>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn btn-secondary" onclick="exportBuild()" title="Save this build as a portable file you can re-import or share">
+                    <i class="bi bi-download"></i> Save Build File
+                </button>
+                <button class="btn btn-success" onclick="downloadDashboard()">
+                    <i class="bi bi-files"></i> Get Dashboard Files
+                </button>
+            </div>
         ` : `
             <button class="btn btn-primary" onclick="nextStep()">
                 Next <i class="bi bi-arrow-right"></i>
@@ -226,6 +238,23 @@ function renderSetupStep() {
                    placeholder="Example: Financial Aid Documents"
                    value="${escapeHtml(State.dashboardTitle)}"
                    oninput="updateDashboardTitle(this.value)">
+        </div>
+
+        <div class="form-group">
+            <label><i class="bi bi-palette" style="margin-right:8px;color:var(--primary);"></i>Dashboard Colors</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                ${COLOR_PRESETS.map(p => `<button type="button" title="${escapeHtml(p.name)}" aria-label="${escapeHtml(p.name)} colors" onclick="applyColorPreset('${p.primary}','${p.accent}')" style="width:30px;height:30px;border-radius:6px;cursor:pointer;background:linear-gradient(135deg, ${p.primary} 0 60%, ${p.accent} 60% 100%);border:2px solid ${(State.colors.primary || '').toLowerCase() === p.primary.toLowerCase() ? '#111' : 'rgba(0,0,0,0.15)'};"></button>`).join('')}
+            </div>
+            <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.9rem;color:#444;">Primary
+                    <input type="color" id="colorPrimary" value="${escapeHtml(State.colors.primary || '#006341')}" oninput="setDashboardColor('primary', this.value)" style="width:42px;height:30px;padding:0;border:1px solid #ccc;border-radius:5px;cursor:pointer;">
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.9rem;color:#444;">Accent
+                    <input type="color" id="colorAccent" value="${escapeHtml(State.colors.accent || '#f4b41a')}" oninput="setDashboardColor('accent', this.value)" style="width:42px;height:30px;padding:0;border:1px solid #ccc;border-radius:5px;cursor:pointer;">
+                </label>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="applyColorPreset('#006341','#f4b41a')"><i class="bi bi-arrow-counterclockwise"></i> COD green</button>
+            </div>
+            <small style="color:#666;display:block;margin-top:6px;">Sets the header, buttons, and highlights on your dashboard. Watch the live preview update.</small>
         </div>
 
         ${State.mode === 'forms' || State.mode === 'combined' ? `
@@ -324,6 +353,7 @@ function updateDashboardTitle(value) {
 // renderStyleStep() lives in wizard-generators.js (includes infographic panel, v3.5.1)
 
 function selectStyle(styleId) {
+    if (State.selectedStyle !== styleId) State.maxStepReached = State.currentStep; // style change alters the step list; re-walk to re-validate
     State.selectedStyle = styleId;
     // Preserve scroll position across re-render
     var scrollY = window.scrollY || window.pageYOffset;
@@ -339,27 +369,32 @@ function selectStyle(styleId) {
 // ============================================================================
 
 function getAvailableFields() {
-    // Returns fields available for style-specific configuration
-    if (State.mode === 'content' || State.mode === 'combined') {
-        return (SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [])
-            .filter(f => State.selectedFields.includes(f.id));
-    } else if (State.mode === 'forms') {
-        const inputs = SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [];
-        return inputs.filter(i => State.selectedInputIds.includes(i.id))
-            .map(i => ({ id: i.id, name: i.label, alias: i.id, type: 'text' }));
-    }
-    return [];
+    // Returns fields available for style-specific configuration (only selected fields).
+    // Form inputs alias to their SQL column name (the label), which is how the generated
+    // SQL aliases them (AS [label]) and how the client column defs key them. Aliasing to
+    // the raw input id would make survey/card/detail mappings resolve to a nonexistent
+    // column and render blank.
+    var formSuffix = (State.mode === 'combined') ? ' (form)' : ''; // disambiguate vs same-named doc fields
+    var docFields = (SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [])
+        .filter(f => State.selectedFields.includes(f.id));
+    var formFields = (SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [])
+        .filter(i => State.selectedInputIds.includes(i.id))
+        .map(i => ({ id: i.id, name: i.label, displayName: i.label + formSuffix, alias: i.label, type: 'text' }));
+    if (State.mode === 'forms') return formFields;
+    if (State.mode === 'combined') return docFields.concat(formFields);
+    return docFields; // content
 }
 
 function getAllFields() {
-    // Returns ALL fields for current selection (not just selected ones)
-    if (State.mode === 'content' || State.mode === 'combined') {
-        return SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
-    } else if (State.mode === 'forms') {
-        return (SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [])
-            .map(i => ({ id: i.id, name: i.label, alias: i.id, type: 'text' }));
-    }
-    return [];
+    // Returns ALL fields for current selection (not just selected ones).
+    // See getAvailableFields for why form inputs alias to their label.
+    var formSuffix = (State.mode === 'combined') ? ' (form)' : ''; // disambiguate vs same-named doc fields
+    var docFields = SimulatedData.keyFields[(State.selectedArea && State.selectedArea.id)] || [];
+    var formFields = (SimulatedData.formInputIds[(State.selectedTemplate && State.selectedTemplate.id)] || [])
+        .map(i => ({ id: i.id, name: i.label, displayName: i.label + formSuffix, alias: i.label, type: 'text' }));
+    if (State.mode === 'forms') return formFields;
+    if (State.mode === 'combined') return docFields.concat(formFields);
+    return docFields; // content
 }
 
 // --- Detail Fields (Styles 3, 7, 9) ---
@@ -381,7 +416,7 @@ function renderDetailFieldsStep() {
                 <div class="field-item ${State.styleConfig.detailFields.includes(f.id) ? 'selected' : ''}"
                      onclick="toggleDetailField('${escapeJSAttr(f.id)}')">
                     <input type="checkbox" ${State.styleConfig.detailFields.includes(f.id) ? 'checked' : ''}>
-                    <span>${escapeHtml(f.name)}</span>
+                    <span>${escapeHtml(f.displayName || f.name)}</span>
                 </div>
             `).join('')}
         </div>
@@ -416,7 +451,7 @@ function renderAlphaConfigStep() {
                     <div class="field-item ${State.styleConfig.nameField === f.id ? 'selected' : ''}"
                          onclick="selectAlphaNameField('${escapeJSAttr(f.id)}')">
                         <input type="radio" name="nameField" ${State.styleConfig.nameField === f.id ? 'checked' : ''}>
-                        <span>${escapeHtml(f.name)}</span>
+                        <span>${escapeHtml(f.displayName || f.name)}</span>
                     </div>
                 `).join('')}
             </div>
@@ -429,7 +464,7 @@ function renderAlphaConfigStep() {
                     <div class="alpha-range-row">
                         <input type="text" class="alpha-range-input" value="${escapeHtml(r[0])}" maxlength="1"
                                oninput="updateAlphaRange(${i}, 0, this.value.toUpperCase())">
-                        <span>--</span>
+                        <span>-</span>
                         <input type="text" class="alpha-range-input" value="${escapeHtml(r[1])}" maxlength="1"
                                oninput="updateAlphaRange(${i}, 1, this.value.toUpperCase())">
                         ${ranges.length > 1 ? `<button class="btn-remove-range" onclick="removeAlphaRange(${i})"><i class="bi bi-x"></i></button>` : ''}
@@ -538,6 +573,11 @@ function renderActionsConfigStep() {
     ];
 
     return `
+        <div class="alert" style="background:#e8f4fd;border:1px solid #bee5eb;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
+            <p style="margin:0;"><i class="bi bi-cloud-check" style="color:#0d6efd;margin-right:8px;"></i>
+            <strong>Cloud-Only:</strong> Actions use the Etrieve Central Flow API directly. No SQL Server or Hybrid Server needed.
+            The buttons use decision IDs Approve=1, Deny=2. These are workflow-specific, not universal, so confirm your workflow's decision-option IDs with your Etrieve admin before go-live.</p>
+        </div>
         <div class="step-description">
             <p><i class="bi bi-info-circle" style="color:var(--primary);margin-right:8px;"></i>
             Choose which action buttons appear in each swimlane. Users will see these buttons next to each row.</p>
@@ -584,7 +624,7 @@ function renderSurveyConfigStep() {
     return `
         <div class="step-description">
             <p><i class="bi bi-info-circle" style="color:var(--primary);margin-right:8px;"></i>
-            Map your survey fields so the dashboard can generate analytics, word clouds, and theme analysis.</p>
+            Map your survey fields so the dashboard can show rating stats and response cards.</p>
         </div>
 
         <div class="form-group">
@@ -594,7 +634,7 @@ function renderSurveyConfigStep() {
                     <div class="field-item ${State.styleConfig.ratingField === f.id ? 'selected' : ''}"
                          onclick="State.styleConfig.ratingField = isNaN('${escapeJSAttr(f.id)}') ? '${escapeJSAttr(f.id)}' : Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
                         <input type="radio" name="ratingField" ${State.styleConfig.ratingField === f.id ? 'checked' : ''}>
-                        <span>${escapeHtml(f.name)}</span>
+                        <span>${escapeHtml(f.displayName || f.name)}</span>
                     </div>
                 `).join('')}
             </div>
@@ -607,7 +647,7 @@ function renderSurveyConfigStep() {
                     <div class="field-item ${State.styleConfig.commentField === f.id ? 'selected' : ''}"
                          onclick="State.styleConfig.commentField = isNaN('${escapeJSAttr(f.id)}') ? '${escapeJSAttr(f.id)}' : Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
                         <input type="radio" name="commentField" ${State.styleConfig.commentField === f.id ? 'checked' : ''}>
-                        <span>${escapeHtml(f.name)}</span>
+                        <span>${escapeHtml(f.displayName || f.name)}</span>
                     </div>
                 `).join('')}
             </div>
@@ -620,7 +660,7 @@ function renderSurveyConfigStep() {
                     <div class="field-item ${State.styleConfig.departmentField === f.id ? 'selected' : ''}"
                          onclick="State.styleConfig.departmentField = isNaN('${escapeJSAttr(f.id)}') ? '${escapeJSAttr(f.id)}' : Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
                         <input type="radio" name="deptField" ${State.styleConfig.departmentField === f.id ? 'checked' : ''}>
-                        <span>${escapeHtml(f.name)}</span>
+                        <span>${escapeHtml(f.displayName || f.name)}</span>
                     </div>
                 `).join('')}
             </div>
@@ -718,7 +758,7 @@ function renderCardsConfigStep() {
                             <div class="field-item ${State.styleConfig[configKey] === f.id ? 'selected' : ''}"
                                  onclick="State.styleConfig['${escapeJSAttr(configKey)}'] = isNaN('${escapeJSAttr(f.id)}') ? '${escapeJSAttr(f.id)}' : Number('${escapeJSAttr(f.id)}'); renderStep(); saveDraft();">
                                 <input type="radio" name="${escapeHtml(configKey)}" ${State.styleConfig[configKey] === f.id ? 'checked' : ''}>
-                                <span>${escapeHtml(f.name)}</span>
+                                <span>${escapeHtml(f.displayName || f.name)}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -732,6 +772,11 @@ function renderCardsConfigStep() {
 function renderBulkConfigStep() {
     const targets = State.styleConfig.reassignTargets;
     return `
+        <div class="alert" style="background:#e8f4fd;border:1px solid #bee5eb;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
+            <p style="margin:0;"><i class="bi bi-cloud-check" style="color:#0d6efd;margin-right:8px;"></i>
+            <strong>Cloud-Only:</strong> Bulk Approve and Deny use the Central Flow API directly. No SQL Server needed.
+            The Reassign feature below is optional and requires Hybrid Server if configured.</p>
+        </div>
         <div class="step-description">
             <p><i class="bi bi-info-circle" style="color:var(--primary);margin-right:8px;"></i>
             Configure the reassignment targets for the bulk reassign dropdown menu.</p>
@@ -797,6 +842,7 @@ function selectArea(areaId, keepSelections) {
     if (!keepSelections) {
         State.selectedDocTypes = []; // Reset doc types when area changes
         State.selectedFields = [];
+        State.maxStepReached = State.currentStep; // later steps depend on the folder; re-walk to re-validate
     }
     renderStep();
     saveDraft();
@@ -893,6 +939,7 @@ function selectTemplate(id, keepSelections) {
     State.selectedTemplate = SimulatedData.formTemplates.find(t => t.id === id);
     if (!keepSelections) {
         State.selectedInputIds = [];
+        State.maxStepReached = State.currentStep; // later steps depend on the form; re-walk to re-validate
     }
     renderStep();
     saveDraft();
@@ -1008,12 +1055,7 @@ function renderFormFieldsStep() {
         if (assigneeSelected) {
             virtualFieldHtml += `
             <div style="padding:8px 12px;background:#f0f7fa;border-radius:6px;border-left:3px solid #17a2b8;">
-                <label style="font-size:0.8rem;color:#555;">TaskQueue column name for assignee:</label>
-                <input type="text" value="${escapeHtml(State.styleConfig.assigneeColumnName || '')}"
-                       placeholder="e.g. UserId, AssignedTo"
-                       oninput="State.styleConfig.assigneeColumnName = this.value; saveDraft();"
-                       style="width:100%;padding:6px 10px;border:1px solid #cde;border-radius:4px;margin-top:4px;font-size:0.85rem;">
-                <small style="color:#999;display:block;margin-top:4px;">Run <code>PROBE_TaskQueue_Columns.sql</code> as a GET source to discover the correct column name.</small>
+                <small style="color:#555;display:block;font-size:0.8rem;">Shows who currently has the task. The name is filled in for you automatically, no setup needed.</small>
             </div>`;
         }
     }
@@ -1188,13 +1230,16 @@ function renderSwimlanesStep() {
     if (State.swimlanes.length === 0) {
         // In forms/combined mode, auto-set FormStatus filters on default swimlanes
         var isFormsMode = (State.mode === 'forms' || State.mode === 'combined');
+        // fieldId 'form_status' matches getFilterableFields()/applyFilter() so that adding a
+        // Form Status filter to a default swimlane merges into this seeded filter instead of
+        // appending a duplicate (applyFilter dedups on String(fieldId)).
         State.swimlanes = [
             { id: 1, name: 'In Progress', filters: isFormsMode
-                ? [{ fieldName: 'Form Status', sqlAlias: 'FormStatus', values: ['In Progress'] }] : [] },
+                ? [{ fieldId: 'form_status', fieldName: 'Form Status', sqlAlias: 'FormStatus', values: ['In Progress'] }] : [] },
             { id: 2, name: 'Completed', filters: isFormsMode
-                ? [{ fieldName: 'Form Status', sqlAlias: 'FormStatus', values: ['Completed'] }] : [] },
+                ? [{ fieldId: 'form_status', fieldName: 'Form Status', sqlAlias: 'FormStatus', values: ['Completed'] }] : [] },
             { id: 3, name: 'Error', filters: isFormsMode
-                ? [{ fieldName: 'Form Status', sqlAlias: 'FormStatus', values: ['Error'] }] : [] }
+                ? [{ fieldId: 'form_status', fieldName: 'Form Status', sqlAlias: 'FormStatus', values: ['Error'] }] : [] }
         ];
         saveDraft();
     }
@@ -1228,7 +1273,7 @@ function renderSwimlanesStep() {
                     <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                     <input type="text" class="swimlane-name" value="${escapeHtml(sl.name)}"
                            onchange="updateSwimlaneName(${idx}, this.value)" onclick="event.stopPropagation()"
-                           title="Click to rename this group" placeholder="Enter group name...">
+                           title="Click to rename this swimlane" placeholder="Enter swimlane name...">
                     ${hasFilters ? `
                         <span class="swimlane-status-badge swimlane-status-ok" title="Filters configured">
                             <i class="bi bi-check-circle-fill"></i>
@@ -1238,14 +1283,14 @@ function renderSwimlanesStep() {
                             <i class="bi bi-exclamation-triangle-fill"></i>
                         </span>
                     `}
-                    <span class="delete-btn" onclick="deleteSwimlane(${idx})" title="Delete this group">
+                    <span class="delete-btn" onclick="deleteSwimlane(${idx})" title="Delete this swimlane">
                         <i class="bi bi-trash"></i>
                     </span>
                 </div>
                 <div class="swimlane-filters">
                     <div class="filter-label">
                         <i class="bi bi-funnel"></i> Show items where:
-                        <span class="filter-help-icon" title="Filters control which rows appear in this group. Without a filter, every row from your data source will show up here.">
+                        <span class="filter-help-icon" title="Filters control which rows appear in this swimlane. Without a filter, every row from your data source will show up here.">
                             <i class="bi bi-question-circle"></i>
                         </span>
                     </div>
@@ -1258,12 +1303,12 @@ function renderSwimlanesStep() {
                             <i class="bi bi-exclamation-triangle"></i>
                             <div>
                                 <strong>No filters set</strong>
-                                <span>Every row will appear in this group. Click "Add Filter" below to choose which items belong here.</span>
+                                <span>Every row will appear in this swimlane. Click "Add Filter" below to choose which items belong here.</span>
                             </div>
                         </div>
                     `}
                     <button class="add-filter-btn ${hasFilters ? '' : 'add-filter-btn-emphasized'}" onclick="openFilterModal(${idx})"
-                            title="Choose a field and values to control which rows appear in this group">
+                            title="Choose a field and values to control which rows appear in this swimlane">
                         <i class="bi bi-plus-circle"></i> ${hasFilters ? 'Add Another Filter' : 'Add Filter (Recommended)'}
                     </button>
                 </div>
@@ -1279,7 +1324,7 @@ function renderSwimlanesStep() {
                 <div class="filter-guidance-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
                 <div class="filter-guidance-text">
                     <strong>No filterable fields available</strong>
-                    <p>Go back to a previous step and make sure you selected fields that have predefined values (like Status, Workflow Step, Term, etc.). Without filterable fields, you can't control which rows appear in each group.</p>
+                    <p>Go back to a previous step and make sure you selected fields that have predefined values (like Status, Workflow Step, Term, etc.). Without filterable fields, you can't control which rows appear in each swimlane.</p>
                 </div>
             </div>`;
     } else if (allUnfiltered && State.swimlanes.length > 1) {
@@ -1287,8 +1332,8 @@ function renderSwimlanesStep() {
             <div class="filter-guidance filter-guidance-warn">
                 <div class="filter-guidance-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
                 <div class="filter-guidance-text">
-                    <strong>All groups are showing the same data</strong>
-                    <p>None of your groups have filters, so every group will display the exact same rows. Use the "Add Filter" button on each group to pick which items belong in each section.</p>
+                    <strong>All swimlanes are showing the same data</strong>
+                    <p>None of your swimlanes have filters, so every swimlane will display the exact same rows. Use the "Add Filter" button on each swimlane to pick which items belong in each section.</p>
                 </div>
             </div>`;
     } else if (unfilteredCount > 0) {
@@ -1296,8 +1341,8 @@ function renderSwimlanesStep() {
             <div class="filter-guidance filter-guidance-info">
                 <div class="filter-guidance-icon"><i class="bi bi-info-circle-fill"></i></div>
                 <div class="filter-guidance-text">
-                    <strong>${unfilteredCount} group${unfilteredCount > 1 ? 's have' : ' has'} no filters</strong>
-                    <p>Groups without filters will show every row. If that's intentional (e.g., an "All Items" section), that's fine. Otherwise, add a filter so each group shows different data.</p>
+                    <strong>${unfilteredCount} swimlane${unfilteredCount > 1 ? 's have' : ' has'} no filters</strong>
+                    <p>Swimlanes without filters will show every row. If that's intentional (e.g., an "All Items" section), that's fine. Otherwise, add a filter so each swimlane shows different data.</p>
                 </div>
             </div>`;
     }
@@ -1305,8 +1350,8 @@ function renderSwimlanesStep() {
     return `
         <div class="step-description">
             <p><i class="bi bi-layout-three-columns" style="color:var(--accent);margin-right:8px;"></i>
-            Groups are the sections of your dashboard. <strong>Each group needs a filter</strong> so it shows the right data.
-            For example, an "In Progress" group should filter to only show in-progress items.</p>
+            Swimlanes are the sections of your dashboard. <strong>Each swimlane should usually have a filter</strong> so it shows the right data.
+            For example, an "In Progress" swimlane should filter to only show in-progress items. A swimlane with no filter shows every item.</p>
         </div>
 
         ${topGuidance}
@@ -1322,27 +1367,27 @@ function renderSwimlanesStep() {
                     <div class="filter-guide-step">
                         <div class="filter-guide-step-num">1</div>
                         <div>
-                            <strong>Create groups</strong> for each section you want (e.g., "In Progress", "Completed", "Denied").
+                            <strong>Create swimlanes</strong> for each section you want (e.g., "In Progress", "Completed", "Denied").
                         </div>
                     </div>
                     <div class="filter-guide-step">
                         <div class="filter-guide-step-num">2</div>
                         <div>
-                            <strong>Add a filter</strong> to each group. Pick a field (like "Workflow Step") and then check which values belong in that group.
+                            <strong>Add a filter</strong> to each swimlane. Pick a field (like "Workflow Step") and then check which values belong in that swimlane.
                         </div>
                     </div>
                     <div class="filter-guide-step">
                         <div class="filter-guide-step-num">3</div>
                         <div>
-                            <strong>Each row goes to the first matching group.</strong> If a row's data matches a group's filter, it shows up there. If it matches no filters, it won't appear.
+                            <strong>Each row goes to the first matching swimlane.</strong> If a row's data matches a swimlane's filter, it shows up there. If it matches no filters, it won't appear.
                         </div>
                     </div>
                 </div>
                 <div class="filter-guide-example">
                     <div class="filter-guide-example-title"><i class="bi bi-arrow-right-circle"></i> Example</div>
                     <div class="filter-guide-example-body">
-                        <strong>"In Progress"</strong> group &rarr; filter: Workflow Step = "NICC Employees" or "Manager Review"<br>
-                        <strong>"Completed"</strong> group &rarr; filter: Workflow Step = "Approved" or "Completed"<br>
+                        <strong>"In Progress"</strong> swimlane &rarr; filter: Workflow Step = "Manager Review" or "Dean Approval"<br>
+                        <strong>"Completed"</strong> swimlane &rarr; filter: Workflow Step = "Approved" or "Completed"<br>
                         <em>Result: each form goes to the right section based on where it is in the workflow.</em>
                     </div>
                 </div>
@@ -1353,8 +1398,8 @@ function renderSwimlanesStep() {
             ${swimlanesHtml}
         </div>
 
-        <button class="btn btn-secondary" onclick="addSwimlane()" style="margin-top:15px;" title="Add a new group section to your dashboard">
-            <i class="bi bi-plus-lg"></i> Add Another Group
+        <button class="btn btn-secondary" onclick="addSwimlane()" style="margin-top:15px;" title="Add a new swimlane to your dashboard">
+            <i class="bi bi-plus-lg"></i> Add Another Swimlane
         </button>
 
         <!-- Filter Modal -->
@@ -1367,7 +1412,7 @@ function renderSwimlanesStep() {
                 <div class="filter-modal-body">
                     <div class="filter-modal-hint">
                         <i class="bi bi-info-circle"></i>
-                        Pick a field below, then check off which values should appear in this group.
+                        Pick a field below, then check off which values should appear in this swimlane.
                         Only rows that match will show up in this section of your dashboard.
                     </div>
                     <div class="form-group">
@@ -1383,7 +1428,7 @@ function renderSwimlanesStep() {
                     </div>
                     <div class="form-group" id="filterValuesGroup" style="display:none;">
                         <label>Include items where the field matches ANY of these:
-                            <span class="field-label-hint">Check one or more values that belong in this group</span>
+                            <span class="field-label-hint">Check one or more values that belong in this swimlane</span>
                         </label>
                         <div id="filterValuesContainer" class="filter-values-grid"></div>
                         <div class="filter-values-hint" id="filterValuesHint" style="display:none;">
@@ -1542,7 +1587,7 @@ function openFilterModal(swimlaneIdx) {
     document.getElementById('applyFilterBtn').disabled = true;
     // Update modal title to show which swimlane we're filtering
     var modalTitle = document.querySelector('.filter-modal-header h4');
-    var swimlaneName = State.swimlanes[swimlaneIdx] ? State.swimlanes[swimlaneIdx].name : 'Group';
+    var swimlaneName = State.swimlanes[swimlaneIdx] ? State.swimlanes[swimlaneIdx].name : 'Swimlane';
     if (modalTitle) {
         modalTitle.innerHTML = '<i class="bi bi-funnel"></i> Add Filter to "' + escapeHtml(swimlaneName) + '"';
     }
@@ -1599,7 +1644,7 @@ function updateFilterValues() {
     selectedFilterValues = [];
 
     if (values.length > 0) {
-        // Predefined values — show checkboxes
+        // Predefined values - show checkboxes
         valuesContainer.innerHTML = values.map(v => `
             <label class="filter-value-item" title="Check this box to include rows where ${escapeHtml(option.text.split(' (')[0])} = &quot;${escapeHtml(v)}&quot;">
                 <input type="checkbox" value="${escapeHtml(v)}" onchange="toggleFilterValue('${escapeJSAttr(v)}')">
@@ -1607,7 +1652,7 @@ function updateFilterValues() {
             </label>
         `).join('');
     } else {
-        // No predefined values — show text input for manual entry
+        // No predefined values - show text input for manual entry
         valuesContainer.innerHTML = `
             <div style="padding:8px 0;">
                 <label style="font-size:0.85rem;font-weight:600;margin-bottom:6px;display:block;">
@@ -1692,7 +1737,7 @@ function removeFilter(swimlaneIdx, filterIdx) {
 }
 
 function addSwimlane() {
-    var baseName = 'New Group';
+    var baseName = 'New Swimlane';
     var name = baseName;
     var num = 2;
     var existingNames = State.swimlanes.map(function(s) { return s.name; });
@@ -1731,7 +1776,7 @@ function updateSwimlaneName(idx, value) {
 function deleteSwimlane(idx) {
     if (idx < 0 || idx >= State.swimlanes.length) return;
     if (State.swimlanes.length <= 1) {
-        showToast('You need at least one group.', 'warning');
+        showToast('You need at least one swimlane.', 'warning');
         return;
     }
     var deletedName = State.swimlanes[idx].name;
@@ -1837,9 +1882,10 @@ function renderSecurityConfigStep() {
     return `
         <div class="step-description">
             <p><i class="bi bi-shield-lock" style="color:var(--primary);margin-right:8px;"></i>
-            <strong>Security-first access control</strong> prevents unauthorized data from reaching the browser.
-            When enabled, the dashboard checks the user's group membership <em>before</em> calling the integration.
-            Non-authorized users never receive the data — it's not just hidden with CSS.</p>
+            <strong>Access control</strong> limits which swimlanes each user sees. A user in no authorized group
+            gets an Access Denied message and no data loads. A user in a swimlane group loads the dataset and sees
+            only their authorized swimlanes. Note: this is UI-level filtering, not row-level data security. For
+            true confidentiality, filter by user or group in the source SQL.</p>
         </div>
 
         <div style="background:#f8f9fa;border-radius:12px;padding:20px;margin:20px 0;">
@@ -1881,8 +1927,9 @@ function renderSecurityConfigStep() {
             <div style="background:white;border:1px solid #e0e0e0;border-radius:12px;padding:20px;margin:20px 0;">
                 <h5 style="color:var(--primary);margin-bottom:8px;"><i class="bi bi-diagram-3"></i> Per-Swimlane Group Assignments</h5>
                 <p style="color:#666;font-size:0.85rem;margin-bottom:15px;">
-                    Assign an Azure AD group to each swimlane. Users in that group will only load data for their swimlane.
+                    Assign an Azure AD group to each swimlane. Users in that group see only their swimlane.
                     Leave blank for swimlanes that don't need restriction (visible to all).
+                    Your Etrieve or IT admin can provide the group ID (GUID).
                 </p>
                 ${swimlanes.length > 0 ? `
                     <table style="width:100%;border-collapse:collapse;">
@@ -1901,11 +1948,11 @@ function renderSecurityConfigStep() {
             <div style="background:rgba(23,162,184,0.08);border-radius:10px;padding:16px 20px;margin:20px 0;font-size:0.85rem;line-height:1.7;">
                 <strong><i class="bi bi-info-circle"></i> How it works at runtime:</strong>
                 <ol style="margin:8px 0 0;padding-left:20px;">
-                    <li>Dashboard checks if user belongs to the <strong>Power Group</strong></li>
-                    <li>If yes &rarr; loads <em>all</em> data from the integration (full dataset)</li>
+                    <li>Dashboard checks if the user belongs to the <strong>Power Group</strong></li>
+                    <li>If yes &rarr; shows <em>all</em> swimlanes (full dataset)</li>
                     <li>If no &rarr; checks which swimlane group(s) the user belongs to</li>
-                    <li>Only fires the integration for matched swimlanes (data never sent for others)</li>
-                    <li>If user matches no groups &rarr; shows "Access Denied" message</li>
+                    <li>Shows only the matched swimlanes (the dataset is fetched, then filtered in the browser)</li>
+                    <li>If the user matches no groups &rarr; shows "Access Denied" and loads no data</li>
                 </ol>
             </div>
         </div>
@@ -1947,6 +1994,57 @@ function updateSwimlaneGroupName(idx, value) {
     saveDraft();
 }
 
+// Advisory pre-flight checks: catches the silent foot-guns (blank required field
+// mappings, filterless overlapping swimlanes, no data columns) before download.
+function computePreflight() {
+    var issues = [];
+    var st = State.selectedStyle;
+    var sc = State.styleConfig || {};
+    if (State.mode === 'forms' && (State.selectedInputIds || []).length === 0) issues.push({ level: 'warn', msg: 'No form fields selected. The dashboard will show only status columns.' });
+    if (State.mode === 'content' && (State.selectedFields || []).length === 0) issues.push({ level: 'warn', msg: 'No document fields selected, so rows will have no data columns.' });
+    if (State.mode === 'combined' && (State.selectedFields || []).length === 0 && (State.selectedInputIds || []).length === 0) issues.push({ level: 'warn', msg: 'No document or form fields selected.' });
+    var lanes = State.swimlanes || [];
+    if (lanes.length === 0) issues.push({ level: 'warn', msg: 'No swimlanes defined. Add at least one section.' });
+    var noFilter = lanes.filter(function (l) { return !l.filters || l.filters.length === 0; });
+    if (lanes.length > 1 && noFilter.length > 1) issues.push({ level: 'warn', msg: noFilter.length + ' swimlanes have no filter, so each shows every row. Add filters so they separate the data.' });
+    else if (lanes.length > 1 && noFilter.length === 1) issues.push({ level: 'info', msg: 'Swimlane "' + noFilter[0].name + '" has no filter and will act as a catch-all (shows all rows).' });
+    if (st === 'survey-analytics' && !sc.ratingField) issues.push({ level: 'warn', msg: 'Survey style: no Rating field mapped, so the average-rating stat will be blank.' });
+    if (st === 'cards-dashboard') {
+        if (!sc.cardTitleField) issues.push({ level: 'warn', msg: 'Cards style: no Title field mapped, so cards will show "Untitled".' });
+        if (!sc.cardStatusField) issues.push({ level: 'info', msg: 'Cards style: no Status field mapped, so status badges will be blank.' });
+    }
+    if ((st === 'expandable' || st === 'pdf-signatures' || st === 'award-nominations') && (sc.detailFields || []).length === 0) issues.push({ level: 'warn', msg: 'Expandable style: no detail fields chosen, so expanded rows will be empty.' });
+    if (st === 'committee-voting' && (sc.committeeMembers || []).length === 0) issues.push({ level: 'warn', msg: 'Committee style: no members defined, so there are no vote columns.' });
+    if (st === 'workflow-actions') {
+        var wa = sc.workflowActions || {};
+        var anyAction = Object.keys(wa).some(function (k) { return (wa[k] || []).length > 0; });
+        if (!anyAction) issues.push({ level: 'warn', msg: 'Workflow Actions style: no action buttons configured for any swimlane.' });
+    }
+    if (!(State.sourceName || '').trim()) issues.push({ level: 'warn', msg: 'No source name set. Etrieve needs a source name to connect the data.' });
+    return issues;
+}
+function renderPreflightPanel() {
+    var issues = computePreflight();
+    var warns = issues.filter(function (i) { return i.level === 'warn'; });
+    var infos = issues.filter(function (i) { return i.level === 'info'; });
+    if (warns.length === 0 && infos.length === 0) {
+        return '<div style="background:rgba(40,167,69,0.08);border:1px solid rgba(40,167,69,0.3);border-radius:12px;padding:16px 20px;margin:20px 0;">' +
+            '<h4 style="color:#059669;margin-bottom:6px;"><i class="bi bi-check-circle-fill"></i> Pre-flight check</h4>' +
+            '<div style="color:#155724;">Everything looks good. No issues detected.</div></div>';
+    }
+    var rowsHtml = warns.concat(infos).map(function (i) {
+        var color = i.level === 'warn' ? '#B45309' : '#555';
+        var icon = i.level === 'warn' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle';
+        return '<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;color:' + color + ';"><i class="bi ' + icon + '" style="margin-top:3px;"></i><span>' + escapeHtml(i.msg) + '</span></div>';
+    }).join('');
+    var bg = warns.length > 0 ? 'rgba(245,158,11,0.08)' : 'rgba(23,162,184,0.06)';
+    var bd = warns.length > 0 ? 'rgba(245,158,11,0.35)' : 'rgba(23,162,184,0.25)';
+    var head = warns.length > 0
+        ? '<h4 style="color:#B45309;margin-bottom:10px;"><i class="bi bi-clipboard-check"></i> Pre-flight check: ' + warns.length + ' thing' + (warns.length === 1 ? '' : 's') + ' to review</h4>'
+        : '<h4 style="color:var(--primary);margin-bottom:10px;"><i class="bi bi-clipboard-check"></i> Pre-flight notes</h4>';
+    return '<div style="background:' + bg + ';border:1px solid ' + bd + ';border-radius:12px;padding:16px 20px;margin:20px 0;">' + head + rowsHtml +
+        '<div style="font-size:0.8rem;color:#888;margin-top:8px;">These are advisory. You can still download, or go back to adjust.</div></div>';
+}
 function renderGenerateStep() {
     const sql = State.customSQL || generateSQL();
 
@@ -1980,7 +2078,7 @@ function renderGenerateStep() {
             summary.push(`<strong>Workflow Steps:</strong> ${State.selectedWorkflowSteps.length} tracked`);
         }
     }
-    summary.push(`<strong>Groups:</strong> ${State.swimlanes.map(s => escapeHtml(s.name)).join(', ')}`);
+    summary.push(`<strong>Swimlanes:</strong> ${State.swimlanes.map(s => escapeHtml(s.name)).join(', ')}`);
 
     // Security summary
     if (State.securityConfig.enabled) {
@@ -2010,6 +2108,8 @@ function renderGenerateStep() {
                     ${summary.map(s => `<div>${s}</div>`).join('')}
                 </div>
             </div>
+
+        ${renderPreflightPanel()}
 
             <div class="advanced-section active">
                 <h5><i class="bi bi-code-slash"></i> SQL Query Editor</h5>
@@ -2075,6 +2175,8 @@ function renderGenerateStep() {
                 ${summary.map(s => `<div>${s}</div>`).join('')}
             </div>
         </div>
+
+        ${renderPreflightPanel()}
 
         <details style="margin:20px 0;">
             <summary style="cursor:pointer;font-weight:600;padding:10px 0;color:var(--primary);">
@@ -2308,7 +2410,7 @@ function copyCurrentFile(e) {
             var sel = window.getSelection();
             sel.removeAllRanges();
             sel.addRange(range);
-            showToast('Text selected -- press Ctrl+C to copy, then paste into Notepad and save as: ' + filename, 'info');
+            showToast('Text selected. Press Ctrl+C to copy, then paste into Notepad and save as: ' + filename, 'info');
         } else {
             showToast('Copy failed. Please select all text manually (Ctrl+A), copy (Ctrl+C), and save as: ' + filename, 'error');
         }
