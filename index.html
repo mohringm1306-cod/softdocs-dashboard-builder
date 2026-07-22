@@ -1,145 +1,226 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" xmlns="https://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard Builder Wizard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link href="wizard.css" rel="stylesheet" />
-</head>
-<body>
-    <!-- Loading Overlay -->
-    <div class="loading" id="loadingOverlay" style="display:none;">
-        <div class="loading-spinner">
-            <i class="bi bi-arrow-repeat spin"></i>
-            <span>Loading...</span>
-        </div>
-    </div>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Dashboard Builder Wizard</title>
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+		/>
+		<link href="wizard.css" rel="stylesheet" />
+	</head>
+	<body>
+		<!-- Loading Overlay -->
+		<div class="loading" id="loadingOverlay" style="display: none">
+			<div class="loading-spinner">
+				<i class="bi bi-arrow-repeat spin"></i>
+				<span>Loading...</span>
+			</div>
+		</div>
 
-    <!-- Header Bar -->
-    <div class="header-bar">
-        <div style="display:flex;align-items:center;gap:15px;">
-            <button class="reset-btn" onclick="resetWizard()" title="Start Over" aria-label="Start over from the beginning">
-                <i class="bi bi-house-door"></i> <span>Start Over</span>
-            </button>
-            <h1><i class="bi bi-grid-3x3-gap"></i> Dashboard Builder</h1>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;">
-            <span id="modeIndicator"></span>
-            <button class="setup-guide-btn" onclick="toggleSetupGuide()" title="Admin Setup Guide">
-                <i class="bi bi-book"></i> <span>Setup Guide</span>
-            </button>
-            <span class="badge" id="versionBadge">v4.3</span>
-        </div>
-    </div>
+		<!-- Header Bar -->
+		<div class="header-bar">
+			<div style="display: flex; align-items: center; gap: 15px">
+				<button
+					class="reset-btn"
+					onclick="resetWizard()"
+					title="Start Over"
+					aria-label="Start over from the beginning"
+				>
+					<i class="bi bi-house-door"></i> <span>Start Over</span>
+				</button>
+				<h1><i class="bi bi-grid-3x3-gap"></i> Dashboard Builder</h1>
+			</div>
+			<div style="display: flex; align-items: center; gap: 12px">
+				<span id="modeIndicator"></span>
+				<button
+					class="setup-guide-btn"
+					onclick="toggleSetupGuide()"
+					title="Admin Setup Guide"
+				>
+					<i class="bi bi-book"></i> <span>Setup Guide</span>
+				</button>
+				<span class="badge" id="versionBadge">v4.3</span>
+			</div>
+		</div>
 
-    <!-- Admin Setup Guide (collapsible) -->
-    <div id="setupGuide" class="setup-guide" style="display:none;"></div>
+		<!-- Admin Setup Guide (collapsible) -->
+		<div id="setupGuide" class="setup-guide" style="display: none"></div>
 
-    <!-- Main Container (matches wizard-demo.html structure) -->
-    <div class="main-container">
-        <!-- Progress Section -->
-        <div class="progress-section" id="progressSection" style="display: none;">
-            <div class="progress-header">
-                <span id="progressTitle">Building Dashboard</span>
-                <span id="stepCounter">Step 1 of 6</span>
-            </div>
-            <div class="progress-bar-container">
-                <div class="progress-bar-fill" id="progressFill" style="width: 16.6%"></div>
-            </div>
-            <div class="progress-steps" id="progressSteps"></div>
-        </div>
+		<!-- Main Container (matches wizard-demo.html structure) -->
+		<div class="main-container">
+			<!-- Progress Section -->
+			<div
+				class="progress-section"
+				id="progressSection"
+				style="display: none"
+			>
+				<div class="progress-header">
+					<span id="progressTitle">Building Dashboard</span>
+					<span id="stepCounter">Step 1 of 6</span>
+				</div>
+				<div class="progress-bar-container">
+					<div
+						class="progress-bar-fill"
+						id="progressFill"
+						style="width: 16.6%"
+					></div>
+				</div>
+				<div class="progress-steps" id="progressSteps"></div>
+			</div>
 
-        <div class="wizard-card">
-            <div class="card-header" id="cardHeader">
-                <h2><i class="bi bi-magic"></i> Welcome to Dashboard Builder</h2>
-                <p>Build powerful Softdocs dashboards without writing SQL from scratch</p>
-            </div>
-            <div class="card-body" id="cardBody">
-                <!-- Progress Steps (legacy, used by renderProgress) -->
-                <div id="progressBar" style="display: none;"></div>
+			<div class="wizard-card">
+				<div class="card-header" id="cardHeader">
+					<h2>
+						<i class="bi bi-magic"></i> Welcome to Dashboard Builder
+					</h2>
+					<p>
+						Build powerful Softdocs dashboards without writing SQL
+						from scratch
+					</p>
+				</div>
+				<div class="card-body" id="cardBody">
+					<!-- Progress Steps (legacy, used by renderProgress) -->
+					<div id="progressBar" style="display: none"></div>
 
-                <!-- Mode Selection Screen -->
-                <div id="modeSelection">
-                    <h3 style="margin-bottom: 20px;">What type of dashboard do you want to build?</h3>
-                    <div class="mode-cards">
-                        <div class="mode-card content-card" role="button" onclick="selectMode('content', event)" tabindex="0" onkeydown="handleModeKeydown(event, 'content')">
-                            <div class="mode-icon"><i class="bi bi-file-earmark-text"></i></div>
-                            <h4>Document Lookup</h4>
-                            <p>Find and view scanned documents by student or employee</p>
-                        </div>
-                        <div class="mode-card forms-card" role="button" onclick="selectMode('forms', event)" tabindex="0" onkeydown="handleModeKeydown(event, 'forms')">
-                            <div class="mode-icon"><i class="bi bi-ui-checks-grid"></i></div>
-                            <h4>Form Tracker</h4>
-                            <p>Track form submissions and their approval status</p>
-                        </div>
-                        <div class="mode-card combined-card" role="button" onclick="selectMode('combined', event)" tabindex="0" onkeydown="handleModeKeydown(event, 'combined')">
-                            <div class="mode-icon"><i class="bi bi-layers"></i></div>
-                            <h4>Combined View</h4>
-                            <p>Documents and forms together in one dashboard</p>
-                        </div>
-                    </div>
-                    <p class="setup-guide-hint">
-                        <i class="bi bi-info-circle"></i>
-                        First time setting up? <a href="#" onclick="toggleSetupGuide(); return false;">Open the Admin Setup Guide</a> for step-by-step instructions.
-                    </p>
-                </div>
+					<!-- Mode Selection Screen -->
+					<div id="modeSelection">
+						<h3 style="margin-bottom: 20px">
+							What type of dashboard do you want to build?
+						</h3>
+						<div class="mode-cards">
+							<div
+								class="mode-card content-card"
+								role="button"
+								onclick="selectMode('content', event)"
+								tabindex="0"
+								onkeydown="handleModeKeydown(event, 'content')"
+							>
+								<div class="mode-icon">
+									<i class="bi bi-file-earmark-text"></i>
+								</div>
+								<h4>Document Lookup</h4>
+								<p>
+									Find and view scanned documents by student
+									or employee
+								</p>
+							</div>
+							<div
+								class="mode-card forms-card"
+								role="button"
+								onclick="selectMode('forms', event)"
+								tabindex="0"
+								onkeydown="handleModeKeydown(event, 'forms')"
+							>
+								<div class="mode-icon">
+									<i class="bi bi-ui-checks-grid"></i>
+								</div>
+								<h4>Form Tracker</h4>
+								<p>
+									Track form submissions and their approval
+									status
+								</p>
+							</div>
+							<div
+								class="mode-card combined-card"
+								role="button"
+								onclick="selectMode('combined', event)"
+								tabindex="0"
+								onkeydown="handleModeKeydown(event, 'combined')"
+							>
+								<div class="mode-icon">
+									<i class="bi bi-layers"></i>
+								</div>
+								<h4>Combined View</h4>
+								<p>
+									Documents and forms together in one
+									dashboard
+								</p>
+							</div>
+						</div>
+						<p class="setup-guide-hint">
+							<i class="bi bi-info-circle"></i>
+							First time setting up?
+							<a
+								href="#"
+								onclick="
+									toggleSetupGuide();
+									return false;
+								"
+								>Open the Admin Setup Guide</a
+							>
+							for step-by-step instructions.
+						</p>
+					</div>
 
-                <!-- Step Content with Preview (populated by JS) -->
-                <div id="stepContent" style="display: none;">
-                    <div class="wizard-layout">
-                        <div class="wizard-main" id="wizardMain"></div>
-                        <div class="preview-panel" id="previewPanel">
-                            <div class="preview-header">
-                                <div class="dots">
-                                    <span class="dot red"></span>
-                                    <span class="dot yellow"></span>
-                                    <span class="dot green" onclick="expandPreview()" title="Expand preview"></span>
-                                </div>
-                                <span class="title">Live Preview</span>
-                                <button class="expand-btn" onclick="expandPreview()" title="Expand preview">
-                                    <i class="bi bi-arrows-fullscreen"></i> Expand
-                                </button>
-                            </div>
-                            <div class="preview-content" id="previewContent"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+					<!-- Step Content with Preview (populated by JS) -->
+					<div id="stepContent" style="display: none">
+						<div class="wizard-layout">
+							<div class="wizard-main" id="wizardMain"></div>
+							<div class="preview-panel" id="previewPanel">
+								<div class="preview-header">
+									<div class="dots">
+										<span class="dot red"></span>
+										<span class="dot yellow"></span>
+										<span
+											class="dot green"
+											onclick="expandPreview()"
+											title="Expand preview"
+										></span>
+									</div>
+									<span class="title">Live Preview</span>
+									<button
+										class="expand-btn"
+										onclick="expandPreview()"
+										title="Expand preview"
+									>
+										<i class="bi bi-arrows-fullscreen"></i>
+										Expand
+									</button>
+								</div>
+								<div
+									class="preview-content"
+									id="previewContent"
+								></div>
+							</div>
+						</div>
+					</div>
+				</div>
 
-            <div class="card-footer" id="cardFooter" style="display: none;">
-                <button class="btn btn-secondary" onclick="prevStep()">
-                    <i class="bi bi-arrow-left"></i> Back
-                </button>
-                <button class="btn btn-primary" onclick="nextStep()">
-                    Next <i class="bi bi-arrow-right"></i>
-                </button>
-            </div>
-        </div>
-    </div>
+				<div class="card-footer" id="cardFooter" style="display: none">
+					<button class="btn btn-secondary" onclick="prevStep()">
+						<i class="bi bi-arrow-left"></i> Back
+					</button>
+					<button class="btn btn-primary" onclick="nextStep()">
+						Next <i class="bi bi-arrow-right"></i>
+					</button>
+				</div>
+			</div>
+		</div>
 
-    <!-- Draft Save Indicator -->
-    <div id="draftIndicator" class="draft-indicator"></div>
+		<!-- Draft Save Indicator -->
+		<div id="draftIndicator" class="draft-indicator"></div>
 
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
+		<!-- Toast Container -->
+		<div class="toast-container" id="toastContainer"></div>
 
-    <!-- Wizard scripts: In Etrieve these load via RequireJS ('template/...') -->
-    <!-- For local testing, load via script tags: -->
-    <script src="wizard-demo.js"></script>
-    <script src="wizard-sql.js"></script>
-    <script src="wizard-templates.js"></script>
-    <script src="wizard-generators.js"></script>
-    <script src="wizard-preview-basic.js"></script>
-    <script src="wizard-preview-advanced.js"></script>
-    <script src="wizard-preview-specialized.js"></script>
-    <script src="wizard-preview.js"></script>
-    <script>
-        // Set version badge from WIZARD_VERSION constant (single source of truth)
-        if (typeof WIZARD_VERSION !== 'undefined') {
-            var vb = document.getElementById('versionBadge');
-            if (vb) vb.textContent = 'v' + WIZARD_VERSION;
-        }
-    </script>
-</body>
+		<!-- Wizard scripts: In Etrieve these load via RequireJS ('template/...') -->
+		<!-- For local testing, load via script tags: -->
+		<script src="wizard-demo.js"></script>
+		<script src="wizard-sql.js"></script>
+		<script src="wizard-templates.js"></script>
+		<script src="wizard-generators.js"></script>
+		<script src="wizard-preview-basic.js"></script>
+		<script src="wizard-preview-advanced.js"></script>
+		<script src="wizard-preview-specialized.js"></script>
+		<script src="wizard-preview.js"></script>
+		<script>
+			// Set version badge from WIZARD_VERSION constant (single source of truth)
+			if (typeof WIZARD_VERSION !== "undefined") {
+				var vb = document.getElementById("versionBadge");
+				if (vb) vb.textContent = "v" + WIZARD_VERSION;
+			}
+		</script>
+	</body>
 </html>

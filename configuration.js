@@ -24,7 +24,7 @@
 //   FROM [dbo].[Catalog]
 //   ORDER BY [Name]
 //
-var areasIntegrationName = 'WizardBuilder_GetAreas';
+var areasIntegrationName = "WizardBuilder_GetAreas";
 
 // ============================================================================
 // INTEGRATION 2: Get Document Types for an Area
@@ -43,7 +43,7 @@ var areasIntegrationName = 'WizardBuilder_GetAreas';
 //   WHERE cdt.CatalogID = @CatalogID
 //   ORDER BY dt.[Name]
 //
-var docTypesIntegrationName = 'WizardBuilder_GetDocTypes';
+var docTypesIntegrationName = "WizardBuilder_GetDocTypes";
 
 // ============================================================================
 // INTEGRATION 3: Get Key Fields for an Area
@@ -77,7 +77,7 @@ var docTypesIntegrationName = 'WizardBuilder_GetDocTypes';
 //   WHERE cdt.CatalogID = @CatalogID
 //   ORDER BY f.[Name]
 //
-var keyFieldsIntegrationName = 'WizardBuilder_GetKeyFields';
+var keyFieldsIntegrationName = "WizardBuilder_GetKeyFields";
 
 // ============================================================================
 // INTEGRATION 4: Get Form Templates
@@ -99,7 +99,7 @@ var keyFieldsIntegrationName = 'WizardBuilder_GetKeyFields';
 //   WHERE tv.IsPublished = 1
 //   ORDER BY t.[Name]
 //
-var formTemplatesIntegrationName = 'WizardBuilder_GetFormTemplates';
+var formTemplatesIntegrationName = "WizardBuilder_GetFormTemplates";
 
 // ============================================================================
 // INTEGRATION 5: Get Form Input Fields
@@ -121,7 +121,7 @@ var formTemplatesIntegrationName = 'WizardBuilder_GetFormTemplates';
 //       AND f.IsDraft = 0
 //   ORDER BY iv.InputID
 //
-var formInputsIntegrationName = 'WizardBuilder_GetFormInputs';
+var formInputsIntegrationName = "WizardBuilder_GetFormInputs";
 
 // ============================================================================
 // INTEGRATION 6: Get Workflow Steps for a Form Template
@@ -154,4 +154,4 @@ var formInputsIntegrationName = 'WizardBuilder_GetFormInputs';
 //       AND ps.IsDeleted = 0
 //   ORDER BY ps.[Name]
 //
-var workflowStepsIntegrationName = 'WizardBuilder_GetWorkflowSteps';
+var workflowStepsIntegrationName = "WizardBuilder_GetWorkflowSteps";

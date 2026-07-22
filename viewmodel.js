@@ -15,342 +15,496 @@
  */
 
 define([
-    'jquery',
-    'knockout',
-    'vmBase',
-    'user',
-    'integration',
-    'template/configuration',
-    'template/wizard-demo',
-    'template/wizard-templates',
-    'template/wizard-generators'
+	"jquery",
+	"knockout",
+	"vmBase",
+	"user",
+	"integration",
+	"template/configuration",
+	"template/wizard-demo",
+	"template/wizard-templates",
+	"template/wizard-generators",
 ], function viewmodel($, ko, vm, user, integration) {
+	// wizard-demo.js, wizard-templates.js, and wizard-generators.js are loaded
+	// as RequireJS dependencies above. Their code runs in global scope (all
+	// function/var declarations become window.*), so showToast, selectArea,
+	// checkForDraft, renderStep, etc. are all available by the time this
+	// module executes.
 
-    // wizard-demo.js, wizard-templates.js, and wizard-generators.js are loaded
-    // as RequireJS dependencies above. Their code runs in global scope (all
-    // function/var declarations become window.*), so showToast, selectArea,
-    // checkForDraft, renderStep, etc. are all available by the time this
-    // module executes.
+	console.log("[WizardBuilder] All scripts loaded via RequireJS");
 
-    console.log('[WizardBuilder] All scripts loaded via RequireJS');
+	// ========================================================================
+	// SAFE TOAST - fallback in case showToast somehow isn't available
+	// ========================================================================
+	function safeToast(msg, type) {
+		if (typeof showToast === "function") {
+			showToast(msg, type);
+		} else {
+			console.error("[WizardBuilder] " + msg);
+		}
+	}
 
-    // ========================================================================
-    // SAFE TOAST - fallback in case showToast somehow isn't available
-    // ========================================================================
-    function safeToast(msg, type) {
-        if (typeof showToast === 'function') {
-            showToast(msg, type);
-        } else {
-            console.error('[WizardBuilder] ' + msg);
-        }
-    }
+	// ========================================================================
+	// DATA ADAPTER - Bridges Etrieve integration.all() -> SimulatedData shape
+	// ========================================================================
 
-    // ========================================================================
-    // DATA ADAPTER - Bridges Etrieve integration.all() -> SimulatedData shape
-    // ========================================================================
+	// Cache for loaded data so we don't re-fetch
+	var _cache = {
+		areas: null,
+		documentTypes: {},
+		keyFields: {},
+		formTemplates: null,
+		formInputIds: {},
+		workflowSteps: {},
+	};
 
-    // Cache for loaded data so we don't re-fetch
-    var _cache = {
-        areas: null,
-        documentTypes: {},
-        keyFields: {},
-        formTemplates: null,
-        formInputIds: {},
-        workflowSteps: {}
-    };
+	/**
+	 * Load areas/catalogs from Etrieve
+	 * Expected SQL: SELECT CatalogID AS id, [Name] AS name FROM [dbo].[Catalog] ORDER BY [Name]
+	 */
+	function loadAreas() {
+		if (_cache.areas !== null)
+			return $.Deferred().resolve(_cache.areas).promise();
+		return integration.all(areasIntegrationName).then(function (data) {
+			_cache.areas = data.map(function (row) {
+				return {
+					id: row.id || row.CatalogID,
+					name: row.name || row.Name,
+					description: row.description || row.Description || "",
+				};
+			});
+			return _cache.areas;
+		});
+	}
 
-    /**
-     * Load areas/catalogs from Etrieve
-     * Expected SQL: SELECT CatalogID AS id, [Name] AS name FROM [dbo].[Catalog] ORDER BY [Name]
-     */
-    function loadAreas() {
-        if (_cache.areas !== null) return $.Deferred().resolve(_cache.areas).promise();
-        return integration.all(areasIntegrationName).then(function(data) {
-            _cache.areas = data.map(function(row) {
-                return { id: row.id || row.CatalogID, name: row.name || row.Name, description: row.description || row.Description || '' };
-            });
-            return _cache.areas;
-        });
-    }
+	/**
+	 * Load document types for a given area
+	 * Expected SQL: SELECT DocumentTypeID AS id, d.Name AS name, d.Name AS code FROM [dbo].[DocumentType] d JOIN [dbo].[CatalogDocumentType] cd ON d.DocumentTypeID = cd.DocumentTypeID WHERE cd.CatalogID = @CatalogID ORDER BY d.Name
+	 */
+	function loadDocTypes(areaId) {
+		areaId = String(areaId); // normalize cache key
+		if (_cache.documentTypes[areaId] !== undefined)
+			return $.Deferred().resolve(_cache.documentTypes[areaId]).promise();
+		return integration
+			.all(docTypesIntegrationName, { CatalogID: areaId })
+			.then(function (data) {
+				_cache.documentTypes[areaId] = data.map(function (row) {
+					return {
+						id: row.id || row.DocumentTypeID,
+						name: row.name || row.Name,
+						code: row.code || row.Code || "",
+					};
+				});
+				return _cache.documentTypes[areaId];
+			});
+	}
 
-    /**
-     * Load document types for a given area
-     * Expected SQL: SELECT DocumentTypeID AS id, d.Name AS name, d.Name AS code FROM [dbo].[DocumentType] d JOIN [dbo].[CatalogDocumentType] cd ON d.DocumentTypeID = cd.DocumentTypeID WHERE cd.CatalogID = @CatalogID ORDER BY d.Name
-     */
-    function loadDocTypes(areaId) {
-        areaId = String(areaId); // normalize cache key
-        if (_cache.documentTypes[areaId] !== undefined) return $.Deferred().resolve(_cache.documentTypes[areaId]).promise();
-        return integration.all(docTypesIntegrationName, { CatalogID: areaId }).then(function(data) {
-            _cache.documentTypes[areaId] = data.map(function(row) {
-                return { id: row.id || row.DocumentTypeID, name: row.name || row.Name, code: row.code || row.Code || '' };
-            });
-            return _cache.documentTypes[areaId];
-        });
-    }
+	/**
+	 * Load key fields for a given area
+	 * See Sources/3_WizardBuilder_GetKeyFields.sql for the full query.
+	 * Expected columns: id, name, type (text|date|number|decimal|party), alias, partyTypeId
+	 * The partyTypeId column (v3.3.3+) lets the JS auto-detect party fields even
+	 * if the CASE statement in the SQL is missing or outdated.
+	 */
+	function loadKeyFields(areaId) {
+		areaId = String(areaId); // normalize cache key
+		if (_cache.keyFields[areaId] !== undefined)
+			return $.Deferred().resolve(_cache.keyFields[areaId]).promise();
+		return integration
+			.all(keyFieldsIntegrationName, { CatalogID: areaId })
+			.then(function (data) {
+				_cache.keyFields[areaId] = data.map(function (row) {
+					var rawType = row.type || "text";
+					// Fallback: if partyTypeId is present (not null/undefined/empty),
+					// force type to 'party' regardless of what the CASE returned.
+					// This catches cases where the SQL source is missing the
+					// PartyTypeID check or was copied from an older version.
+					var partyId =
+						row.partyTypeId || row.PartyTypeID || row.partytypeid;
+					if (partyId != null && partyId !== "" && partyId !== 0) {
+						rawType = "party";
+					}
+					return {
+						id: row.id || row.FieldID,
+						name: row.name || row.Name,
+						type: rawType,
+						alias: row.alias || row.Name || "",
+					};
+				});
+				return _cache.keyFields[areaId];
+			});
+	}
 
-    /**
-     * Load key fields for a given area
-     * See Sources/3_WizardBuilder_GetKeyFields.sql for the full query.
-     * Expected columns: id, name, type (text|date|number|decimal|party), alias, partyTypeId
-     * The partyTypeId column (v3.3.3+) lets the JS auto-detect party fields even
-     * if the CASE statement in the SQL is missing or outdated.
-     */
-    function loadKeyFields(areaId) {
-        areaId = String(areaId); // normalize cache key
-        if (_cache.keyFields[areaId] !== undefined) return $.Deferred().resolve(_cache.keyFields[areaId]).promise();
-        return integration.all(keyFieldsIntegrationName, { CatalogID: areaId }).then(function(data) {
-            _cache.keyFields[areaId] = data.map(function(row) {
-                var rawType = row.type || 'text';
-                // Fallback: if partyTypeId is present (not null/undefined/empty),
-                // force type to 'party' regardless of what the CASE returned.
-                // This catches cases where the SQL source is missing the
-                // PartyTypeID check or was copied from an older version.
-                var partyId = row.partyTypeId || row.PartyTypeID || row.partytypeid;
-                if (partyId != null && partyId !== '' && partyId !== 0) {
-                    rawType = 'party';
-                }
-                return { id: row.id || row.FieldID, name: row.name || row.Name, type: rawType, alias: row.alias || row.Name || '' };
-            });
-            return _cache.keyFields[areaId];
-        });
-    }
+	/**
+	 * Load form templates
+	 * Expected SQL: SELECT tv.TemplateVersionID AS id, t.Name AS name, t.TemplateID AS templateId FROM reporting.central_forms_Template t JOIN reporting.central_forms_TemplateVersion tv ON t.TemplateID = tv.TemplateID WHERE tv.IsPublished = 1 ORDER BY t.Name
+	 */
+	function loadFormTemplates() {
+		if (_cache.formTemplates !== null)
+			return $.Deferred().resolve(_cache.formTemplates).promise();
+		return integration
+			.all(formTemplatesIntegrationName)
+			.then(function (data) {
+				_cache.formTemplates = data.map(function (row) {
+					return {
+						id: row.id || row.TemplateVersionID,
+						name: row.name || row.Name,
+						templateId: row.templateId || row.TemplateID,
+					};
+				});
+				return _cache.formTemplates;
+			});
+	}
 
-    /**
-     * Load form templates
-     * Expected SQL: SELECT tv.TemplateVersionID AS id, t.Name AS name, t.TemplateID AS templateId FROM reporting.central_forms_Template t JOIN reporting.central_forms_TemplateVersion tv ON t.TemplateID = tv.TemplateID WHERE tv.IsPublished = 1 ORDER BY t.Name
-     */
-    function loadFormTemplates() {
-        if (_cache.formTemplates !== null) return $.Deferred().resolve(_cache.formTemplates).promise();
-        return integration.all(formTemplatesIntegrationName).then(function(data) {
-            _cache.formTemplates = data.map(function(row) {
-                return { id: row.id || row.TemplateVersionID, name: row.name || row.Name, templateId: row.templateId || row.TemplateID };
-            });
-            return _cache.formTemplates;
-        });
-    }
+	/**
+	 * Load form input IDs for a given template
+	 * Expected SQL: SELECT DISTINCT iv.InputID AS id, iv.InputID AS label FROM reporting.central_forms_InputValue iv JOIN reporting.central_forms_Form f ON iv.FormID = f.FormID JOIN reporting.central_forms_TemplateVersion tv ON f.TemplateVersionID = tv.TemplateVersionID WHERE tv.TemplateVersionID = @TemplateVersionID ORDER BY iv.InputID
+	 */
+	function loadFormInputs(templateVersionId) {
+		templateVersionId = String(templateVersionId); // normalize cache key
+		if (_cache.formInputIds[templateVersionId] !== undefined)
+			return $.Deferred()
+				.resolve(_cache.formInputIds[templateVersionId])
+				.promise();
+		return integration
+			.all(formInputsIntegrationName, {
+				TemplateVersionID: templateVersionId,
+			})
+			.then(function (data) {
+				_cache.formInputIds[templateVersionId] = data.map(
+					function (row) {
+						return {
+							id: row.id || row.InputID,
+							label: row.label || row.InputID,
+						};
+					},
+				);
+				return _cache.formInputIds[templateVersionId];
+			});
+	}
 
-    /**
-     * Load form input IDs for a given template
-     * Expected SQL: SELECT DISTINCT iv.InputID AS id, iv.InputID AS label FROM reporting.central_forms_InputValue iv JOIN reporting.central_forms_Form f ON iv.FormID = f.FormID JOIN reporting.central_forms_TemplateVersion tv ON f.TemplateVersionID = tv.TemplateVersionID WHERE tv.TemplateVersionID = @TemplateVersionID ORDER BY iv.InputID
-     */
-    function loadFormInputs(templateVersionId) {
-        templateVersionId = String(templateVersionId); // normalize cache key
-        if (_cache.formInputIds[templateVersionId] !== undefined) return $.Deferred().resolve(_cache.formInputIds[templateVersionId]).promise();
-        return integration.all(formInputsIntegrationName, { TemplateVersionID: templateVersionId }).then(function(data) {
-            _cache.formInputIds[templateVersionId] = data.map(function(row) {
-                return { id: row.id || row.InputID, label: row.label || row.InputID };
-            });
-            return _cache.formInputIds[templateVersionId];
-        });
-    }
+	/**
+	 * Load workflow steps for a given template
+	 * Chain: Template -> TemplateVersion.Code -> PackageDocument.SourceTypeCode -> TaskQueue -> ProcessStep
+	 * Expected SQL returns: id, name, displayName
+	 * NOTE: ProcessStepId (lowercase 'd'), no StepOrder column exists
+	 */
+	function loadWorkflowSteps(templateId) {
+		templateId = String(templateId); // normalize cache key
+		if (_cache.workflowSteps[templateId] !== undefined)
+			return $.Deferred()
+				.resolve(_cache.workflowSteps[templateId])
+				.promise();
+		// Wrap in explicit Deferred so this ALWAYS resolves (jQuery < 3.0 safe)
+		var d = $.Deferred();
+		integration
+			.all(workflowStepsIntegrationName, { TemplateID: templateId })
+			.then(
+				function (data) {
+					if (!data || data.length === 0) {
+						console.warn(
+							'[VM loadWorkflowSteps] Source "' +
+								workflowStepsIntegrationName +
+								'" returned 0 rows for TemplateID=' +
+								templateId +
+								". This usually means no forms from this template have entered the workflow yet, or the integration source SQL needs the correct TemplateID parameter.",
+						);
+						_cache.workflowSteps[templateId] = [];
+						d.resolve([]);
+						return;
+					}
+					console.log(
+						"[VM loadWorkflowSteps] Loaded " +
+							data.length +
+							" workflow steps for TemplateID=" +
+							templateId,
+					);
+					_cache.workflowSteps[templateId] = data.map(
+						function (row, idx) {
+							return {
+								id: row.id || row.ProcessStepId,
+								name: row.name || row.Name,
+								displayName:
+									row.displayName ||
+									(row.name || row.Name || "").replace(
+										/_/g,
+										" ",
+									),
+								order: idx,
+								activeCount: 0,
+							};
+						},
+					);
+					d.resolve(_cache.workflowSteps[templateId]);
+				},
+				function (err) {
+					console.error(
+						"[VM loadWorkflowSteps] FAILED for TemplateID=" +
+							templateId +
+							":",
+						err,
+					);
+					console.error(
+						'[VM loadWorkflowSteps] Check that integration source "' +
+							workflowStepsIntegrationName +
+							'" exists and has valid SQL. A 500 error typically means a SQL syntax error or wrong column/table name.',
+					);
+					_cache.workflowSteps[templateId] = [];
+					d.resolve([]);
+				},
+			);
+		return d.promise();
+	}
 
-    /**
-     * Load workflow steps for a given template
-     * Chain: Template -> TemplateVersion.Code -> PackageDocument.SourceTypeCode -> TaskQueue -> ProcessStep
-     * Expected SQL returns: id, name, displayName
-     * NOTE: ProcessStepId (lowercase 'd'), no StepOrder column exists
-     */
-    function loadWorkflowSteps(templateId) {
-        templateId = String(templateId); // normalize cache key
-        if (_cache.workflowSteps[templateId] !== undefined) return $.Deferred().resolve(_cache.workflowSteps[templateId]).promise();
-        // Wrap in explicit Deferred so this ALWAYS resolves (jQuery < 3.0 safe)
-        var d = $.Deferred();
-        integration.all(workflowStepsIntegrationName, { TemplateID: templateId }).then(function(data) {
-            if (!data || data.length === 0) {
-                console.warn('[VM loadWorkflowSteps] Source "' + workflowStepsIntegrationName + '" returned 0 rows for TemplateID=' + templateId + '. This usually means no forms from this template have entered the workflow yet, or the integration source SQL needs the correct TemplateID parameter.');
-                _cache.workflowSteps[templateId] = [];
-                d.resolve([]);
-                return;
-            }
-            console.log('[VM loadWorkflowSteps] Loaded ' + data.length + ' workflow steps for TemplateID=' + templateId);
-            _cache.workflowSteps[templateId] = data.map(function(row, idx) {
-                return {
-                    id: row.id || row.ProcessStepId,
-                    name: row.name || row.Name,
-                    displayName: row.displayName || (row.name || row.Name || '').replace(/_/g, ' '),
-                    order: idx,
-                    activeCount: 0
-                };
-            });
-            d.resolve(_cache.workflowSteps[templateId]);
-        }, function(err) {
-            console.error('[VM loadWorkflowSteps] FAILED for TemplateID=' + templateId + ':', err);
-            console.error('[VM loadWorkflowSteps] Check that integration source "' + workflowStepsIntegrationName + '" exists and has valid SQL. A 500 error typically means a SQL syntax error or wrong column/table name.');
-            _cache.workflowSteps[templateId] = [];
-            d.resolve([]);
-        });
-        return d.promise();
-    }
+	// ========================================================================
+	// SIMULATED DATA REPLACEMENT
+	// ========================================================================
 
-    // ========================================================================
-    // SIMULATED DATA REPLACEMENT
-    // ========================================================================
+	/**
+	 * Build a SimulatedData-compatible object from cached integration data.
+	 * The wizard code references SimulatedData.areas, .documentTypes, etc.
+	 * We replace it with a live proxy that triggers integration loads.
+	 */
+	function buildLiveDataProxy() {
+		return {
+			areas: _cache.areas || [],
+			documentTypes: _cache.documentTypes || {},
+			keyFields: _cache.keyFields || {},
+			formTemplates: _cache.formTemplates || [],
+			formInputIds: _cache.formInputIds || {},
+			workflowSteps: _cache.workflowSteps || {},
+		};
+	}
 
-    /**
-     * Build a SimulatedData-compatible object from cached integration data.
-     * The wizard code references SimulatedData.areas, .documentTypes, etc.
-     * We replace it with a live proxy that triggers integration loads.
-     */
-    function buildLiveDataProxy() {
-        return {
-            areas: _cache.areas || [],
-            documentTypes: _cache.documentTypes || {},
-            keyFields: _cache.keyFields || {},
-            formTemplates: _cache.formTemplates || [],
-            formInputIds: _cache.formInputIds || {},
-            workflowSteps: _cache.workflowSteps || {}
-        };
-    }
+	// ========================================================================
+	// ETRIEVE LIFECYCLE - Scripts loaded via RequireJS (no $.getScript needed)
+	// ========================================================================
 
-    // ========================================================================
-    // ETRIEVE LIFECYCLE - Scripts loaded via RequireJS (no $.getScript needed)
-    // ========================================================================
+	vm.onLoad = function (source, inputValues) {
+		// Hide the Etrieve parent frame panels to give wizard full screen
+		try {
+			window.parent.$(".hsplitter, .bottom_panel").hide();
+			window.parent.$(".top_panel").css("height", "100%");
+		} catch (e) {
+			/* cross-origin or no parent frame */
+		}
 
-    vm.onLoad = function(source, inputValues) {
-        // Hide the Etrieve parent frame panels to give wizard full screen
-        try {
-            window.parent.$('.hsplitter, .bottom_panel').hide();
-            window.parent.$('.top_panel').css('height', '100%');
-        } catch (e) { /* cross-origin or no parent frame */ }
+		// Store current user info for the wizard
+		window._etrieveUser = {
+			username: user.UserName || "",
+			displayName: (user.FirstName || "") + " " + (user.LastName || ""),
+			firstName: user.FirstName || "",
+			lastName: user.LastName || "",
+		};
 
-        // Store current user info for the wizard
-        window._etrieveUser = {
-            username: user.UserName || '',
-            displayName: (user.FirstName || '') + ' ' + (user.LastName || ''),
-            firstName: user.FirstName || '',
-            lastName: user.LastName || ''
-        };
+		// Fetch each integration source independently so we can diagnose which ones fail
+		var loading = $(".loading");
+		if (loading.length) loading.show();
 
-        // Fetch each integration source independently so we can diagnose which ones fail
-        var loading = $('.loading');
-        if (loading.length) loading.show();
+		var results = { areas: false, templates: false };
 
-        var results = { areas: false, templates: false };
+		// Wrap each promise so it always resolves (never rejects) - ensures $.when waits for BOTH
+		// IMPORTANT: Use single .then(ok, err) form - jQuery < 3.0 doesn't swallow rejections
+		// with .then(ok).then(null, err) two-call chains.
+		var areasPromise = loadAreas().then(
+			function (data) {
+				results.areas = true;
+				console.log(
+					"[WizardBuilder] ✓ GetAreas returned " +
+						data.length +
+						" areas",
+				);
+			},
+			function (err) {
+				console.error(
+					"[WizardBuilder] ✗ GetAreas FAILED:",
+					areasIntegrationName,
+					err,
+				);
+				return $.Deferred().resolve().promise(); // swallow rejection so $.when waits for both
+			},
+		);
 
-        // Wrap each promise so it always resolves (never rejects) - ensures $.when waits for BOTH
-        // IMPORTANT: Use single .then(ok, err) form - jQuery < 3.0 doesn't swallow rejections
-        // with .then(ok).then(null, err) two-call chains.
-        var areasPromise = loadAreas().then(function(data) {
-            results.areas = true;
-            console.log('[WizardBuilder] ✓ GetAreas returned ' + data.length + ' areas');
-        }, function(err) {
-            console.error('[WizardBuilder] ✗ GetAreas FAILED:', areasIntegrationName, err);
-            return $.Deferred().resolve().promise(); // swallow rejection so $.when waits for both
-        });
+		var templatesPromise = loadFormTemplates().then(
+			function (data) {
+				results.templates = true;
+				console.log(
+					"[WizardBuilder] ✓ GetFormTemplates returned " +
+						data.length +
+						" templates",
+				);
+			},
+			function (err) {
+				console.error(
+					"[WizardBuilder] ✗ GetFormTemplates FAILED:",
+					formTemplatesIntegrationName,
+					err,
+				);
+				return $.Deferred().resolve().promise(); // swallow rejection so $.when waits for both
+			},
+		);
 
-        var templatesPromise = loadFormTemplates().then(function(data) {
-            results.templates = true;
-            console.log('[WizardBuilder] ✓ GetFormTemplates returned ' + data.length + ' templates');
-        }, function(err) {
-            console.error('[WizardBuilder] ✗ GetFormTemplates FAILED:', formTemplatesIntegrationName, err);
-            return $.Deferred().resolve().promise(); // swallow rejection so $.when waits for both
-        });
+		// Wait for both to settle, then initialize
+		$.when(areasPromise, templatesPromise).always(function () {
+			// Replace SimulatedData with whatever we got
+			window.SimulatedData = buildLiveDataProxy();
 
-        // Wait for both to settle, then initialize
-        $.when(areasPromise, templatesPromise).always(function() {
-            // Replace SimulatedData with whatever we got
-            window.SimulatedData = buildLiveDataProxy();
+			// Remove demo mode banner if present
+			var demoBanner = document.getElementById("demoBanner");
+			if (demoBanner) demoBanner.style.display = "none";
 
-            // Remove demo mode banner if present
-            var demoBanner = document.getElementById('demoBanner');
-            if (demoBanner) demoBanner.style.display = 'none';
+			// Mark that we're running in Etrieve (not standalone demo)
+			window._isEtrieveDeployed = true;
 
-            // Mark that we're running in Etrieve (not standalone demo)
-            window._isEtrieveDeployed = true;
+			// Log diagnostic summary
+			console.log("[WizardBuilder] Source results:", results);
+			if (!results.areas && !results.templates) {
+				safeToast(
+					"Unable to connect to Softdocs. Please refresh and try again.",
+					"error",
+				);
+			} else if (!results.areas) {
+				safeToast(
+					"Unable to load document folders. Form Tracker mode still works.",
+					"error",
+				);
+			} else if (!results.templates) {
+				safeToast(
+					"Form templates not available. Document Lookup mode still works.",
+					"error",
+				);
+			}
 
-            // Log diagnostic summary
-            console.log('[WizardBuilder] Source results:', results);
-            if (!results.areas && !results.templates) {
-                safeToast('Unable to connect to Softdocs. Please refresh and try again.', 'error');
-            } else if (!results.areas) {
-                safeToast('Unable to load document folders. Form Tracker mode still works.', 'error');
-            } else if (!results.templates) {
-                safeToast('Form templates not available. Document Lookup mode still works.', 'error');
-            }
+			// Trigger wizard initialization - DOMContentLoaded has already fired
+			// by the time RequireJS runs, so call checkForDraft manually
+			if (typeof checkForDraft === "function") {
+				checkForDraft();
+			}
 
-            // Trigger wizard initialization - DOMContentLoaded has already fired
-            // by the time RequireJS runs, so call checkForDraft manually
-            if (typeof checkForDraft === 'function') {
-                checkForDraft();
-            }
+			if (loading.length) loading.hide();
+			console.log("[WizardBuilder] Initialization complete");
+		});
+	};
 
-            if (loading.length) loading.hide();
-            console.log('[WizardBuilder] Initialization complete');
-        });
-    };
+	vm.setDefaults = function (source, inputValues) {
+		// No form defaults needed for the wizard
+	};
 
-    vm.setDefaults = function(source, inputValues) {
-        // No form defaults needed for the wizard
-    };
+	vm.afterLoad = function () {
+		// Wire up dynamic data loading for wizard steps that need on-demand data
+		// When the wizard navigates to a step that needs doc types or key fields,
+		// we intercept and load the data from Etrieve first.
 
-    vm.afterLoad = function() {
-        // Wire up dynamic data loading for wizard steps that need on-demand data
-        // When the wizard navigates to a step that needs doc types or key fields,
-        // we intercept and load the data from Etrieve first.
+		// Override the area selection to load doc types + key fields on demand
+		// Guard against double-wrapping if afterLoad fires twice
+		var _origSelectArea = window.selectArea;
+		if (
+			typeof _origSelectArea === "function" &&
+			!_origSelectArea._isVMWrapped
+		) {
+			window.selectArea = function (areaId, keepSelections) {
+				var loading = $(".loading");
+				if (loading.length) loading.show();
 
-        // Override the area selection to load doc types + key fields on demand
-        // Guard against double-wrapping if afterLoad fires twice
-        var _origSelectArea = window.selectArea;
-        if (typeof _origSelectArea === 'function' && !_origSelectArea._isVMWrapped) {
-            window.selectArea = function(areaId, keepSelections) {
-                var loading = $('.loading');
-                if (loading.length) loading.show();
+				// Single-call .then(ok, err) - jQuery < 3.0 safe (avoids .fail() on transformed promise)
+				$.when(loadDocTypes(areaId), loadKeyFields(areaId)).then(
+					function () {
+						// Update SimulatedData with newly loaded data
+						window.SimulatedData.documentTypes[areaId] =
+							_cache.documentTypes[areaId];
+						window.SimulatedData.keyFields[areaId] =
+							_cache.keyFields[areaId];
 
-                // Single-call .then(ok, err) - jQuery < 3.0 safe (avoids .fail() on transformed promise)
-                $.when(loadDocTypes(areaId), loadKeyFields(areaId)).then(function() {
-                    // Update SimulatedData with newly loaded data
-                    window.SimulatedData.documentTypes[areaId] = _cache.documentTypes[areaId];
-                    window.SimulatedData.keyFields[areaId] = _cache.keyFields[areaId];
+						// Call original function
+						_origSelectArea(areaId, keepSelections);
+						if (loading.length) loading.hide();
+					},
+					function () {
+						safeToast(
+							"Unable to load document types for this folder. Try a different folder.",
+							"error",
+						);
+						_origSelectArea(areaId, keepSelections);
+						if (loading.length) loading.hide();
+					},
+				);
+			};
+			window.selectArea._isVMWrapped = true;
+		}
 
-                    // Call original function
-                    _origSelectArea(areaId, keepSelections);
-                    if (loading.length) loading.hide();
-                }, function() {
-                    safeToast('Unable to load document types for this folder. Try a different folder.', 'error');
-                    _origSelectArea(areaId, keepSelections);
-                    if (loading.length) loading.hide();
-                });
-            };
-            window.selectArea._isVMWrapped = true;
-        }
+		// Override template selection to load form inputs + workflow steps on demand
+		// Guard against double-wrapping if afterLoad fires twice
+		var _origSelectTemplate = window.selectTemplate;
+		if (
+			typeof _origSelectTemplate === "function" &&
+			!_origSelectTemplate._isVMWrapped
+		) {
+			window.selectTemplate = function (templateId, keepSelections) {
+				// Use String coercion for comparison (onclick may pass numeric ID, integration returns string)
+				var template = (_cache.formTemplates || []).find(function (t) {
+					return String(t.id) === String(templateId);
+				});
+				var tvId = templateId;
+				var tId;
+				if (template) {
+					tId = template.templateId;
+				} else {
+					console.warn(
+						"[VM selectTemplate] Template not found in cache for id:",
+						templateId,
+						"- workflow steps may not load correctly",
+					);
+					tId = templateId; // fallback: best-effort, may be wrong ID type
+				}
+				var loading = $(".loading");
+				if (loading.length) loading.show();
 
-        // Override template selection to load form inputs + workflow steps on demand
-        // Guard against double-wrapping if afterLoad fires twice
-        var _origSelectTemplate = window.selectTemplate;
-        if (typeof _origSelectTemplate === 'function' && !_origSelectTemplate._isVMWrapped) {
-            window.selectTemplate = function(templateId, keepSelections) {
-                // Use String coercion for comparison (onclick may pass numeric ID, integration returns string)
-                var template = (_cache.formTemplates || []).find(function(t) { return String(t.id) === String(templateId); });
-                var tvId = templateId;
-                var tId;
-                if (template) {
-                    tId = template.templateId;
-                } else {
-                    console.warn('[VM selectTemplate] Template not found in cache for id:', templateId, '- workflow steps may not load correctly');
-                    tId = templateId; // fallback: best-effort, may be wrong ID type
-                }
-                var loading = $('.loading');
-                if (loading.length) loading.show();
+				// Single-call .then(ok, err) - jQuery < 3.0 safe (avoids .fail() on transformed promise)
+				$.when(loadFormInputs(tvId), loadWorkflowSteps(tId)).then(
+					function () {
+						console.log(
+							"[VM selectTemplate] Loaded formInputIds for",
+							tvId,
+							":",
+							(_cache.formInputIds[tvId] || []).length,
+							"inputs",
+						);
+						console.log(
+							"[VM selectTemplate] keepSelections:",
+							keepSelections,
+							"current selectedInputIds:",
+							window.State
+								? window.State.selectedInputIds.length
+								: "N/A",
+						);
+						window.SimulatedData.formInputIds[tvId] =
+							_cache.formInputIds[tvId];
+						window.SimulatedData.workflowSteps[tId] =
+							_cache.workflowSteps[tId];
 
-                // Single-call .then(ok, err) - jQuery < 3.0 safe (avoids .fail() on transformed promise)
-                $.when(loadFormInputs(tvId), loadWorkflowSteps(tId)).then(function() {
-                    console.log('[VM selectTemplate] Loaded formInputIds for', tvId, ':', (_cache.formInputIds[tvId] || []).length, 'inputs');
-                    console.log('[VM selectTemplate] keepSelections:', keepSelections, 'current selectedInputIds:', window.State ? window.State.selectedInputIds.length : 'N/A');
-                    window.SimulatedData.formInputIds[tvId] = _cache.formInputIds[tvId];
-                    window.SimulatedData.workflowSteps[tId] = _cache.workflowSteps[tId];
+						_origSelectTemplate(templateId, keepSelections);
+						if (loading.length) loading.hide();
+					},
+					function (err) {
+						console.error(
+							"[VM selectTemplate] FAILED for tvId:",
+							tvId,
+							"tId:",
+							tId,
+							err,
+						);
+						safeToast(
+							"Unable to load form fields. Try selecting a different form.",
+							"error",
+						);
+						_origSelectTemplate(templateId, keepSelections);
+						if (loading.length) loading.hide();
+					},
+				);
+			};
+			window.selectTemplate._isVMWrapped = true;
+		}
+	};
 
-                    _origSelectTemplate(templateId, keepSelections);
-                    if (loading.length) loading.hide();
-                }, function(err) {
-                    console.error('[VM selectTemplate] FAILED for tvId:', tvId, 'tId:', tId, err);
-                    safeToast('Unable to load form fields. Try selecting a different form.', 'error');
-                    _origSelectTemplate(templateId, keepSelections);
-                    if (loading.length) loading.hide();
-                });
-            };
-            window.selectTemplate._isVMWrapped = true;
-        }
-    };
-
-    return vm;
+	return vm;
 });

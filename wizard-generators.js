@@ -1,1036 +1,2182 @@
 "use strict";
 
-function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
-function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
-function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
-function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _toConsumableArray(r) {
+	return (
+		_arrayWithoutHoles(r) ||
+		_iterableToArray(r) ||
+		_unsupportedIterableToArray(r) ||
+		_nonIterableSpread()
+	);
+}
+function _nonIterableSpread() {
+	throw new TypeError(
+		"Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.",
+	);
+}
+function _unsupportedIterableToArray(r, a) {
+	if (r) {
+		if ("string" == typeof r) return _arrayLikeToArray(r, a);
+		var t = {}.toString.call(r).slice(8, -1);
+		return (
+			"Object" === t && r.constructor && (t = r.constructor.name),
+			"Map" === t || "Set" === t
+				? Array.from(r)
+				: "Arguments" === t ||
+					  /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t)
+					? _arrayLikeToArray(r, a)
+					: void 0
+		);
+	}
+}
+function _iterableToArray(r) {
+	if (
+		("undefined" != typeof Symbol && null != r[Symbol.iterator]) ||
+		null != r["@@iterator"]
+	)
+		return Array.from(r);
+}
+function _arrayWithoutHoles(r) {
+	if (Array.isArray(r)) return _arrayLikeToArray(r);
+}
+function _arrayLikeToArray(r, a) {
+	(null == a || a > r.length) && (a = r.length);
+	for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
+	return n;
+}
 // Stamp all [Dashboard] log prefixes with the generator version.
 // Applied as a post-processing step so every console.log/warn/error
 // in the generated viewmodel automatically includes the version.
 function _stampVersion(code) {
-  var ver = (typeof WIZARD_VERSION !== 'undefined') ? WIZARD_VERSION : '3.0.0';
-  return code.replace(/\[Dashboard\]/g, '[Dashboard v' + ver + ']');
+	var ver = typeof WIZARD_VERSION !== "undefined" ? WIZARD_VERSION : "3.0.0";
+	return code.replace(/\[Dashboard\]/g, "[Dashboard v" + ver + "]");
 }
 
 function generateViewModelJS() {
-  var style = State.selectedStyle || 'simple-status';
-  var vm;
-  switch (style) {
-    case 'simple-status':
-    case 'request-type':
-      vm = generateVM_simple(); break;
-    case 'expandable':
-    case 'pdf-signatures':
-    case 'award-nominations':
-      vm = generateVM_expandable(); break;
-    case 'alpha-split':
-      vm = generateVM_alphaSplit(); break;
-    case 'claims':
-      vm = generateVM_claims(); break;
-    case 'workflow-actions':
-      vm = generateVM_workflow(); break;
-    case 'survey-analytics':
-      vm = generateVM_survey(); break;
-    case 'committee-voting':
-      vm = generateVM_voting(); break;
-    case 'cards-dashboard':
-      vm = generateVM_cards(); break;
-    case 'bulk-actions':
-      vm = generateVM_bulkActions(); break;
-    default:
-      vm = generateVM_simple(); break;
-  }
-  return _stampVersion(vm);
+	var style = State.selectedStyle || "simple-status";
+	var vm;
+	switch (style) {
+		case "simple-status":
+		case "request-type":
+			vm = generateVM_simple();
+			break;
+		case "expandable":
+		case "pdf-signatures":
+		case "award-nominations":
+			vm = generateVM_expandable();
+			break;
+		case "alpha-split":
+			vm = generateVM_alphaSplit();
+			break;
+		case "claims":
+			vm = generateVM_claims();
+			break;
+		case "workflow-actions":
+			vm = generateVM_workflow();
+			break;
+		case "survey-analytics":
+			vm = generateVM_survey();
+			break;
+		case "committee-voting":
+			vm = generateVM_voting();
+			break;
+		case "cards-dashboard":
+			vm = generateVM_cards();
+			break;
+		case "bulk-actions":
+			vm = generateVM_bulkActions();
+			break;
+		default:
+			vm = generateVM_simple();
+			break;
+	}
+	return _stampVersion(vm);
 }
 function generateIndexHTML() {
-  var style = State.selectedStyle || 'simple-status';
-  switch (style) {
-    case 'simple-status':
-    case 'request-type':
-      return generateHTML_simple();
-    case 'expandable':
-    case 'pdf-signatures':
-    case 'award-nominations':
-      return generateHTML_expandable();
-    case 'alpha-split':
-      return generateHTML_alphaSplit();
-    case 'claims':
-      return generateHTML_claims();
-    case 'workflow-actions':
-      return generateHTML_workflow();
-    case 'survey-analytics':
-      return generateHTML_survey();
-    case 'committee-voting':
-      return generateHTML_voting();
-    case 'cards-dashboard':
-      return generateHTML_cards();
-    case 'bulk-actions':
-      return generateHTML_bulkActions();
-    default:
-      return generateHTML_simple();
-  }
+	var style = State.selectedStyle || "simple-status";
+	switch (style) {
+		case "simple-status":
+		case "request-type":
+			return generateHTML_simple();
+		case "expandable":
+		case "pdf-signatures":
+		case "award-nominations":
+			return generateHTML_expandable();
+		case "alpha-split":
+			return generateHTML_alphaSplit();
+		case "claims":
+			return generateHTML_claims();
+		case "workflow-actions":
+			return generateHTML_workflow();
+		case "survey-analytics":
+			return generateHTML_survey();
+		case "committee-voting":
+			return generateHTML_voting();
+		case "cards-dashboard":
+			return generateHTML_cards();
+		case "bulk-actions":
+			return generateHTML_bulkActions();
+		default:
+			return generateHTML_simple();
+	}
 }
 // Resolve a stored field id/value to the SQL alias used as the row key. Content fields
 // store a numeric FieldID, but generated columns are keyed by alias, so cards/survey
 // mappings must translate id -> alias (mirrors how detailFields already does it).
 function resolveFieldAlias(v) {
-  if (v === '' || v == null) return v;
-  var all = (typeof getAllFields === 'function') ? getAllFields() : [];
-  var f = all.find(function (x) { return x.id === v || String(x.id) === String(v); });
-  return f ? (f.alias || f.id) : v;
+	if (v === "" || v == null) return v;
+	var all = typeof getAllFields === "function" ? getAllFields() : [];
+	var f = all.find(function (x) {
+		return x.id === v || String(x.id) === String(v);
+	});
+	return f ? f.alias || f.id : v;
 }
 // Pick a reliable date column for the runtime date-range filter, or null.
 // Forms have a universal SubmittedDate. Content uses a selected date-typed field.
 // Combined is intentionally skipped: document rows have no SubmittedDate, so a date
 // filter would hide every document.
 function detectDateField() {
-  if (State.mode === 'forms') return { field: 'SubmittedDate', label: 'Submitted' };
-  if (State.mode === 'content') {
-    var fields = (typeof getAllFields === 'function') ? getAllFields() : [];
-    var sel = State.selectedFields || [];
-    for (var i = 0; i < fields.length; i++) {
-      var f = fields[i];
-      if (sel.indexOf(f.id) === -1) continue;
-      if (f.type === 'date' || /date/i.test(f.alias || '') || /date/i.test(f.name || '')) {
-        return { field: f.alias || f.name, label: f.name };
-      }
-    }
-  }
-  return null;
+	if (State.mode === "forms")
+		return { field: "SubmittedDate", label: "Submitted" };
+	if (State.mode === "content") {
+		var fields = typeof getAllFields === "function" ? getAllFields() : [];
+		var sel = State.selectedFields || [];
+		for (var i = 0; i < fields.length; i++) {
+			var f = fields[i];
+			if (sel.indexOf(f.id) === -1) continue;
+			if (
+				f.type === "date" ||
+				/date/i.test(f.alias || "") ||
+				/date/i.test(f.name || "")
+			) {
+				return { field: f.alias || f.name, label: f.name };
+			}
+		}
+	}
+	return null;
 }
 function generateConfigJS() {
-  var swimlaneConfigs = State.swimlanes.map(function (sl) {
-    var filterStr = sl.filters && sl.filters.length > 0 ? sl.filters.map(function (f) {
-      // Use sqlAlias (actual SQL column name) instead of display name for row lookups
-      var fieldKey = f.sqlAlias || f.fieldName;
-      return "{ field: '".concat(escapeJS(fieldKey), "', values: [").concat((f.values || []).map(function (v) {
-        return "'".concat(escapeJS(v), "'");
-      }).join(', '), "] }");
-    }).join(', ') : '';
-    return "    { name: '".concat(escapeJS(sl.name), "', filters: [").concat(filterStr, "] }");
-  }).join(',\n');
-  var styleConfigBlock = '';
-  var sc = State.styleConfig;
-  var style = State.selectedStyle || 'simple-status';
-  if (style === 'claims') {
-    styleConfigBlock = "\n    // Claims system config\n    claims: {\n        filterChips: ".concat(JSON.stringify(sc.filterChips), ",\n        ageBadgeThresholds: { warning: ").concat(sc.ageBadgeWarning || 30, ", critical: ").concat(sc.ageBadgeCritical || 60, " }\n    },\n    currentUser: '', // Set to logged-in user");
-  } else if (style === 'committee-voting') {
-    styleConfigBlock = "\n    // Committee voting config\n    voting: {\n        members: ".concat(JSON.stringify(sc.committeeMembers, null, 8), "\n    },\n    currentUser: '', // Set to logged-in user");
-  } else if (style === 'expandable' || style === 'pdf-signatures' || style === 'award-nominations') {
-    var allFields = getAllFields();
-    var detailFieldDefs = (sc.detailFields || []).map(function (id) {
-      var f = allFields.find(function (x) {
-        return x.id === id || x.id === String(id);
-      });
-      return f ? "{ field: '".concat(escapeJS(f.alias || f.id), "', label: '").concat(escapeJS(f.name), "' }") : "{ field: '".concat(escapeJS(id), "', label: '").concat(escapeJS(id), "' }");
-    });
-    styleConfigBlock = "\n    // Expandable row detail fields\n    expandable: {\n        detailFields: [".concat(detailFieldDefs.join(', '), "]\n    },");
-  } else if (style === 'alpha-split') {
-    styleConfigBlock = "\n    // Alpha split config\n    alphaSplit: {\n        nameField: '".concat(escapeJS(sc.nameField || 'LastName'), "',\n        ranges: ").concat(JSON.stringify(sc.alphaRanges), "\n    },");
-  } else if (style === 'workflow-actions') {
-    styleConfigBlock = "\n    // Workflow action buttons per swimlane\n    workflowActions: ".concat(JSON.stringify(sc.workflowActions, null, 8), ",");
-  } else if (style === 'survey-analytics') {
-    styleConfigBlock = "\n    // Survey field mappings\n    survey: {\n        ratingField: '".concat(escapeJS(resolveFieldAlias(sc.ratingField) || ''), "',\n        commentField: '").concat(escapeJS(resolveFieldAlias(sc.commentField) || ''), "',\n        departmentField: '").concat(escapeJS(resolveFieldAlias(sc.departmentField) || ''), "'\n    },");
-  } else if (style === 'cards-dashboard') {
-    styleConfigBlock = "\n    // Card layout field mappings\n    cards: {\n        titleField: '".concat(escapeJS(resolveFieldAlias(sc.cardTitleField) || ''), "',\n        statusField: '").concat(escapeJS(resolveFieldAlias(sc.cardStatusField) || ''), "',\n        leadField: '").concat(escapeJS(resolveFieldAlias(sc.cardLeadField) || ''), "',\n        budgetField: '").concat(escapeJS(resolveFieldAlias(sc.cardBudgetField) || ''), "'\n    },");
-  } else if (style === 'bulk-actions') {
-    styleConfigBlock = "\n    // Bulk action reassign targets\n    bulkActions: {\n        reassignTargets: ".concat(JSON.stringify(sc.reassignTargets), "\n    },");
-  }
+	var swimlaneConfigs = State.swimlanes
+		.map(function (sl) {
+			var filterStr =
+				sl.filters && sl.filters.length > 0
+					? sl.filters
+							.map(function (f) {
+								// Use sqlAlias (actual SQL column name) instead of display name for row lookups
+								var fieldKey = f.sqlAlias || f.fieldName;
+								return "{ field: '"
+									.concat(escapeJS(fieldKey), "', values: [")
+									.concat(
+										(f.values || [])
+											.map(function (v) {
+												return "'".concat(
+													escapeJS(v),
+													"'",
+												);
+											})
+											.join(", "),
+										"] }",
+									);
+							})
+							.join(", ")
+					: "";
+			return "    { name: '"
+				.concat(escapeJS(sl.name), "', filters: [")
+				.concat(filterStr, "] }");
+		})
+		.join(",\n");
+	var styleConfigBlock = "";
+	var sc = State.styleConfig;
+	var style = State.selectedStyle || "simple-status";
+	if (style === "claims") {
+		styleConfigBlock =
+			"\n    // Claims system config\n    claims: {\n        filterChips: "
+				.concat(
+					JSON.stringify(sc.filterChips),
+					",\n        ageBadgeThresholds: { warning: ",
+				)
+				.concat(sc.ageBadgeWarning || 30, ", critical: ")
+				.concat(
+					sc.ageBadgeCritical || 60,
+					" }\n    },\n    currentUser: '', // Set to logged-in user",
+				);
+	} else if (style === "committee-voting") {
+		styleConfigBlock =
+			"\n    // Committee voting config\n    voting: {\n        members: ".concat(
+				JSON.stringify(sc.committeeMembers, null, 8),
+				"\n    },\n    currentUser: '', // Set to logged-in user",
+			);
+	} else if (
+		style === "expandable" ||
+		style === "pdf-signatures" ||
+		style === "award-nominations"
+	) {
+		var allFields = getAllFields();
+		var detailFieldDefs = (sc.detailFields || []).map(function (id) {
+			var f = allFields.find(function (x) {
+				return x.id === id || x.id === String(id);
+			});
+			return f
+				? "{ field: '"
+						.concat(escapeJS(f.alias || f.id), "', label: '")
+						.concat(escapeJS(f.name), "' }")
+				: "{ field: '"
+						.concat(escapeJS(id), "', label: '")
+						.concat(escapeJS(id), "' }");
+		});
+		styleConfigBlock =
+			"\n    // Expandable row detail fields\n    expandable: {\n        detailFields: [".concat(
+				detailFieldDefs.join(", "),
+				"]\n    },",
+			);
+	} else if (style === "alpha-split") {
+		styleConfigBlock =
+			"\n    // Alpha split config\n    alphaSplit: {\n        nameField: '"
+				.concat(
+					escapeJS(sc.nameField || "LastName"),
+					"',\n        ranges: ",
+				)
+				.concat(JSON.stringify(sc.alphaRanges), "\n    },");
+	} else if (style === "workflow-actions") {
+		styleConfigBlock =
+			"\n    // Workflow action buttons per swimlane\n    workflowActions: ".concat(
+				JSON.stringify(sc.workflowActions, null, 8),
+				",",
+			);
+	} else if (style === "survey-analytics") {
+		styleConfigBlock =
+			"\n    // Survey field mappings\n    survey: {\n        ratingField: '"
+				.concat(
+					escapeJS(resolveFieldAlias(sc.ratingField) || ""),
+					"',\n        commentField: '",
+				)
+				.concat(
+					escapeJS(resolveFieldAlias(sc.commentField) || ""),
+					"',\n        departmentField: '",
+				)
+				.concat(
+					escapeJS(resolveFieldAlias(sc.departmentField) || ""),
+					"'\n    },",
+				);
+	} else if (style === "cards-dashboard") {
+		styleConfigBlock =
+			"\n    // Card layout field mappings\n    cards: {\n        titleField: '"
+				.concat(
+					escapeJS(resolveFieldAlias(sc.cardTitleField) || ""),
+					"',\n        statusField: '",
+				)
+				.concat(
+					escapeJS(resolveFieldAlias(sc.cardStatusField) || ""),
+					"',\n        leadField: '",
+				)
+				.concat(
+					escapeJS(resolveFieldAlias(sc.cardLeadField) || ""),
+					"',\n        budgetField: '",
+				)
+				.concat(
+					escapeJS(resolveFieldAlias(sc.cardBudgetField) || ""),
+					"'\n    },",
+				);
+	} else if (style === "bulk-actions") {
+		styleConfigBlock =
+			"\n    // Bulk action reassign targets\n    bulkActions: {\n        reassignTargets: ".concat(
+				JSON.stringify(sc.reassignTargets),
+				"\n    },",
+			);
+	}
 
-  // Security config block
-  var securityConfigBlock = '';
-  if (State.securityConfig && State.securityConfig.enabled) {
-    var secGroups = (State.securityConfig.swimlaneGroups || []).filter(function(g) { return g.groupId; });
-    securityConfigBlock = "\n    // Access control (UI-level swimlane visibility)\n    // Power users see all swimlanes; other users see only the swimlanes their group allows.\n    // NOTE: all rows are still fetched to the browser and filtered client-side. This hides\n    // swimlanes in the UI but is NOT row-level data security; for true confidentiality,\n    // filter by user or group inside the source SQL.\n    security: {\n        enabled: true,\n        powerGroupId: '" + escapeJS(State.securityConfig.powerGroupId || '') + "',\n        powerGroupName: '" + escapeJS(State.securityConfig.powerGroupName || '') + "',\n        swimlaneGroups: " + JSON.stringify(secGroups, null, 8) + "\n    },";
-  } else {
-    securityConfigBlock = "\n    // Security: disabled (all users see all data)\n    security: { enabled: false },";
-  }
+	// Security config block
+	var securityConfigBlock = "";
+	if (State.securityConfig && State.securityConfig.enabled) {
+		var secGroups = (State.securityConfig.swimlaneGroups || []).filter(
+			function (g) {
+				return g.groupId;
+			},
+		);
+		securityConfigBlock =
+			"\n    // Access control (UI-level swimlane visibility)\n    // Power users see all swimlanes; other users see only the swimlanes their group allows.\n    // NOTE: all rows are still fetched to the browser and filtered client-side. This hides\n    // swimlanes in the UI but is NOT row-level data security; for true confidentiality,\n    // filter by user or group inside the source SQL.\n    security: {\n        enabled: true,\n        powerGroupId: '" +
+			escapeJS(State.securityConfig.powerGroupId || "") +
+			"',\n        powerGroupName: '" +
+			escapeJS(State.securityConfig.powerGroupName || "") +
+			"',\n        swimlaneGroups: " +
+			JSON.stringify(secGroups, null, 8) +
+			"\n    },";
+	} else {
+		securityConfigBlock =
+			"\n    // Security: disabled (all users see all data)\n    security: { enabled: false },";
+	}
 
-  // Build integration block based on mode
-  var integrationBlockStr;
-  if (State.mode === 'combined') {
-    var baseName = escapeJS(State.sourceName) || 'Dashboard';
-    integrationBlockStr = "    integration: {\n        contentSource: '" + baseName + "_Content',\n        formsSource: '" + baseName + "_Forms',\n        refreshInterval: 300000\n    },";
-  } else {
-    integrationBlockStr = "    integration: {\n        source: '" + (escapeJS(State.sourceName) || 'Dashboard') + "',\n        refreshInterval: 300000\n    },";
-  }
+	// Build integration block based on mode
+	var integrationBlockStr;
+	if (State.mode === "combined") {
+		var baseName = escapeJS(State.sourceName) || "Dashboard";
+		integrationBlockStr =
+			"    integration: {\n        contentSource: '" +
+			baseName +
+			"_Content',\n        formsSource: '" +
+			baseName +
+			"_Forms',\n        refreshInterval: 300000\n    },";
+	} else {
+		integrationBlockStr =
+			"    integration: {\n        source: '" +
+			(escapeJS(State.sourceName) || "Dashboard") +
+			"',\n        refreshInterval: 300000\n    },";
+	}
 
-  // For combined mode, generate separate column sets for content vs forms
-  var splitColumnsBlock = '';
-  if (State.mode === 'combined' && typeof generateSplitColumnDefinitions === 'function') {
-    var split = generateSplitColumnDefinitions();
-    splitColumnsBlock = "\n    contentColumns: [\n" + split.contentColumns + "\n    ],\n\n    formsColumns: [\n" + split.formsColumns + "\n    ],\n";
-  }
+	// For combined mode, generate separate column sets for content vs forms
+	var splitColumnsBlock = "";
+	if (
+		State.mode === "combined" &&
+		typeof generateSplitColumnDefinitions === "function"
+	) {
+		var split = generateSplitColumnDefinitions();
+		splitColumnsBlock =
+			"\n    contentColumns: [\n" +
+			split.contentColumns +
+			"\n    ],\n\n    formsColumns: [\n" +
+			split.formsColumns +
+			"\n    ],\n";
+	}
 
-  var ver = (typeof WIZARD_VERSION !== 'undefined') ? WIZARD_VERSION : '3.0.0';
-  // Default sort targets a real column: forms have SubmittedDate; content/combined
-  // keep the SQL's own ORDER BY (empty field = no client re-sort).
-  var defaultSortField = (State.mode === 'forms') ? 'SubmittedDate' : '';
-  var _df = (typeof detectDateField === 'function') ? detectDateField() : null;
-  var dateFieldCfg = _df ? escapeJS(_df.field) : '';
-  var dateLabelCfg = _df ? escapeJS(_df.label) : '';
-  return "/**\n * Dashboard Configuration\n * Generated by Dashboard Builder v" + ver + "\n * Style: ".concat(style, "\n * ").concat(new Date().toISOString(), "\n */\n\nconsole.log('[Dashboard v" + ver + "] configuration.js loaded');\n\nvar DashboardConfig = {\n    generatorVersion: '" + ver + "',\n    title: '").concat(escapeJS(State.dashboardTitle) || 'My Dashboard', "',\n    sourceName: '").concat(escapeJS(State.sourceName) || 'Dashboard', "',\n    mode: '").concat(escapeJS(State.mode), "',\n    style: '").concat(escapeJS(style), "',\n\n").concat(integrationBlockStr, "\n\n    swimlanes: [\n").concat(swimlaneConfigs, "\n    ],\n\n    columns: [\n").concat(generateColumnDefinitions(), "\n    ],\n").concat(splitColumnsBlock).concat(styleConfigBlock, "\n").concat(securityConfigBlock, "\n\n    // Base URLs for View links. The runtime prepends the appropriate URL\n    // to relative view links based on the dashboard mode.\n    // centralUrl: for forms mode (/central/submissions?...)\n    // contentUrl: for content mode (/#areaId=...&NodeId=...&DocumentId=...)\n    centralUrl: '").concat(escapeJS(State.centralUrl || ''), "',\n    contentUrl: '").concat(escapeJS(State.contentUrl || ''), "',\n\n    ui: {\n        showSearch: true,\n        showFilters: true,\n        rowsPerPage: 25,\n        defaultSort: { field: '" + defaultSortField + "', direction: 'desc' },\n        dateField: '" + dateFieldCfg + "',\n        dateLabel: '" + dateLabelCfg + "'\n    }\n};\n\nconsole.log('[Dashboard v' + DashboardConfig.generatorVersion + '] DashboardConfig created, source: ' + DashboardConfig.sourceName);\n\n// AMD registration for Etrieve RequireJS (loaded as 'template/configuration')\nif (typeof define === 'function' && define.amd) {\n    define('template/configuration', [], function() { return DashboardConfig; });\n}\n// Node.js fallback for local testing\nif (typeof module !== 'undefined') { module.exports = DashboardConfig; }\n").concat(generateWriteIntegrationVars(), "\n");
+	var ver = typeof WIZARD_VERSION !== "undefined" ? WIZARD_VERSION : "3.0.0";
+	// Default sort targets a real column: forms have SubmittedDate; content/combined
+	// keep the SQL's own ORDER BY (empty field = no client re-sort).
+	var defaultSortField = State.mode === "forms" ? "SubmittedDate" : "";
+	var _df = typeof detectDateField === "function" ? detectDateField() : null;
+	var dateFieldCfg = _df ? escapeJS(_df.field) : "";
+	var dateLabelCfg = _df ? escapeJS(_df.label) : "";
+	return (
+		"/**\n * Dashboard Configuration\n * Generated by Dashboard Builder v" +
+		ver +
+		"\n * Style: "
+			.concat(style, "\n * ")
+			.concat(
+				new Date().toISOString(),
+				"\n */\n\nconsole.log('[Dashboard v" +
+					ver +
+					"] configuration.js loaded');\n\nvar DashboardConfig = {\n    generatorVersion: '" +
+					ver +
+					"',\n    title: '",
+			)
+			.concat(
+				escapeJS(State.dashboardTitle) || "My Dashboard",
+				"',\n    sourceName: '",
+			)
+			.concat(
+				escapeJS(State.sourceName) || "Dashboard",
+				"',\n    mode: '",
+			)
+			.concat(escapeJS(State.mode), "',\n    style: '")
+			.concat(escapeJS(style), "',\n\n")
+			.concat(integrationBlockStr, "\n\n    swimlanes: [\n")
+			.concat(swimlaneConfigs, "\n    ],\n\n    columns: [\n")
+			.concat(generateColumnDefinitions(), "\n    ],\n")
+			.concat(splitColumnsBlock)
+			.concat(styleConfigBlock, "\n")
+			.concat(
+				securityConfigBlock,
+				"\n\n    // Base URLs for View links. The runtime prepends the appropriate URL\n    // to relative view links based on the dashboard mode.\n    // centralUrl: for forms mode (/central/submissions?...)\n    // contentUrl: for content mode (/#areaId=...&NodeId=...&DocumentId=...)\n    centralUrl: '",
+			)
+			.concat(escapeJS(State.centralUrl || ""), "',\n    contentUrl: '")
+			.concat(
+				escapeJS(State.contentUrl || ""),
+				"',\n\n    ui: {\n        showSearch: true,\n        showFilters: true,\n        rowsPerPage: 25,\n        defaultSort: { field: '" +
+					defaultSortField +
+					"', direction: 'desc' },\n        dateField: '" +
+					dateFieldCfg +
+					"',\n        dateLabel: '" +
+					dateLabelCfg +
+					"'\n    }\n};\n\nconsole.log('[Dashboard v' + DashboardConfig.generatorVersion + '] DashboardConfig created, source: ' + DashboardConfig.sourceName);\n\n// AMD registration for Etrieve RequireJS (loaded as 'template/configuration')\nif (typeof define === 'function' && define.amd) {\n    define('template/configuration', [], function() { return DashboardConfig; });\n}\n// Node.js fallback for local testing\nif (typeof module !== 'undefined') { module.exports = DashboardConfig; }\n",
+			)
+			.concat(generateWriteIntegrationVars(), "\n")
+	);
 }
 function generateWriteIntegrationVars() {
-  var name = safeName(State.dashboardTitle || State.sourceName || 'Dashboard');
-  var style = State.selectedStyle || 'simple-status';
-  var vars = '';
-  if (style === 'claims') {
-    vars = "\n// Write-back integrations (on-prem SQL via Hybrid Server)\nvar claimIntegration = '".concat(name, "_ClaimItem';\nvar unclaimIntegration = '").concat(name, "_UnclaimItem';\n");
-  } else if (style === 'committee-voting') {
-    vars = "\n// Write-back integrations (on-prem SQL via Hybrid Server)\nvar castVoteIntegration = '".concat(name, "_CastVote';\nvar finalDecisionIntegration = '").concat(name, "_FinalDecision';\nvar getUserInfoIntegration = '").concat(name, "_GetUserInfo';\n");
-  } else if (style === 'workflow-actions') {
-    vars = "\n// Workflow Actions: uses Central Flow API directly (cloud-only).\n// No write-back integration needed for approve/deny.\n";
-  } else if (style === 'bulk-actions') {
-    // Approve/Deny use Central Flow API. Reassign still needs Hybrid Server.
-    if (State.styleConfig && State.styleConfig.reassignTargets && State.styleConfig.reassignTargets.length > 0) {
-      vars = "\n// Bulk Actions: approve/deny use Central Flow API (cloud-only).\n// Reassign uses Hybrid Server write-back integration.\nvar bulkDecisionIntegration = '".concat(name, "_BulkDecision';\n");
-    } else {
-      vars = "\n// Bulk Actions: uses Central Flow API directly (cloud-only).\n// No write-back integration needed.\n";
-    }
-  }
-  // Notes integrations (cross-cutting feature, works with any style)
-  if (State.notesConfig && State.notesConfig.enabled) {
-    if (!vars) vars = '\n// Write-back integrations (on-prem SQL via Hybrid Server)\n';
-    vars += "var saveNoteIntegration = '".concat(name, "_SaveNote';\nvar getNotesIntegration = '").concat(name, "_GetNotes';\n");
-  }
-  return vars;
+	var name = safeName(
+		State.dashboardTitle || State.sourceName || "Dashboard",
+	);
+	var style = State.selectedStyle || "simple-status";
+	var vars = "";
+	if (style === "claims") {
+		vars =
+			"\n// Write-back integrations (on-prem SQL via Hybrid Server)\nvar claimIntegration = '"
+				.concat(name, "_ClaimItem';\nvar unclaimIntegration = '")
+				.concat(name, "_UnclaimItem';\n");
+	} else if (style === "committee-voting") {
+		vars =
+			"\n// Write-back integrations (on-prem SQL via Hybrid Server)\nvar castVoteIntegration = '"
+				.concat(name, "_CastVote';\nvar finalDecisionIntegration = '")
+				.concat(
+					name,
+					"_FinalDecision';\nvar getUserInfoIntegration = '",
+				)
+				.concat(name, "_GetUserInfo';\n");
+	} else if (style === "workflow-actions") {
+		vars =
+			"\n// Workflow Actions: uses Central Flow API directly (cloud-only).\n// No write-back integration needed for approve/deny.\n";
+	} else if (style === "bulk-actions") {
+		// Approve/Deny use Central Flow API. Reassign still needs Hybrid Server.
+		if (
+			State.styleConfig &&
+			State.styleConfig.reassignTargets &&
+			State.styleConfig.reassignTargets.length > 0
+		) {
+			vars =
+				"\n// Bulk Actions: approve/deny use Central Flow API (cloud-only).\n// Reassign uses Hybrid Server write-back integration.\nvar bulkDecisionIntegration = '".concat(
+					name,
+					"_BulkDecision';\n",
+				);
+		} else {
+			vars =
+				"\n// Bulk Actions: uses Central Flow API directly (cloud-only).\n// No write-back integration needed.\n";
+		}
+	}
+	// Notes integrations (cross-cutting feature, works with any style)
+	if (State.notesConfig && State.notesConfig.enabled) {
+		if (!vars)
+			vars =
+				"\n// Write-back integrations (on-prem SQL via Hybrid Server)\n";
+		vars += "var saveNoteIntegration = '"
+			.concat(name, "_SaveNote';\nvar getNotesIntegration = '")
+			.concat(name, "_GetNotes';\n");
+	}
+	return vars;
 }
 function generateReadme() {
-  var _State$selectedArea2, _State$selectedArea3, _State$selectedTempla;
-  var style = State.selectedStyle || 'simple-status';
-  var styleDef = DashboardStyles.find(function (s) {
-    return s.id === style;
-  }) || {
-    name: 'Simple Status',
-    description: ''
-  };
-  var name = safeName(State.dashboardTitle || State.sourceName || 'Dashboard');
-  var isWriteBack = needsWriteBack();
-  var styleNotes = {
-    'simple-status': 'Basic swimlane dashboard. Items are grouped by status into collapsible sections.',
-    'request-type': 'Items are grouped by request type/category rather than status.',
-    'expandable': 'Rows can be expanded (+/- toggle) to show detail fields in a grid layout.',
-    'alpha-split': 'Items are automatically split into alphabetical ranges by last name for workload distribution.',
-    'claims': 'Staff can claim/unclaim items. Includes personal stats, quick-filter chips, and age badges. **Requires write-back integrations** via Hybrid Server.',
-    'workflow-actions': 'Each swimlane has context-sensitive action buttons with confirmation modals. Uses the Central Flow API to approve/deny directly (cloud-only).',
-    'pdf-signatures': 'Expandable rows show signatures and document details. Includes PDF generation.',
-    'survey-analytics': 'Includes stats cards and table/card view modes.',
-    'award-nominations': 'Expandable nomination details with category badges for award programs.',
-    'committee-voting': 'Named voter columns for committee decisions. Includes vote buttons and document preview. **Requires write-back integrations** via Hybrid Server.',
-    'cards-dashboard': 'Executive card layout with status metrics, progress tracking, and responsive grid.',
-    'bulk-actions': 'Bulk checkbox selection with approve/deny/reassign operations and row-level action menus. Approve/Deny use Central Flow API (cloud-only); Reassign uses Hybrid Server if configured.'
-  };
-  var writeBackSection = '';
-  if (isWriteBack) {
-    writeBackSection += "\n### ".concat(style === 'claims' ? '5' : '5', ". Create Write-Back Schema (On-Prem SQL Server)\n\nThis style requires tables and stored procedures on your on-prem SQL Server,\nconnected to Etrieve Cloud via the **Hybrid Server** agent.\n\n1. Open `schema.sql` in SQL Server Management Studio (SSMS)\n2. Review the generated CREATE TABLE and CREATE OR ALTER PROCEDURE statements\n3. Execute against your on-prem database\n4. Verify the tables and procs were created successfully\n\n");
-    if (style === 'claims') {
-      writeBackSection += "### 6. Create Write-Back Integration Sources\n\nYou need **two** additional integration sources on the Hybrid Server:\n\n| Integration Name | Type | Stored Procedure | Parameters |\n|------------------|------|-----------------|------------|\n| `".concat(name, "_ClaimItem` | SQL (Hybrid) | `[dbo].[sp_").concat(name, "_ClaimItem]` | `@FormID VARCHAR(50)`, `@ClaimedBy NVARCHAR(100)` |\n| `").concat(name, "_UnclaimItem` | SQL (Hybrid) | `[dbo].[sp_").concat(name, "_UnclaimItem]` | `@FormID VARCHAR(50)`, `@ClaimedBy NVARCHAR(100)` |\n\nFor each integration:\n1. In Etrieve Central > Admin > Sources, click **Add Source**\n2. Name it exactly as shown above (must match `configuration.js` variable names)\n3. Set type to **SQL Stored Procedure** and select your Hybrid connection\n4. Map the parameters as listed\n\n");
-    } else if (style === 'committee-voting') {
-      writeBackSection += "### 6. Create Write-Back Integration Sources\n\nYou need **three** additional integration sources on the Hybrid Server:\n\n| Integration Name | Type | Stored Procedure | Parameters |\n|------------------|------|-----------------|------------|\n| `".concat(name, "_GetUserInfo` | SQL (Hybrid) | `[dbo].[sp_").concat(name, "_GetUserInfo]` | `@Username NVARCHAR(100)` |\n| `").concat(name, "_CastVote` | SQL (Hybrid) | `[dbo].[sp_").concat(name, "_CastVote]` | `@DocumentID VARCHAR(50)`, `@MemberSlot VARCHAR(10)`, `@Vote VARCHAR(10)`, `@VotedBy NVARCHAR(100)`, `@Comment NVARCHAR(500)` |\n| `").concat(name, "_FinalDecision` | SQL (Hybrid) | `[dbo].[sp_").concat(name, "_FinalDecision]` | `@DocumentID VARCHAR(50)`, `@Decision VARCHAR(10)`, `@DecisionBy NVARCHAR(100)`, `@Comment NVARCHAR(500)` |\n\n**`_GetUserInfo`** is called automatically at dashboard load. It looks up the logged-in user's member slot so votes are recorded under the correct column.\n\n");
-    } else if (style === 'workflow-actions') {
-      writeBackSection = "### 5. Workflow Actions (Cloud-Only)\n\nThis dashboard uses the **Etrieve Central Flow API** to approve/deny items directly.\n**No SQL Server or Hybrid Server is needed** for workflow actions.\n\n**How it works:**\n- When a user clicks Approve/Deny, the dashboard calls the Central WorkQueue API\n- The CSRF token from the user's active session authenticates the request\n- The workflow package is locked, then the decision is applied (Lock + PutWorkQueue)\n- The dashboard auto-refreshes to show the updated state\n\n**Requirements:**\n- The dashboard must run inside Etrieve Central (same origin)\n- Users must have workflow permissions for the items they are acting on\n- Default DecisionOptionIDs: Approve=1, Deny=2 (adjust in viewmodel.js if needed)\n\n**Reference:** Based on the Softdocs 'Approve Packages in Your Inbox' utility pattern.\n\n";
-    } else if (style === 'bulk-actions') {
-      writeBackSection = "### 5. Bulk Actions (Cloud-Only for Approve/Deny)\n\nApprove and Deny use the **Etrieve Central Flow API** directly.\n**No SQL Server or Hybrid Server is needed** for approve/deny operations.\n\n**How it works:**\n- Select items with checkboxes, click Bulk Approve or Bulk Deny\n- Each task is locked then approved/denied via the Central WorkQueue API\n- Individual Quick Approve/Deny from row menus works the same way\n\n**Reassign Feature** (optional, requires Hybrid Server):\nIf you configured reassign targets, the Reassign button uses a Hybrid Server\nwrite-back integration to record the reassignment in on-prem SQL.\n\n";
-      if (State.styleConfig && State.styleConfig.reassignTargets && State.styleConfig.reassignTargets.length > 0) {
-        writeBackSection += "### 6. Reassign Integration (Hybrid Server)\n\nThe Reassign feature requires **one** Hybrid Server integration source:\n\n| Integration Name | Type | Stored Procedure | Parameters |\n|------------------|------|-----------------|------------|\n| `".concat(name, "_BulkDecision` | SQL (Hybrid) | `[dbo].[sp_").concat(name, "_BulkDecision]` | `@FormIDs NVARCHAR(MAX)`, `@Decision VARCHAR(20)`, `@DecidedBy NVARCHAR(100)`, `@ReassignTarget NVARCHAR(100)`, `@Comment NVARCHAR(500)` |\n\n");
-      }
-    }
-  }
-  // Notes write-back documentation (cross-cutting, appended to any style)
-  if (State.notesConfig && State.notesConfig.enabled) {
-    var notesLabel = escapeJS((State.notesConfig && State.notesConfig.columnLabel) || 'Notes');
-    if (!writeBackSection) {
-      writeBackSection = "\n### 5. Create Write-Back Schema (On-Prem SQL Server)\n\nThe " + notesLabel + " column requires a table and stored procedures on your on-prem SQL Server,\nconnected to Etrieve Cloud via the **Hybrid Server** agent.\n\n1. Open `schema.sql` in SQL Server Management Studio (SSMS)\n2. Review the generated CREATE TABLE and CREATE OR ALTER PROCEDURE statements\n3. Execute against your on-prem database\n4. Verify the tables and procs were created successfully\n\n";
-    }
-    writeBackSection += "### " + notesLabel + " Column Integration Sources\n\nThe " + notesLabel + " column stores user-entered text on your on-prem SQL Server.\nData is loaded separately from the main integration source and merged client-side.\n\n**Table:** `" + name + "_Notes` (ItemID, NoteText, UpdatedBy, UpdatedDate)\n\n| Integration Name | Method | SQL | Parameters |\n|------------------|--------|-----|------------|\n| `" + name + "_SaveNote` | POST | `EXEC sp_" + name + "_SaveNote @ItemID, @NoteText, @UpdatedBy` | `@ItemID VARCHAR(50)`, `@NoteText NVARCHAR(2000)`, `@UpdatedBy NVARCHAR(100)` |\n| `" + name + "_GetNotes` | GET | `EXEC sp_" + name + "_GetNotes` | (none) |\n\n";
-  }
-  // Assignee documentation for forms mode
-  if (State.selectedInputIds && State.selectedInputIds.includes('__assignedTo__')) {
-    var colName = (State.styleConfig && State.styleConfig.assigneeColumnName) || 'ActorId';
-    writeBackSection += "### Assigned To Column\n\nThe **Assigned To** column shows who currently holds the task. The query resolves it\nfrom `central_flow_TaskQueue.ActorId` to a display name via a join to\n`central_flow_Actor`, so no extra configuration is needed.\n\n";
-  }
-  var dataSourceNotes = '';
-  if (State.mode === 'content') {
-    var _State$selectedArea;
-    dataSourceNotes = "### Data Source: Etrieve Content (Documents)\n\nThe `integration-query.sql` reads from the **Etrieve Content** database tables:\n- `dbo.DocumentType` - document types in the selected area\n- `dbo.Document` - document records\n- `dbo.Node` - folder/catalog assignment (`CatalogID = ".concat(((_State$selectedArea = State.selectedArea) === null || _State$selectedArea === void 0 ? void 0 : _State$selectedArea.id) || 'XXX', "`)\n- `dbo.ivDocumentTextFieldValue` / `dbo.ivDocumentDateFieldValue` - indexed field values\n- `dbo.DocumentFieldPartyVersion` + `dbo.PartyVersion` - party/person fields (e.g. Student Info)\n\nEach selected field is LEFT JOINed by `FieldID` to retrieve the value per document.\n\n#### Party Fields\nFields with `PartyTypeID` set (e.g. Student Info, Employee) store their data in\nthe Party system instead of the normal FieldValue tables. The wizard detects these\nautomatically via the `partyTypeId` column from the GetKeyFields integration source\nand generates the correct JOINs (`DocumentFieldPartyVersion` + `PartyVersion`).\n\nIf a party field shows no data, verify the GetKeyFields source includes\n`f.PartyTypeID AS partyTypeId` in its SELECT statement.");
-  } else if (State.mode === 'forms') {
-    dataSourceNotes = "### Data Source: Etrieve Central Forms\n\nThe `integration-query.sql` reads from the **Central Forms** reporting tables:\n- `reporting.central_forms_Form` - submitted form instances\n- `reporting.central_forms_InputValue` - field values per form (pivoted via CASE/MAX)\n- `reporting.central_flow_PackageDocument` - links forms to workflow packages\n- `reporting.central_flow_TaskQueue` - current step assignment\n- `reporting.central_flow_ProcessStep` - step name/code lookup\n\n#### FormStatus Column\nThe SQL always includes a computed `FormStatus` column:\n- **In Progress** - form has an active TaskQueue entry (still in workflow)\n- **Completed** - form has no TaskQueue entry (workflow finished)\n\nDefault swimlanes filter on this field automatically. You can also filter on\n`CurrentStepName` for finer-grained step-level grouping.\n\n**Important:** The query filters by `TemplateVersionID`. If you publish a new version\nof the form, you must update the ID in the SQL query.\n\n### Navigation\nThe dashboard includes a **Back** button in the header for returning to the previous page.";
-  } else if (State.mode === 'combined') {
-    dataSourceNotes = "### Data Source: Combined (Documents + Forms)\n\nCombined mode uses **two separate integration sources** because Content (`dbo.*`)\nand Central Forms (`reporting.central_forms_*`) return different row shapes; both sources use the **Etrieve Content** connection.\n\n- **Content source** (`" + (escapeJS(State.sourceName) || 'Dashboard') + "_Content`): reads `dbo.DocumentType`, `dbo.Document`, `dbo.Node`, field value tables\n- **Forms source** (`" + (escapeJS(State.sourceName) || 'Dashboard') + "_Forms`): reads `reporting.central_forms_Form`, `reporting.central_forms_InputValue`\n\nThe viewmodel loads both sources independently and merges them at runtime,\nadding a `RecordType` column ('Document' or 'Form') to distinguish the rows.";
-  }
-  var filesTable = "| File | Description |\n|------|-------------|\n| `integration-query.sql` | SQL query for the read-only Etrieve integration source |\n| `configuration.js` | Dashboard config: swimlanes, filters, columns, style settings |\n| `viewmodel.js` | Dashboard JS: data loading, rendering, interactions (AMD module) |\n| `index.html` | Dashboard HTML template with embedded CSS |\n| `README.md` | This setup guide |";
-  if (isWriteBack) {
-    filesTable += "\n| `schema.sql` | **SQL Server schema**: CREATE TABLE + stored procedures for write-back |";
-  }
-  var ver = (typeof WIZARD_VERSION !== 'undefined') ? WIZARD_VERSION : '3.0.0';
-  var _dfRm = (typeof detectDateField === 'function') ? detectDateField() : null;
-  var controlsSection = "## Built-In Controls\n\nEvery generated dashboard includes these header controls, with no extra setup:\n\n- **Search** - type to filter rows across all columns.\n" + (_dfRm ? ("- **Date range** - filter by " + _dfRm.label + " using the From / To date pickers.\n") : "") + "- **Overview chart** - a collapsible bar chart of item counts per swimlane; it updates as you search or filter.\n- **Sortable columns** - click a column header to sort, click again to reverse.\n- **CSV export** - each swimlane has an Export button that downloads its rows.\n- **Auto-refresh** - data reloads every 5 minutes.\n\n";
-  return "# ".concat(State.dashboardTitle || 'Dashboard', "\n\nGenerated by **Dashboard Builder v" + ver + "** on ").concat(new Date().toLocaleDateString(), "\n\n**Style:** ").concat(styleDef.name, "\n").concat(styleNotes[style] || styleDef.description, "\n\n---\n\n" + controlsSection + "## Files Included\n\n").concat(filesTable, "\n\n## Setup Instructions\n\n### 1. Create the Read Integration Source\n\nThe main integration source provides data to the dashboard.\n\n1. In **Etrieve Central**, open the Navigation Panel > **Admin Settings** > **Sources**, click **Add New Source**, and choose Source Type **Database**\n2. Name it exactly: `").concat(State.sourceName || 'Dashboard', "` (must match character-for-character; the Code auto-generates)\n3. Set the **Connection** to **Etrieve Content** (this connection reaches both the Content `dbo` tables and the Central Forms `reporting` tables)\n4. **Leave the Schema field blank** (it defaults to `dbo`)\n5. On the **Actions** tab, keep the **Get** action, toggle **Custom** on, and paste `integration-query.sql` into the **Query Editor**\n6. On the **Privileges** tab, add your dashboard users so they can execute the source\n7. Save the source\n\n> **Common mistakes:** If the dashboard shows \"Unable to load data\": a **403 / NotAuthorized** means users lack **Get** on the source's **Privileges** tab or on the form's **Connect** tab; a **500** usually means the Schema was not left blank or a table/column name is wrong; and the source **Name** must match `configuration.js` exactly.\n\n").concat(dataSourceNotes, "\n\n### 2. Upload Dashboard Files to Etrieve\n\nAll JS files are loaded via Etrieve's RequireJS system. **Do NOT add manual script-src tags** - they will 404 in Etrieve Cloud.\n\n1. In **Etrieve Central** > **Admin Settings** > **Forms**, create a new form\n2. Upload these files:\n   - `index.html` - the main template\n   - `configuration.js` - registered as RequireJS module `template/configuration`\n   - `viewmodel.js` - registered as RequireJS module `template/viewmodel`\n\n### 3. Connect the Source to the Form\n\n1. Open the form you just created\n2. Go to the **Connect** tab (under the form's settings)\n3. Find your integration source (`").concat(State.sourceName || 'Dashboard', "`) and check **Get**\n4. On the same **Connect** tab, leave **Run on Load** unchecked for this source (the dashboard calls it on demand)\n\n> Without this step, the dashboard will load but show no data. The source must be linked to the form.\n\n### 4. Configure Permissions\n\nEnsure dashboard users have access to:\n- The dashboard form (granted via its security chain: Entra group to role to form)\n").concat(State.mode === 'content' || State.mode === 'combined' ? "- The content area/catalog: **".concat(((_State$selectedArea2 = State.selectedArea) === null || _State$selectedArea2 === void 0 ? void 0 : _State$selectedArea2.name) || 'N/A', "** (CatalogID: ").concat(((_State$selectedArea3 = State.selectedArea) === null || _State$selectedArea3 === void 0 ? void 0 : _State$selectedArea3.id) || 'N/A', ")") : '', "\n").concat(State.mode === 'forms' || State.mode === 'combined' ? "- The form template: **".concat(((_State$selectedTempla = State.selectedTemplate) === null || _State$selectedTempla === void 0 ? void 0 : _State$selectedTempla.name) || 'N/A', "**") : '', "\n- The integration source: `").concat(State.sourceName || 'Dashboard', "`\n").concat(writeBackSection, "\n## Swimlane Configuration\n\nSwimlanes are defined in `configuration.js` and control how data is grouped:\n\n").concat(State.swimlanes.map(function (sl) {
-    var filterDesc = sl.filters && sl.filters.length > 0 ? sl.filters.map(function (f) {
-      return "`".concat(f.fieldName, "` IN (").concat(f.values.map(function (v) {
-        return "`".concat(v, "`");
-      }).join(', '), ")");
-    }).join(' AND ') : 'No filters (catch-all - shows remaining items)';
-    return "- **".concat(sl.name, "**: ").concat(filterDesc);
-  }).join('\n'), "\n\n## Style-Specific Features\n\n").concat(style === 'claims' ? "- **Claim/Unclaim**: Staff can claim items for processing (writes to on-prem SQL)\n- **Filter Chips**: Quick filters: ".concat((State.styleConfig.filterChips || []).join(', '), "\n- **Age Badges**: Warning (yellow) at ").concat(State.styleConfig.ageBadgeWarning || 30, " days, Critical (red) at ").concat(State.styleConfig.ageBadgeCritical || 60, " days\n- **Personal Stats**: Shows each user's claimed count vs total") : '', "\n").concat(style === 'committee-voting' ? "- **Committee Members**: ".concat((State.styleConfig.committeeMembers || []).map(function (m) {
-    return m.name;
-  }).join(', '), "\n- **Voting**: Each member has Approve / Deny / Request More Info buttons\n- **Vote Tracking**: Computed columns count approvals, denials, and completion") : '', "\n").concat(style === 'expandable' || style === 'pdf-signatures' || style === 'award-nominations' ? "- **Expandable Rows**: Click +/- to show detail fields in a grid layout" : '', "\n").concat(style === 'alpha-split' ? "- **Alpha Ranges**: ".concat((State.styleConfig.alphaRanges || []).map(function (r) {
-    return r[0] + '-' + r[1];
-  }).join(', '), "\n- **Name Field**: Split by `").concat(State.styleConfig.nameField ? 'configured field' : 'last name', "`") : '', "\n").concat(style === 'workflow-actions' ? "- **Action Buttons**: Context-sensitive per swimlane (e.g., Approve, Deny, Request Info)\n- **Confirmation Modals**: Each action shows a confirmation dialog before executing" : '', "\n").concat(style === 'survey-analytics' ? "- **Stats Cards**: Response count, average rating, distribution\n- **View Modes**: Toggle between table view and card view" : '', "\n").concat(style === 'cards-dashboard' ? "- **Card Layout**: Responsive grid of cards with status badges\n- **Status Metrics**: Summary bar with color-coded status counts\n- **Card Fields**: Title, Status, Lead, Budget (as configured)" : '', "\n").concat(style === 'bulk-actions' ? "- **Bulk Operations**: Select multiple items via checkboxes, then Approve / Deny / Reassign\n- **Reassign Targets**: ".concat((State.styleConfig.reassignTargets || []).join(', '), "\n- **Row Actions**: Individual approve/deny/reassign per row") : '', "\n\n## Customization\n\n### Modifying the SQL Query\nEdit `integration-query.sql` to add/remove columns, change filters, or adjust JOINs.\nAfter changes, update the integration source in Etrieve Central and verify the column\nnames match what `configuration.js` expects in the `columns` array.\n\n### Modifying Swimlanes\nEdit the `swimlanes` array in `configuration.js`. Each swimlane has:\n- `name`: Display name in the header\n- `filters`: Array of `{field, values}` objects that determine which rows appear\n\n### Changing the Style\nThe dashboard style is set in `configuration.js` (`style` property) and the\ncorresponding rendering logic is in `viewmodel.js`. To change styles, re-run the\nDashboard Builder wizard and generate new files.\n\n## Troubleshooting\n\n| Problem | Solution |\n|---------|----------|\n| Dashboard shows \"Unable to load data\" | Check integration source name matches `configuration.js` sourceName exactly |\n| Integration returns 500 error | Verify Schema field is blank, SQL is valid, and column/table names are correct |\n| Integration returns 403 error | On the source, check the **Privileges** tab (users need **Get**); confirm the form's **Connect** tab has **Get** checked |\n| Source name mismatch | The name in Etrieve must be character-for-character identical to `configuration.js` |\n| 404 errors in browser console | Ensure files are uploaded as dashboard template files, not as attachments |\n| Columns don't match | Verify SQL column aliases match `configuration.js` columns[].field values |\n| Write-back actions fail | Check Hybrid Server connection and stored procedure parameter names |\n| \"integration is not defined\" | The Etrieve `integration` API object requires the dashboard to be served from Etrieve |\n\n---\n\n*Generated by Dashboard Builder Wizard v" + ver + "*\n");
+	var _State$selectedArea2, _State$selectedArea3, _State$selectedTempla;
+	var style = State.selectedStyle || "simple-status";
+	var styleDef = DashboardStyles.find(function (s) {
+		return s.id === style;
+	}) || {
+		name: "Simple Status",
+		description: "",
+	};
+	var name = safeName(
+		State.dashboardTitle || State.sourceName || "Dashboard",
+	);
+	var isWriteBack = needsWriteBack();
+	var styleNotes = {
+		"simple-status":
+			"Basic swimlane dashboard. Items are grouped by status into collapsible sections.",
+		"request-type":
+			"Items are grouped by request type/category rather than status.",
+		expandable:
+			"Rows can be expanded (+/- toggle) to show detail fields in a grid layout.",
+		"alpha-split":
+			"Items are automatically split into alphabetical ranges by last name for workload distribution.",
+		claims: "Staff can claim/unclaim items. Includes personal stats, quick-filter chips, and age badges. **Requires write-back integrations** via Hybrid Server.",
+		"workflow-actions":
+			"Each swimlane has context-sensitive action buttons with confirmation modals. Uses the Central Flow API to approve/deny directly (cloud-only).",
+		"pdf-signatures":
+			"Expandable rows show signatures and document details. Includes PDF generation.",
+		"survey-analytics": "Includes stats cards and table/card view modes.",
+		"award-nominations":
+			"Expandable nomination details with category badges for award programs.",
+		"committee-voting":
+			"Named voter columns for committee decisions. Includes vote buttons and document preview. **Requires write-back integrations** via Hybrid Server.",
+		"cards-dashboard":
+			"Executive card layout with status metrics, progress tracking, and responsive grid.",
+		"bulk-actions":
+			"Bulk checkbox selection with approve/deny/reassign operations and row-level action menus. Approve/Deny use Central Flow API (cloud-only); Reassign uses Hybrid Server if configured.",
+	};
+	var writeBackSection = "";
+	if (isWriteBack) {
+		writeBackSection += "\n### ".concat(
+			style === "claims" ? "5" : "5",
+			". Create Write-Back Schema (On-Prem SQL Server)\n\nThis style requires tables and stored procedures on your on-prem SQL Server,\nconnected to Etrieve Cloud via the **Hybrid Server** agent.\n\n1. Open `schema.sql` in SQL Server Management Studio (SSMS)\n2. Review the generated CREATE TABLE and CREATE OR ALTER PROCEDURE statements\n3. Execute against your on-prem database\n4. Verify the tables and procs were created successfully\n\n",
+		);
+		if (style === "claims") {
+			writeBackSection +=
+				"### 6. Create Write-Back Integration Sources\n\nYou need **two** additional integration sources on the Hybrid Server:\n\n| Integration Name | Type | Stored Procedure | Parameters |\n|------------------|------|-----------------|------------|\n| `"
+					.concat(name, "_ClaimItem` | SQL (Hybrid) | `[dbo].[sp_")
+					.concat(
+						name,
+						"_ClaimItem]` | `@FormID VARCHAR(50)`, `@ClaimedBy NVARCHAR(100)` |\n| `",
+					)
+					.concat(name, "_UnclaimItem` | SQL (Hybrid) | `[dbo].[sp_")
+					.concat(
+						name,
+						"_UnclaimItem]` | `@FormID VARCHAR(50)`, `@ClaimedBy NVARCHAR(100)` |\n\nFor each integration:\n1. In Etrieve Central > Admin > Sources, click **Add Source**\n2. Name it exactly as shown above (must match `configuration.js` variable names)\n3. Set type to **SQL Stored Procedure** and select your Hybrid connection\n4. Map the parameters as listed\n\n",
+					);
+		} else if (style === "committee-voting") {
+			writeBackSection +=
+				"### 6. Create Write-Back Integration Sources\n\nYou need **three** additional integration sources on the Hybrid Server:\n\n| Integration Name | Type | Stored Procedure | Parameters |\n|------------------|------|-----------------|------------|\n| `"
+					.concat(name, "_GetUserInfo` | SQL (Hybrid) | `[dbo].[sp_")
+					.concat(
+						name,
+						"_GetUserInfo]` | `@Username NVARCHAR(100)` |\n| `",
+					)
+					.concat(name, "_CastVote` | SQL (Hybrid) | `[dbo].[sp_")
+					.concat(
+						name,
+						"_CastVote]` | `@DocumentID VARCHAR(50)`, `@MemberSlot VARCHAR(10)`, `@Vote VARCHAR(10)`, `@VotedBy NVARCHAR(100)`, `@Comment NVARCHAR(500)` |\n| `",
+					)
+					.concat(
+						name,
+						"_FinalDecision` | SQL (Hybrid) | `[dbo].[sp_",
+					)
+					.concat(
+						name,
+						"_FinalDecision]` | `@DocumentID VARCHAR(50)`, `@Decision VARCHAR(10)`, `@DecisionBy NVARCHAR(100)`, `@Comment NVARCHAR(500)` |\n\n**`_GetUserInfo`** is called automatically at dashboard load. It looks up the logged-in user's member slot so votes are recorded under the correct column.\n\n",
+					);
+		} else if (style === "workflow-actions") {
+			writeBackSection =
+				"### 5. Workflow Actions (Cloud-Only)\n\nThis dashboard uses the **Etrieve Central Flow API** to approve/deny items directly.\n**No SQL Server or Hybrid Server is needed** for workflow actions.\n\n**How it works:**\n- When a user clicks Approve/Deny, the dashboard calls the Central WorkQueue API\n- The CSRF token from the user's active session authenticates the request\n- The workflow package is locked, then the decision is applied (Lock + PutWorkQueue)\n- The dashboard auto-refreshes to show the updated state\n\n**Requirements:**\n- The dashboard must run inside Etrieve Central (same origin)\n- Users must have workflow permissions for the items they are acting on\n- Default DecisionOptionIDs: Approve=1, Deny=2 (adjust in viewmodel.js if needed)\n\n**Reference:** Based on the Softdocs 'Approve Packages in Your Inbox' utility pattern.\n\n";
+		} else if (style === "bulk-actions") {
+			writeBackSection =
+				"### 5. Bulk Actions (Cloud-Only for Approve/Deny)\n\nApprove and Deny use the **Etrieve Central Flow API** directly.\n**No SQL Server or Hybrid Server is needed** for approve/deny operations.\n\n**How it works:**\n- Select items with checkboxes, click Bulk Approve or Bulk Deny\n- Each task is locked then approved/denied via the Central WorkQueue API\n- Individual Quick Approve/Deny from row menus works the same way\n\n**Reassign Feature** (optional, requires Hybrid Server):\nIf you configured reassign targets, the Reassign button uses a Hybrid Server\nwrite-back integration to record the reassignment in on-prem SQL.\n\n";
+			if (
+				State.styleConfig &&
+				State.styleConfig.reassignTargets &&
+				State.styleConfig.reassignTargets.length > 0
+			) {
+				writeBackSection +=
+					"### 6. Reassign Integration (Hybrid Server)\n\nThe Reassign feature requires **one** Hybrid Server integration source:\n\n| Integration Name | Type | Stored Procedure | Parameters |\n|------------------|------|-----------------|------------|\n| `"
+						.concat(
+							name,
+							"_BulkDecision` | SQL (Hybrid) | `[dbo].[sp_",
+						)
+						.concat(
+							name,
+							"_BulkDecision]` | `@FormIDs NVARCHAR(MAX)`, `@Decision VARCHAR(20)`, `@DecidedBy NVARCHAR(100)`, `@ReassignTarget NVARCHAR(100)`, `@Comment NVARCHAR(500)` |\n\n",
+						);
+			}
+		}
+	}
+	// Notes write-back documentation (cross-cutting, appended to any style)
+	if (State.notesConfig && State.notesConfig.enabled) {
+		var notesLabel = escapeJS(
+			(State.notesConfig && State.notesConfig.columnLabel) || "Notes",
+		);
+		if (!writeBackSection) {
+			writeBackSection =
+				"\n### 5. Create Write-Back Schema (On-Prem SQL Server)\n\nThe " +
+				notesLabel +
+				" column requires a table and stored procedures on your on-prem SQL Server,\nconnected to Etrieve Cloud via the **Hybrid Server** agent.\n\n1. Open `schema.sql` in SQL Server Management Studio (SSMS)\n2. Review the generated CREATE TABLE and CREATE OR ALTER PROCEDURE statements\n3. Execute against your on-prem database\n4. Verify the tables and procs were created successfully\n\n";
+		}
+		writeBackSection +=
+			"### " +
+			notesLabel +
+			" Column Integration Sources\n\nThe " +
+			notesLabel +
+			" column stores user-entered text on your on-prem SQL Server.\nData is loaded separately from the main integration source and merged client-side.\n\n**Table:** `" +
+			name +
+			"_Notes` (ItemID, NoteText, UpdatedBy, UpdatedDate)\n\n| Integration Name | Method | SQL | Parameters |\n|------------------|--------|-----|------------|\n| `" +
+			name +
+			"_SaveNote` | POST | `EXEC sp_" +
+			name +
+			"_SaveNote @ItemID, @NoteText, @UpdatedBy` | `@ItemID VARCHAR(50)`, `@NoteText NVARCHAR(2000)`, `@UpdatedBy NVARCHAR(100)` |\n| `" +
+			name +
+			"_GetNotes` | GET | `EXEC sp_" +
+			name +
+			"_GetNotes` | (none) |\n\n";
+	}
+	// Assignee documentation for forms mode
+	if (
+		State.selectedInputIds &&
+		State.selectedInputIds.includes("__assignedTo__")
+	) {
+		var colName =
+			(State.styleConfig && State.styleConfig.assigneeColumnName) ||
+			"ActorId";
+		writeBackSection +=
+			"### Assigned To Column\n\nThe **Assigned To** column shows who currently holds the task. The query resolves it\nfrom `central_flow_TaskQueue.ActorId` to a display name via a join to\n`central_flow_Actor`, so no extra configuration is needed.\n\n";
+	}
+	var dataSourceNotes = "";
+	if (State.mode === "content") {
+		var _State$selectedArea;
+		dataSourceNotes =
+			"### Data Source: Etrieve Content (Documents)\n\nThe `integration-query.sql` reads from the **Etrieve Content** database tables:\n- `dbo.DocumentType` - document types in the selected area\n- `dbo.Document` - document records\n- `dbo.Node` - folder/catalog assignment (`CatalogID = ".concat(
+				((_State$selectedArea = State.selectedArea) === null ||
+				_State$selectedArea === void 0
+					? void 0
+					: _State$selectedArea.id) || "XXX",
+				"`)\n- `dbo.ivDocumentTextFieldValue` / `dbo.ivDocumentDateFieldValue` - indexed field values\n- `dbo.DocumentFieldPartyVersion` + `dbo.PartyVersion` - party/person fields (e.g. Student Info)\n\nEach selected field is LEFT JOINed by `FieldID` to retrieve the value per document.\n\n#### Party Fields\nFields with `PartyTypeID` set (e.g. Student Info, Employee) store their data in\nthe Party system instead of the normal FieldValue tables. The wizard detects these\nautomatically via the `partyTypeId` column from the GetKeyFields integration source\nand generates the correct JOINs (`DocumentFieldPartyVersion` + `PartyVersion`).\n\nIf a party field shows no data, verify the GetKeyFields source includes\n`f.PartyTypeID AS partyTypeId` in its SELECT statement.",
+			);
+	} else if (State.mode === "forms") {
+		dataSourceNotes =
+			"### Data Source: Etrieve Central Forms\n\nThe `integration-query.sql` reads from the **Central Forms** reporting tables:\n- `reporting.central_forms_Form` - submitted form instances\n- `reporting.central_forms_InputValue` - field values per form (pivoted via CASE/MAX)\n- `reporting.central_flow_PackageDocument` - links forms to workflow packages\n- `reporting.central_flow_TaskQueue` - current step assignment\n- `reporting.central_flow_ProcessStep` - step name/code lookup\n\n#### FormStatus Column\nThe SQL always includes a computed `FormStatus` column:\n- **In Progress** - form has an active TaskQueue entry (still in workflow)\n- **Completed** - form has no TaskQueue entry (workflow finished)\n\nDefault swimlanes filter on this field automatically. You can also filter on\n`CurrentStepName` for finer-grained step-level grouping.\n\n**Important:** The query filters by `TemplateVersionID`. If you publish a new version\nof the form, you must update the ID in the SQL query.\n\n### Navigation\nThe dashboard includes a **Back** button in the header for returning to the previous page.";
+	} else if (State.mode === "combined") {
+		dataSourceNotes =
+			"### Data Source: Combined (Documents + Forms)\n\nCombined mode uses **two separate integration sources** because Content (`dbo.*`)\nand Central Forms (`reporting.central_forms_*`) return different row shapes; both sources use the **Etrieve Content** connection.\n\n- **Content source** (`" +
+			(escapeJS(State.sourceName) || "Dashboard") +
+			"_Content`): reads `dbo.DocumentType`, `dbo.Document`, `dbo.Node`, field value tables\n- **Forms source** (`" +
+			(escapeJS(State.sourceName) || "Dashboard") +
+			"_Forms`): reads `reporting.central_forms_Form`, `reporting.central_forms_InputValue`\n\nThe viewmodel loads both sources independently and merges them at runtime,\nadding a `RecordType` column ('Document' or 'Form') to distinguish the rows.";
+	}
+	var filesTable =
+		"| File | Description |\n|------|-------------|\n| `integration-query.sql` | SQL query for the read-only Etrieve integration source |\n| `configuration.js` | Dashboard config: swimlanes, filters, columns, style settings |\n| `viewmodel.js` | Dashboard JS: data loading, rendering, interactions (AMD module) |\n| `index.html` | Dashboard HTML template with embedded CSS |\n| `README.md` | This setup guide |";
+	if (isWriteBack) {
+		filesTable +=
+			"\n| `schema.sql` | **SQL Server schema**: CREATE TABLE + stored procedures for write-back |";
+	}
+	var ver = typeof WIZARD_VERSION !== "undefined" ? WIZARD_VERSION : "3.0.0";
+	var _dfRm =
+		typeof detectDateField === "function" ? detectDateField() : null;
+	var controlsSection =
+		"## Built-In Controls\n\nEvery generated dashboard includes these header controls, with no extra setup:\n\n- **Search** - type to filter rows across all columns.\n" +
+		(_dfRm
+			? "- **Date range** - filter by " +
+				_dfRm.label +
+				" using the From / To date pickers.\n"
+			: "") +
+		"- **Overview chart** - a collapsible bar chart of item counts per swimlane; it updates as you search or filter.\n- **Sortable columns** - click a column header to sort, click again to reverse.\n- **CSV export** - each swimlane has an Export button that downloads its rows.\n- **Auto-refresh** - data reloads every 5 minutes.\n\n";
+	return "# "
+		.concat(
+			State.dashboardTitle || "Dashboard",
+			"\n\nGenerated by **Dashboard Builder v" + ver + "** on ",
+		)
+		.concat(new Date().toLocaleDateString(), "\n\n**Style:** ")
+		.concat(styleDef.name, "\n")
+		.concat(
+			styleNotes[style] || styleDef.description,
+			"\n\n---\n\n" + controlsSection + "## Files Included\n\n",
+		)
+		.concat(
+			filesTable,
+			"\n\n## Setup Instructions\n\n### 1. Create the Read Integration Source\n\nThe main integration source provides data to the dashboard.\n\n1. In **Etrieve Central**, open the Navigation Panel > **Admin Settings** > **Sources**, click **Add New Source**, and choose Source Type **Database**\n2. Name it exactly: `",
+		)
+		.concat(
+			State.sourceName || "Dashboard",
+			"` (must match character-for-character; the Code auto-generates)\n3. Set the **Connection** to **Etrieve Content** (this connection reaches both the Content `dbo` tables and the Central Forms `reporting` tables)\n4. **Leave the Schema field blank** (it defaults to `dbo`)\n5. On the **Actions** tab, keep the **Get** action, toggle **Custom** on, and paste `integration-query.sql` into the **Query Editor**\n6. On the **Privileges** tab, add your dashboard users so they can execute the source\n7. Save the source\n\n> **Common mistakes:** If the dashboard shows \"Unable to load data\": a **403 / NotAuthorized** means users lack **Get** on the source's **Privileges** tab or on the form's **Connect** tab; a **500** usually means the Schema was not left blank or a table/column name is wrong; and the source **Name** must match `configuration.js` exactly.\n\n",
+		)
+		.concat(
+			dataSourceNotes,
+			"\n\n### 2. Upload Dashboard Files to Etrieve\n\nAll JS files are loaded via Etrieve's RequireJS system. **Do NOT add manual script-src tags** - they will 404 in Etrieve Cloud.\n\n1. In **Etrieve Central** > **Admin Settings** > **Forms**, create a new form\n2. Upload these files:\n   - `index.html` - the main template\n   - `configuration.js` - registered as RequireJS module `template/configuration`\n   - `viewmodel.js` - registered as RequireJS module `template/viewmodel`\n\n### 3. Connect the Source to the Form\n\n1. Open the form you just created\n2. Go to the **Connect** tab (under the form's settings)\n3. Find your integration source (`",
+		)
+		.concat(
+			State.sourceName || "Dashboard",
+			"`) and check **Get**\n4. On the same **Connect** tab, leave **Run on Load** unchecked for this source (the dashboard calls it on demand)\n\n> Without this step, the dashboard will load but show no data. The source must be linked to the form.\n\n### 4. Configure Permissions\n\nEnsure dashboard users have access to:\n- The dashboard form (granted via its security chain: Entra group to role to form)\n",
+		)
+		.concat(
+			State.mode === "content" || State.mode === "combined"
+				? "- The content area/catalog: **"
+						.concat(
+							((_State$selectedArea2 = State.selectedArea) ===
+								null || _State$selectedArea2 === void 0
+								? void 0
+								: _State$selectedArea2.name) || "N/A",
+							"** (CatalogID: ",
+						)
+						.concat(
+							((_State$selectedArea3 = State.selectedArea) ===
+								null || _State$selectedArea3 === void 0
+								? void 0
+								: _State$selectedArea3.id) || "N/A",
+							")",
+						)
+				: "",
+			"\n",
+		)
+		.concat(
+			State.mode === "forms" || State.mode === "combined"
+				? "- The form template: **".concat(
+						((_State$selectedTempla = State.selectedTemplate) ===
+							null || _State$selectedTempla === void 0
+							? void 0
+							: _State$selectedTempla.name) || "N/A",
+						"**",
+					)
+				: "",
+			"\n- The integration source: `",
+		)
+		.concat(State.sourceName || "Dashboard", "`\n")
+		.concat(
+			writeBackSection,
+			"\n## Swimlane Configuration\n\nSwimlanes are defined in `configuration.js` and control how data is grouped:\n\n",
+		)
+		.concat(
+			State.swimlanes
+				.map(function (sl) {
+					var filterDesc =
+						sl.filters && sl.filters.length > 0
+							? sl.filters
+									.map(function (f) {
+										return "`"
+											.concat(f.fieldName, "` IN (")
+											.concat(
+												f.values
+													.map(function (v) {
+														return "`".concat(
+															v,
+															"`",
+														);
+													})
+													.join(", "),
+												")",
+											);
+									})
+									.join(" AND ")
+							: "No filters (catch-all - shows remaining items)";
+					return "- **".concat(sl.name, "**: ").concat(filterDesc);
+				})
+				.join("\n"),
+			"\n\n## Style-Specific Features\n\n",
+		)
+		.concat(
+			style === "claims"
+				? "- **Claim/Unclaim**: Staff can claim items for processing (writes to on-prem SQL)\n- **Filter Chips**: Quick filters: "
+						.concat(
+							(State.styleConfig.filterChips || []).join(", "),
+							"\n- **Age Badges**: Warning (yellow) at ",
+						)
+						.concat(
+							State.styleConfig.ageBadgeWarning || 30,
+							" days, Critical (red) at ",
+						)
+						.concat(
+							State.styleConfig.ageBadgeCritical || 60,
+							" days\n- **Personal Stats**: Shows each user's claimed count vs total",
+						)
+				: "",
+			"\n",
+		)
+		.concat(
+			style === "committee-voting"
+				? "- **Committee Members**: ".concat(
+						(State.styleConfig.committeeMembers || [])
+							.map(function (m) {
+								return m.name;
+							})
+							.join(", "),
+						"\n- **Voting**: Each member has Approve / Deny / Request More Info buttons\n- **Vote Tracking**: Computed columns count approvals, denials, and completion",
+					)
+				: "",
+			"\n",
+		)
+		.concat(
+			style === "expandable" ||
+				style === "pdf-signatures" ||
+				style === "award-nominations"
+				? "- **Expandable Rows**: Click +/- to show detail fields in a grid layout"
+				: "",
+			"\n",
+		)
+		.concat(
+			style === "alpha-split"
+				? "- **Alpha Ranges**: "
+						.concat(
+							(State.styleConfig.alphaRanges || [])
+								.map(function (r) {
+									return r[0] + "-" + r[1];
+								})
+								.join(", "),
+							"\n- **Name Field**: Split by `",
+						)
+						.concat(
+							State.styleConfig.nameField
+								? "configured field"
+								: "last name",
+							"`",
+						)
+				: "",
+			"\n",
+		)
+		.concat(
+			style === "workflow-actions"
+				? "- **Action Buttons**: Context-sensitive per swimlane (e.g., Approve, Deny, Request Info)\n- **Confirmation Modals**: Each action shows a confirmation dialog before executing"
+				: "",
+			"\n",
+		)
+		.concat(
+			style === "survey-analytics"
+				? "- **Stats Cards**: Response count, average rating, distribution\n- **View Modes**: Toggle between table view and card view"
+				: "",
+			"\n",
+		)
+		.concat(
+			style === "cards-dashboard"
+				? "- **Card Layout**: Responsive grid of cards with status badges\n- **Status Metrics**: Summary bar with color-coded status counts\n- **Card Fields**: Title, Status, Lead, Budget (as configured)"
+				: "",
+			"\n",
+		)
+		.concat(
+			style === "bulk-actions"
+				? "- **Bulk Operations**: Select multiple items via checkboxes, then Approve / Deny / Reassign\n- **Reassign Targets**: ".concat(
+						(State.styleConfig.reassignTargets || []).join(", "),
+						"\n- **Row Actions**: Individual approve/deny/reassign per row",
+					)
+				: "",
+			'\n\n## Customization\n\n### Modifying the SQL Query\nEdit `integration-query.sql` to add/remove columns, change filters, or adjust JOINs.\nAfter changes, update the integration source in Etrieve Central and verify the column\nnames match what `configuration.js` expects in the `columns` array.\n\n### Modifying Swimlanes\nEdit the `swimlanes` array in `configuration.js`. Each swimlane has:\n- `name`: Display name in the header\n- `filters`: Array of `{field, values}` objects that determine which rows appear\n\n### Changing the Style\nThe dashboard style is set in `configuration.js` (`style` property) and the\ncorresponding rendering logic is in `viewmodel.js`. To change styles, re-run the\nDashboard Builder wizard and generate new files.\n\n## Troubleshooting\n\n| Problem | Solution |\n|---------|----------|\n| Dashboard shows "Unable to load data" | Check integration source name matches `configuration.js` sourceName exactly |\n| Integration returns 500 error | Verify Schema field is blank, SQL is valid, and column/table names are correct |\n| Integration returns 403 error | On the source, check the **Privileges** tab (users need **Get**); confirm the form\'s **Connect** tab has **Get** checked |\n| Source name mismatch | The name in Etrieve must be character-for-character identical to `configuration.js` |\n| 404 errors in browser console | Ensure files are uploaded as dashboard template files, not as attachments |\n| Columns don\'t match | Verify SQL column aliases match `configuration.js` columns[].field values |\n| Write-back actions fail | Check Hybrid Server connection and stored procedure parameter names |\n| "integration is not defined" | The Etrieve `integration` API object requires the dashboard to be served from Etrieve |\n\n---\n\n*Generated by Dashboard Builder Wizard v' +
+				ver +
+				"*\n",
+		);
 }
 function htmlHead(extraCss) {
-  var ver = (typeof WIZARD_VERSION !== 'undefined') ? WIZARD_VERSION : '3.0.0';
-  // User-selected brand colors, validated as #rrggbb (fall back to COD green).
-  var _c = State.colors || {};
-  var _sh = (typeof safeHex === 'function') ? safeHex : function (h, f) { return /^#[0-9a-fA-F]{6}$/.test(h || '') ? h : f; };
-  var cPrimary = _sh(_c.primary, '#006341');
-  var cPrimaryDark = _sh(_c.primaryDark, '#004d35');
-  var cAccent = _sh(_c.accent, '#f4b41a');
-  // Notes column CSS (cross-cutting, appended to any style)
-  if (State.notesConfig && State.notesConfig.enabled) {
-    extraCss = (extraCss || '') + "\n        .note-cell { padding: 4px 8px !important; }\n        .note-input { width: 100%; min-width: 120px; padding: 6px 8px; border: 1px solid transparent; border-radius: 4px; font-size: 0.85rem; background: transparent; transition: border-color 0.2s, background 0.2s; }\n        .note-input:focus { border-color: var(--primary); background: #fff; outline: none; box-shadow: 0 0 0 2px rgba(0,0,0,0.08); }\n        .note-input:hover { border-color: #ccc; background: #fafbfc; }\n        .note-input::placeholder { color: #ccc; font-style: italic; }\n    ";
-  }
-  return "<!DOCTYPE html>\n<!-- Generated by Dashboard Builder v" + ver + " on " + new Date().toISOString() + " -->\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>".concat(escapeHtml(State.dashboardTitle || 'Dashboard'), "</title>\n    <link href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css\" rel=\"stylesheet\">\n    <style>\n        :root {\n            --primary: " + cPrimary + ";\n            --primary-dark: " + cPrimaryDark + ";\n            --accent: " + cAccent + ";\n        }\n        * { margin: 0; padding: 0; box-sizing: border-box; }\n        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; min-height: 100vh; }\n        .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 20px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }\n        .header h1 { font-size: 1.5rem; }\n        .container { max-width: 1400px; margin: 0 auto; padding: 30px; }\n        .toolbar { display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }\n        .search-box { flex: 1; min-width: 250px; position: relative; }\n        .search-box input { width: 100%; padding: 12px 15px 12px 45px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }\n        .search-box i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #999; }\n        .swimlane { background: white; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }\n        .swimlane-header { background: #f8f9fa; padding: 15px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: 600; border-bottom: 1px solid #e9ecef; }\n        .swimlane-header:hover { background: #f0f2f5; }\n        .swimlane-header .count { background: var(--primary); color: white; padding: 3px 10px; border-radius: 15px; font-size: 0.85rem; }\n        .swimlane-content { padding: 0; overflow-x: auto; }\n        .swimlane-content.collapsed { display: none; }\n        .data-table { width: 100%; border-collapse: collapse; }\n        .data-table th { background: #f8f9fa; padding: 12px 15px; text-align: left; font-weight: 600; border-bottom: 2px solid #e9ecef; cursor: pointer; user-select: none; white-space: nowrap; }\n        .data-table th:hover { background: #e9ecef; }\n        .data-table th .sort-icon { margin-left: 4px; font-size: 0.75em; opacity: 0.3; }\n        .data-table th .sort-icon.active { opacity: 1; color: var(--primary); }\n        .data-table td { padding: 12px 15px; border-bottom: 1px solid #f0f2f5; }\n        .data-table tr:hover td { background: #fafbfc; }\n        .view-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; background: var(--primary); color: white; text-decoration: none; border-radius: 6px; font-size: 0.85rem; border: none; cursor: pointer; }\n        .view-btn:hover { background: var(--primary-dark); }\n        .error-message { text-align: center; padding: 50px; color: #dc3545; }\n        .error-message i { font-size: 3rem; margin-bottom: 15px; }\n        .export-btn { margin-left: auto; padding: 4px 12px; background: var(--accent); color: #000; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }\n        .export-btn:hover { opacity: 0.9; }\n        .btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; }\n        .btn-success { background: #28a745; color: white; }\n        .btn-danger { background: #dc3545; color: white; }\n        .btn-info { background: #17a2b8; color: white; }\n        .btn-primary { background: var(--primary); color: white; }\n        .btn-warning { background: #ffc107; color: #000; }\n        .btn-secondary { background: #6c757d; color: white; }\n        .btn-sm { padding: 4px 10px; font-size: 0.8rem; }\n        .btn-outline-primary { background: transparent; color: var(--primary); border: 1px solid var(--primary); }\n        .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }\n        .back-btn { background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:0.85rem; display:inline-flex; align-items:center; gap:5px; text-decoration:none; }\n        .back-btn:hover { background:rgba(255,255,255,0.25); }\n        .date-filter { display:flex; align-items:center; gap:6px; }\n        .date-filter label { font-size:0.8rem; color:#666; white-space:nowrap; display:inline-flex; align-items:center; gap:4px; }\n        .date-filter input[type=date] { padding:8px 10px; border:2px solid #e0e0e0; border-radius:8px; font-size:0.85rem; }\n        .summary-chart { background:#fff; border-radius:12px; padding:16px 20px; margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }\n        .summary-chart h3 { font-size:0.95rem; color:#333; margin-bottom:12px; display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }\n        .summary-chart.collapsed h3 { margin-bottom:0; }\n        .summary-chart.collapsed .chart-body { display:none; }\n        .chart-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:0.85rem; }\n        .chart-label { width:160px; text-align:right; color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }\n        .chart-bar-wrap { flex:1; background:#f0f2f5; border-radius:4px; overflow:hidden; }\n        .chart-bar { display:block; height:20px; background:linear-gradient(90deg, var(--primary), var(--primary-dark)); border-radius:4px; min-width:2px; }\n        .chart-val { width:44px; color:#333; font-weight:600; text-align:left; }\n        ").concat(extraCss || '', "\n    </style>\n</head>");
+	var ver = typeof WIZARD_VERSION !== "undefined" ? WIZARD_VERSION : "3.0.0";
+	// User-selected brand colors, validated as #rrggbb (fall back to COD green).
+	var _c = State.colors || {};
+	var _sh =
+		typeof safeHex === "function"
+			? safeHex
+			: function (h, f) {
+					return /^#[0-9a-fA-F]{6}$/.test(h || "") ? h : f;
+				};
+	var cPrimary = _sh(_c.primary, "#006341");
+	var cPrimaryDark = _sh(_c.primaryDark, "#004d35");
+	var cAccent = _sh(_c.accent, "#f4b41a");
+	// Notes column CSS (cross-cutting, appended to any style)
+	if (State.notesConfig && State.notesConfig.enabled) {
+		extraCss =
+			(extraCss || "") +
+			"\n        .note-cell { padding: 4px 8px !important; }\n        .note-input { width: 100%; min-width: 120px; padding: 6px 8px; border: 1px solid transparent; border-radius: 4px; font-size: 0.85rem; background: transparent; transition: border-color 0.2s, background 0.2s; }\n        .note-input:focus { border-color: var(--primary); background: #fff; outline: none; box-shadow: 0 0 0 2px rgba(0,0,0,0.08); }\n        .note-input:hover { border-color: #ccc; background: #fafbfc; }\n        .note-input::placeholder { color: #ccc; font-style: italic; }\n    ";
+	}
+	return (
+		"<!DOCTYPE html>\n<!-- Generated by Dashboard Builder v" +
+		ver +
+		" on " +
+		new Date().toISOString() +
+		' -->\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>'
+			.concat(
+				escapeHtml(State.dashboardTitle || "Dashboard"),
+				'</title>\n    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">\n    <style>\n        :root {\n            --primary: ' +
+					cPrimary +
+					";\n            --primary-dark: " +
+					cPrimaryDark +
+					";\n            --accent: " +
+					cAccent +
+					";\n        }\n        * { margin: 0; padding: 0; box-sizing: border-box; }\n        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; min-height: 100vh; }\n        .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 20px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }\n        .header h1 { font-size: 1.5rem; }\n        .container { max-width: 1400px; margin: 0 auto; padding: 30px; }\n        .toolbar { display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }\n        .search-box { flex: 1; min-width: 250px; position: relative; }\n        .search-box input { width: 100%; padding: 12px 15px 12px 45px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }\n        .search-box i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #999; }\n        .swimlane { background: white; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }\n        .swimlane-header { background: #f8f9fa; padding: 15px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: 600; border-bottom: 1px solid #e9ecef; }\n        .swimlane-header:hover { background: #f0f2f5; }\n        .swimlane-header .count { background: var(--primary); color: white; padding: 3px 10px; border-radius: 15px; font-size: 0.85rem; }\n        .swimlane-content { padding: 0; overflow-x: auto; }\n        .swimlane-content.collapsed { display: none; }\n        .data-table { width: 100%; border-collapse: collapse; }\n        .data-table th { background: #f8f9fa; padding: 12px 15px; text-align: left; font-weight: 600; border-bottom: 2px solid #e9ecef; cursor: pointer; user-select: none; white-space: nowrap; }\n        .data-table th:hover { background: #e9ecef; }\n        .data-table th .sort-icon { margin-left: 4px; font-size: 0.75em; opacity: 0.3; }\n        .data-table th .sort-icon.active { opacity: 1; color: var(--primary); }\n        .data-table td { padding: 12px 15px; border-bottom: 1px solid #f0f2f5; }\n        .data-table tr:hover td { background: #fafbfc; }\n        .view-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; background: var(--primary); color: white; text-decoration: none; border-radius: 6px; font-size: 0.85rem; border: none; cursor: pointer; }\n        .view-btn:hover { background: var(--primary-dark); }\n        .error-message { text-align: center; padding: 50px; color: #dc3545; }\n        .error-message i { font-size: 3rem; margin-bottom: 15px; }\n        .export-btn { margin-left: auto; padding: 4px 12px; background: var(--accent); color: #000; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }\n        .export-btn:hover { opacity: 0.9; }\n        .btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; }\n        .btn-success { background: #28a745; color: white; }\n        .btn-danger { background: #dc3545; color: white; }\n        .btn-info { background: #17a2b8; color: white; }\n        .btn-primary { background: var(--primary); color: white; }\n        .btn-warning { background: #ffc107; color: #000; }\n        .btn-secondary { background: #6c757d; color: white; }\n        .btn-sm { padding: 4px 10px; font-size: 0.8rem; }\n        .btn-outline-primary { background: transparent; color: var(--primary); border: 1px solid var(--primary); }\n        .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }\n        .back-btn { background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:0.85rem; display:inline-flex; align-items:center; gap:5px; text-decoration:none; }\n        .back-btn:hover { background:rgba(255,255,255,0.25); }\n        .date-filter { display:flex; align-items:center; gap:6px; }\n        .date-filter label { font-size:0.8rem; color:#666; white-space:nowrap; display:inline-flex; align-items:center; gap:4px; }\n        .date-filter input[type=date] { padding:8px 10px; border:2px solid #e0e0e0; border-radius:8px; font-size:0.85rem; }\n        .summary-chart { background:#fff; border-radius:12px; padding:16px 20px; margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }\n        .summary-chart h3 { font-size:0.95rem; color:#333; margin-bottom:12px; display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }\n        .summary-chart.collapsed h3 { margin-bottom:0; }\n        .summary-chart.collapsed .chart-body { display:none; }\n        .chart-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:0.85rem; }\n        .chart-label { width:160px; text-align:right; color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }\n        .chart-bar-wrap { flex:1; background:#f0f2f5; border-radius:4px; overflow:hidden; }\n        .chart-bar { display:block; height:20px; background:linear-gradient(90deg, var(--primary), var(--primary-dark)); border-radius:4px; min-width:2px; }\n        .chart-val { width:44px; color:#333; font-weight:600; text-align:left; }\n        ",
+			)
+			.concat(extraCss || "", "\n    </style>\n</head>")
+	);
 }
 function htmlBody(innerContent) {
-  var ver = (typeof WIZARD_VERSION !== 'undefined') ? WIZARD_VERSION : '3.0.0';
-  var _df = (typeof detectDateField === 'function') ? detectDateField() : null;
-  var dateFilterHtml = _df ? ('<div class="date-filter"><label><i class="bi bi-calendar3"></i> ' + escapeHtml(_df.label) + '</label><input type="date" data-notsaved="true" title="From" oninput="dashboard._dateFrom=this.value; dashboard.applyFilters(); dashboard.render();"><span style="color:#999;">-</span><input type="date" data-notsaved="true" title="To" oninput="dashboard._dateTo=this.value; dashboard.applyFilters(); dashboard.render();"></div>') : '';
-  return "\n<body>\n    <div class=\"loading\" style=\"display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.7);z-index:9999;justify-content:center;align-items:center;\">\n        <div style=\"text-align:center;\"><div style=\"width:40px;height:40px;border:4px solid #e9ecef;border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 10px;\"></div><span>Loading...</span></div>\n    </div>\n    <style>@keyframes spin { to { transform: rotate(360deg); } } .toast-notification { position:fixed;bottom:20px;right:20px;background:#333;color:white;padding:12px 24px;border-radius:8px;font-size:0.9rem;opacity:0;transition:opacity 0.3s;z-index:9999; } .toast-notification.show { opacity:1; } .toast-success { background:#28a745; } .toast-error { background:#dc3545; }</style>\n    <div class=\"header\">\n        <div style=\"display:flex;justify-content:space-between;align-items:center;\">\n            <div style=\"display:flex;align-items:center;gap:12px;\"><button class=\"back-btn\" onclick=\"window.history.back()\" title=\"Go back\"><i class=\"bi bi-arrow-left\"></i> Back</button><h1><i class=\"bi bi-grid-3x3-gap\"></i> ".concat(escapeHtml(State.dashboardTitle || 'Dashboard'), "</h1></div>\n            <span style=\"font-size:0.75rem;opacity:0.6;\">v" + ver + "</span>\n        </div>\n    </div>\n    <div class=\"container\">\n        <div class=\"toolbar\">\n            <div class=\"search-box\">\n                <i class=\"bi bi-search\"></i>\n                <input type=\"text\" placeholder=\"Search...\" data-notsaved=\"true\" oninput=\"dashboard.searchTerm = this.value; dashboard.applyFilters(); dashboard.render();\">\n            </div>\n            " + dateFilterHtml + "<button id=\"refreshBtn\" class=\"btn btn-primary btn-sm\" onclick=\"dashboard.loadData()\" title=\"Refresh data\"><i class=\"bi bi-arrow-clockwise\"></i> Refresh</button>\n        </div>\n        <div id=\"dashboardChart\" class=\"summary-chart collapsed\" style=\"display:none;\"></div>\n        ").concat(innerContent, "\n    </div>\n    <!-- JS loaded via Etrieve RequireJS: template/configuration, template/viewmodel -->\n    <!-- Do NOT add manual script-src tags; they 404 in Etrieve Cloud. -->\n</body>\n</html>");
+	var ver = typeof WIZARD_VERSION !== "undefined" ? WIZARD_VERSION : "3.0.0";
+	var _df = typeof detectDateField === "function" ? detectDateField() : null;
+	var dateFilterHtml = _df
+		? '<div class="date-filter"><label><i class="bi bi-calendar3"></i> ' +
+			escapeHtml(_df.label) +
+			'</label><input type="date" data-notsaved="true" title="From" oninput="dashboard._dateFrom=this.value; dashboard.applyFilters(); dashboard.render();"><span style="color:#999;">-</span><input type="date" data-notsaved="true" title="To" oninput="dashboard._dateTo=this.value; dashboard.applyFilters(); dashboard.render();"></div>'
+		: "";
+	return '\n<body>\n    <div class="loading" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.7);z-index:9999;justify-content:center;align-items:center;">\n        <div style="text-align:center;"><div style="width:40px;height:40px;border:4px solid #e9ecef;border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 10px;"></div><span>Loading...</span></div>\n    </div>\n    <style>@keyframes spin { to { transform: rotate(360deg); } } .toast-notification { position:fixed;bottom:20px;right:20px;background:#333;color:white;padding:12px 24px;border-radius:8px;font-size:0.9rem;opacity:0;transition:opacity 0.3s;z-index:9999; } .toast-notification.show { opacity:1; } .toast-success { background:#28a745; } .toast-error { background:#dc3545; }</style>\n    <div class="header">\n        <div style="display:flex;justify-content:space-between;align-items:center;">\n            <div style="display:flex;align-items:center;gap:12px;"><button class="back-btn" onclick="window.history.back()" title="Go back"><i class="bi bi-arrow-left"></i> Back</button><h1><i class="bi bi-grid-3x3-gap"></i> '
+		.concat(
+			escapeHtml(State.dashboardTitle || "Dashboard"),
+			'</h1></div>\n            <span style="font-size:0.75rem;opacity:0.6;">v' +
+				ver +
+				'</span>\n        </div>\n    </div>\n    <div class="container">\n        <div class="toolbar">\n            <div class="search-box">\n                <i class="bi bi-search"></i>\n                <input type="text" placeholder="Search..." data-notsaved="true" oninput="dashboard.searchTerm = this.value; dashboard.applyFilters(); dashboard.render();">\n            </div>\n            ' +
+				dateFilterHtml +
+				'<button id="refreshBtn" class="btn btn-primary btn-sm" onclick="dashboard.loadData()" title="Refresh data"><i class="bi bi-arrow-clockwise"></i> Refresh</button>\n        </div>\n        <div id="dashboardChart" class="summary-chart collapsed" style="display:none;"></div>\n        ',
+		)
+		.concat(
+			innerContent,
+			"\n    </div>\n    <!-- JS loaded via Etrieve RequireJS: template/configuration, template/viewmodel -->\n    <!-- Do NOT add manual script-src tags; they 404 in Etrieve Cloud. -->\n</body>\n</html>",
+		);
 }
 function generateHTML_simple() {
-  return htmlHead('') + htmlBody("<div id=\"dashboardContent\"><p style=\"text-align:center;padding:50px;color:#666;\">Loading...</p></div>");
+	return (
+		htmlHead("") +
+		htmlBody(
+			'<div id="dashboardContent"><p style="text-align:center;padding:50px;color:#666;">Loading...</p></div>',
+		)
+	);
 }
 function generateHTML_expandable() {
-  var extraCss = "\n        .toggle-btn { width: 28px; height: 28px; border: 2px solid var(--primary); background: white; color: var(--primary); border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; }\n        .toggle-btn:hover { background: var(--primary); color: white; }\n        .child-row td { background: #f8f9fa; border-left: 4px solid var(--primary); }\n        .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; padding: 15px; }\n        .detail-item label { display: block; font-size: 0.75rem; color: #888; font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }\n        .detail-item span { font-size: 0.9rem; }\n        .separator-bar td { height: 3px; background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 50%, #e0e0e0 100%); padding: 0; }\n        .signature-display { font-family: 'Brush Script MT', cursive; font-size: 1.5rem; color: #333; padding: 5px; border-bottom: 1px solid #999; display: inline-block; }\n    ";
-  return htmlHead(extraCss) + htmlBody("<div id=\"dashboardContent\"><p style=\"text-align:center;padding:50px;color:#666;\">Loading...</p></div>");
+	var extraCss =
+		"\n        .toggle-btn { width: 28px; height: 28px; border: 2px solid var(--primary); background: white; color: var(--primary); border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; }\n        .toggle-btn:hover { background: var(--primary); color: white; }\n        .child-row td { background: #f8f9fa; border-left: 4px solid var(--primary); }\n        .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; padding: 15px; }\n        .detail-item label { display: block; font-size: 0.75rem; color: #888; font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }\n        .detail-item span { font-size: 0.9rem; }\n        .separator-bar td { height: 3px; background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 50%, #e0e0e0 100%); padding: 0; }\n        .signature-display { font-family: 'Brush Script MT', cursive; font-size: 1.5rem; color: #333; padding: 5px; border-bottom: 1px solid #999; display: inline-block; }\n    ";
+	return (
+		htmlHead(extraCss) +
+		htmlBody(
+			'<div id="dashboardContent"><p style="text-align:center;padding:50px;color:#666;">Loading...</p></div>',
+		)
+	);
 }
 function generateHTML_alphaSplit() {
-  return htmlHead('') + htmlBody("<div id=\"dashboardContent\"><p style=\"text-align:center;padding:50px;color:#666;\">Loading...</p></div>");
+	return (
+		htmlHead("") +
+		htmlBody(
+			'<div id="dashboardContent"><p style="text-align:center;padding:50px;color:#666;">Loading...</p></div>',
+		)
+	);
 }
 function generateHTML_claims() {
-  var extraCss = "\n        .personal-stats { background: #f8f9fa; border-left: 4px solid var(--primary); border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; }\n        .personal-stats h6 { color: var(--primary); font-weight: 700; margin-bottom: 10px; }\n        .stat-row { display: flex; gap: 30px; }\n        .stat-item { text-align: center; }\n        .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); }\n        .stat-label { font-size: 0.8rem; color: #888; }\n        .action-bar { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }\n        .action-bar-left, .action-bar-right { display: flex; align-items: center; gap: 10px; }\n        .quick-filters { display: flex; gap: 8px; flex-wrap: wrap; }\n        .filter-chip { padding: 6px 14px; background: #e9ecef; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }\n        .filter-chip.active { background: var(--primary); color: white; }\n        .filter-chip:hover { opacity: 0.85; }\n        .btn-claim { padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }\n        .btn-unclaim { padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }\n        .badge-claimed { display: inline-block; padding: 4px 10px; background: #d4edda; color: #155724; border-radius: 4px; font-size: 0.8rem; }\n        .badge-unclaimed { display: inline-block; padding: 4px 10px; background: #f8d7da; color: #721c24; border-radius: 4px; font-size: 0.8rem; }\n        .age-badge { display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }\n        .age-badge-normal { background: #d4edda; color: #155724; }\n        .age-badge-warning { background: #fff3cd; color: #856404; }\n        .age-badge-critical { background: #f8d7da; color: #721c24; }\n        .row-checkbox { cursor: pointer; }\n    ";
-  return htmlHead(extraCss) + htmlBody("<div id=\"dashboardContent\"><p style=\"text-align:center;padding:50px;color:#666;\">Loading...</p></div>");
+	var extraCss =
+		"\n        .personal-stats { background: #f8f9fa; border-left: 4px solid var(--primary); border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; }\n        .personal-stats h6 { color: var(--primary); font-weight: 700; margin-bottom: 10px; }\n        .stat-row { display: flex; gap: 30px; }\n        .stat-item { text-align: center; }\n        .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); }\n        .stat-label { font-size: 0.8rem; color: #888; }\n        .action-bar { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }\n        .action-bar-left, .action-bar-right { display: flex; align-items: center; gap: 10px; }\n        .quick-filters { display: flex; gap: 8px; flex-wrap: wrap; }\n        .filter-chip { padding: 6px 14px; background: #e9ecef; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }\n        .filter-chip.active { background: var(--primary); color: white; }\n        .filter-chip:hover { opacity: 0.85; }\n        .btn-claim { padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }\n        .btn-unclaim { padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }\n        .badge-claimed { display: inline-block; padding: 4px 10px; background: #d4edda; color: #155724; border-radius: 4px; font-size: 0.8rem; }\n        .badge-unclaimed { display: inline-block; padding: 4px 10px; background: #f8d7da; color: #721c24; border-radius: 4px; font-size: 0.8rem; }\n        .age-badge { display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }\n        .age-badge-normal { background: #d4edda; color: #155724; }\n        .age-badge-warning { background: #fff3cd; color: #856404; }\n        .age-badge-critical { background: #f8d7da; color: #721c24; }\n        .row-checkbox { cursor: pointer; }\n    ";
+	return (
+		htmlHead(extraCss) +
+		htmlBody(
+			'<div id="dashboardContent"><p style="text-align:center;padding:50px;color:#666;">Loading...</p></div>',
+		)
+	);
 }
 function generateHTML_workflow() {
-  var extraCss = "\n        .action-btn { padding: 4px 8px; font-size: 0.8rem; margin: 0 2px; border-radius: 4px; border: none; cursor: pointer; color: white; }\n        .confirmation-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }\n        .confirmation-modal.show { display: flex; }\n        .modal-content-custom { background: white; border-radius: 8px; padding: 25px; max-width: 500px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }\n        .modal-content-custom h5 { color: var(--primary); margin-bottom: 15px; }\n        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }\n    ";
-  return htmlHead(extraCss) + htmlBody("<div id=\"dashboardContent\"><p style=\"text-align:center;padding:50px;color:#666;\">Loading...</p></div>");
+	var extraCss =
+		"\n        .action-btn { padding: 4px 8px; font-size: 0.8rem; margin: 0 2px; border-radius: 4px; border: none; cursor: pointer; color: white; }\n        .confirmation-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }\n        .confirmation-modal.show { display: flex; }\n        .modal-content-custom { background: white; border-radius: 8px; padding: 25px; max-width: 500px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }\n        .modal-content-custom h5 { color: var(--primary); margin-bottom: 15px; }\n        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }\n    ";
+	return (
+		htmlHead(extraCss) +
+		htmlBody(
+			'<div id="dashboardContent"><p style="text-align:center;padding:50px;color:#666;">Loading...</p></div>',
+		)
+	);
 }
 function generateHTML_survey() {
-  var extraCss = "\n        .survey-stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 25px; }\n        .survey-stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid var(--primary); }\n        .survey-stat-card h3 { color: var(--primary); margin-bottom: 5px; }\n        .survey-stat-card small { color: #888; }\n        .action-bar { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }\n        .action-bar-left { display: flex; align-items: center; gap: 10px; }\n        .survey-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }\n        .survey-response-card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }\n    ";
-  return htmlHead(extraCss) + htmlBody("<div id=\"dashboardContent\"><p style=\"text-align:center;padding:50px;color:#666;\">Loading...</p></div>");
+	var extraCss =
+		"\n        .survey-stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 25px; }\n        .survey-stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid var(--primary); }\n        .survey-stat-card h3 { color: var(--primary); margin-bottom: 5px; }\n        .survey-stat-card small { color: #888; }\n        .action-bar { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }\n        .action-bar-left { display: flex; align-items: center; gap: 10px; }\n        .survey-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }\n        .survey-response-card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }\n    ";
+	return (
+		htmlHead(extraCss) +
+		htmlBody(
+			'<div id="dashboardContent"><p style="text-align:center;padding:50px;color:#666;">Loading...</p></div>',
+		)
+	);
 }
 function generateHTML_voting() {
-  var extraCss = "\n        .voting-user-bar { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }\n        .vote-btn { width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin: 0 2px; font-size: 1rem; transition: transform 0.1s, box-shadow 0.1s; }\n        .vote-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }\n        .vote-approve { background: #28a745; color: white; }\n        .vote-deny { background: #dc3545; color: white; }\n        .vote-info { background: #ffc107; color: #000; }\n        .toast-notification { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 12px 24px; border-radius: 8px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s; z-index: 9999; }\n        .toast-notification.show { opacity: 1; }\n    ";
-  return htmlHead(extraCss) + htmlBody("<div id=\"dashboardContent\"><p style=\"text-align:center;padding:50px;color:#666;\">Loading...</p></div>");
+	var extraCss =
+		"\n        .voting-user-bar { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }\n        .vote-btn { width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin: 0 2px; font-size: 1rem; transition: transform 0.1s, box-shadow 0.1s; }\n        .vote-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }\n        .vote-approve { background: #28a745; color: white; }\n        .vote-deny { background: #dc3545; color: white; }\n        .vote-info { background: #ffc107; color: #000; }\n        .toast-notification { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 12px 24px; border-radius: 8px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s; z-index: 9999; }\n        .toast-notification.show { opacity: 1; }\n    ";
+	return (
+		htmlHead(extraCss) +
+		htmlBody(
+			'<div id="dashboardContent"><p style="text-align:center;padding:50px;color:#666;">Loading...</p></div>',
+		)
+	);
 }
 function generateHTML_cards() {
-  var extraCss = "\n        .cards-metrics-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }\n        .cards-metric-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #e9ecef; }\n        .cards-metric-card h6 { color: #888; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 10px; }\n        .cards-status-list { font-size: 0.85rem; }\n        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }\n        .item-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #e9ecef; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }\n        .item-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }\n        .item-card-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px; border-bottom: 1px solid #f0f2f5; }\n        .item-card-title { font-weight: 600; font-size: 0.95rem; }\n        .item-card-meta { font-size: 0.75rem; color: #888; margin-top: 3px; }\n        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }\n        .item-card-body { padding: 15px; }\n    ";
-  return htmlHead(extraCss) + htmlBody("<div id=\"dashboardContent\"><p style=\"text-align:center;padding:50px;color:#666;\">Loading...</p></div>");
+	var extraCss =
+		"\n        .cards-metrics-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }\n        .cards-metric-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #e9ecef; }\n        .cards-metric-card h6 { color: #888; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 10px; }\n        .cards-status-list { font-size: 0.85rem; }\n        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }\n        .item-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #e9ecef; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }\n        .item-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }\n        .item-card-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px; border-bottom: 1px solid #f0f2f5; }\n        .item-card-title { font-weight: 600; font-size: 0.95rem; }\n        .item-card-meta { font-size: 0.75rem; color: #888; margin-top: 3px; }\n        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }\n        .item-card-body { padding: 15px; }\n    ";
+	return (
+		htmlHead(extraCss) +
+		htmlBody(
+			'<div id="dashboardContent"><p style="text-align:center;padding:50px;color:#666;">Loading...</p></div>',
+		)
+	);
 }
 function generateHTML_bulkActions() {
-  var extraCss = "\n        .action-bar { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }\n        .action-bar-left, .action-bar-right { display: flex; align-items: center; gap: 10px; }\n        .reassign-wrapper { position: relative; }\n        .reassign-dropdown { position: absolute; top: 100%; left: 0; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; min-width: 180px; }\n        .reassign-dropdown a { display: block; padding: 10px 15px; cursor: pointer; font-size: 0.9rem; color: #333; text-decoration: none; }\n        .reassign-dropdown a:hover { background: #f0f2f5; }\n        .row-action-dropdown { position: relative; display: inline-block; }\n        .row-action-menu { display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; min-width: 160px; }\n        .row-action-menu.show { display: block; }\n        .row-action-menu a { display: block; padding: 10px 15px; cursor: pointer; font-size: 0.85rem; color: #333; text-decoration: none; }\n        .row-action-menu a:hover { background: #f0f2f5; }\n        .bulk-cb { cursor: pointer; }\n    ";
-  return htmlHead(extraCss) + htmlBody("<div id=\"dashboardContent\"><p style=\"text-align:center;padding:50px;color:#666;\">Loading...</p></div>");
+	var extraCss =
+		"\n        .action-bar { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }\n        .action-bar-left, .action-bar-right { display: flex; align-items: center; gap: 10px; }\n        .reassign-wrapper { position: relative; }\n        .reassign-dropdown { position: absolute; top: 100%; left: 0; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; min-width: 180px; }\n        .reassign-dropdown a { display: block; padding: 10px 15px; cursor: pointer; font-size: 0.9rem; color: #333; text-decoration: none; }\n        .reassign-dropdown a:hover { background: #f0f2f5; }\n        .row-action-dropdown { position: relative; display: inline-block; }\n        .row-action-menu { display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; min-width: 160px; }\n        .row-action-menu.show { display: block; }\n        .row-action-menu a { display: block; padding: 10px 15px; cursor: pointer; font-size: 0.85rem; color: #333; text-decoration: none; }\n        .row-action-menu a:hover { background: #f0f2f5; }\n        .bulk-cb { cursor: pointer; }\n    ";
+	return (
+		htmlHead(extraCss) +
+		htmlBody(
+			'<div id="dashboardContent"><p style="text-align:center;padding:50px;color:#666;">Loading...</p></div>',
+		)
+	);
 }
 function vmPreamble() {
-  var ver = (typeof WIZARD_VERSION !== 'undefined') ? WIZARD_VERSION : '3.0.0';
-  return "/**\n * Dashboard ViewModel\n * Generated by Dashboard Builder v" + ver + "\n * Style: ".concat(State.selectedStyle || 'simple-status', "\n * ").concat(new Date().toISOString(), "\n *\n * Loaded by Etrieve RequireJS as 'template/viewmodel'.\n * Dependencies: integration (Etrieve data layer), user (current user info),\n *               template/configuration (dashboard config with source names).\n */\n\n// All code runs in global scope; define() at the bottom registers for RequireJS.\n\n");
+	var ver = typeof WIZARD_VERSION !== "undefined" ? WIZARD_VERSION : "3.0.0";
+	return (
+		"/**\n * Dashboard ViewModel\n * Generated by Dashboard Builder v" +
+		ver +
+		"\n * Style: "
+			.concat(State.selectedStyle || "simple-status", "\n * ")
+			.concat(
+				new Date().toISOString(),
+				"\n *\n * Loaded by Etrieve RequireJS as 'template/viewmodel'.\n * Dependencies: integration (Etrieve data layer), user (current user info),\n *               template/configuration (dashboard config with source names).\n */\n\n// All code runs in global scope; define() at the bottom registers for RequireJS.\n\n",
+			)
+	);
 }
 function vmBaseClass() {
-  var secEnabled = State.securityConfig && State.securityConfig.enabled;
-  var securityBlock = '';
-  var combinedBlock = '';
-  var notesBlock = '';
-  var notesEnabled = State.notesConfig && State.notesConfig.enabled;
+	var secEnabled = State.securityConfig && State.securityConfig.enabled;
+	var securityBlock = "";
+	var combinedBlock = "";
+	var notesBlock = "";
+	var notesEnabled = State.notesConfig && State.notesConfig.enabled;
 
-  if (secEnabled) {
-    var powerGid = escapeJS(State.securityConfig.powerGroupId || '');
-    var swimlaneGroupsJSON = JSON.stringify((State.securityConfig.swimlaneGroups || []).filter(function(g) { return g.groupId; }));
+	if (secEnabled) {
+		var powerGid = escapeJS(State.securityConfig.powerGroupId || "");
+		var swimlaneGroupsJSON = JSON.stringify(
+			(State.securityConfig.swimlaneGroups || []).filter(function (g) {
+				return g.groupId;
+			}),
+		);
 
-    securityBlock = "\n// ===== SECURITY-FIRST ACCESS CONTROL =====\n// Data is only loaded if the user belongs to an authorized group.\n// Power users get the full dataset; others get filtered per-swimlane.\n\nDashboardViewModel.prototype._securityEnabled = true;\nDashboardViewModel.prototype._powerGroupId = '" + powerGid + "';\nDashboardViewModel.prototype._swimlaneGroups = " + swimlaneGroupsJSON + ";\n\nDashboardViewModel.prototype._checkAccess = function() {\n    // Check if user module is available (Etrieve provides this)\n    if (typeof user === 'undefined' || typeof user.hasGroupOrRole !== 'function') {\n        console.error('Security: user module not available. Access denied (fail-closed).');\n        return { authorized: false, isPower: false, allowedSwimlanes: [] };\n    }\n\n    // Power user check\n    if (this._powerGroupId && user.hasGroupOrRole(this._powerGroupId)) {\n        return { authorized: true, isPower: true, allowedSwimlanes: [] };\n    }\n\n    // Per-swimlane group check\n    var allowed = [];\n    for (var i = 0; i < this._swimlaneGroups.length; i++) {\n        var sg = this._swimlaneGroups[i];\n        if (sg.groupId && user.hasGroupOrRole(sg.groupId)) {\n            allowed.push(sg.swimlaneName);\n        }\n    }\n\n    if (allowed.length > 0) {\n        return { authorized: true, isPower: false, allowedSwimlanes: allowed };\n    }\n\n    return { authorized: false, isPower: false, allowedSwimlanes: [] };\n};\n\n";
-  }
+		securityBlock =
+			"\n// ===== SECURITY-FIRST ACCESS CONTROL =====\n// Data is only loaded if the user belongs to an authorized group.\n// Power users get the full dataset; others get filtered per-swimlane.\n\nDashboardViewModel.prototype._securityEnabled = true;\nDashboardViewModel.prototype._powerGroupId = '" +
+			powerGid +
+			"';\nDashboardViewModel.prototype._swimlaneGroups = " +
+			swimlaneGroupsJSON +
+			";\n\nDashboardViewModel.prototype._checkAccess = function() {\n    // Check if user module is available (Etrieve provides this)\n    if (typeof user === 'undefined' || typeof user.hasGroupOrRole !== 'function') {\n        console.error('Security: user module not available. Access denied (fail-closed).');\n        return { authorized: false, isPower: false, allowedSwimlanes: [] };\n    }\n\n    // Power user check\n    if (this._powerGroupId && user.hasGroupOrRole(this._powerGroupId)) {\n        return { authorized: true, isPower: true, allowedSwimlanes: [] };\n    }\n\n    // Per-swimlane group check\n    var allowed = [];\n    for (var i = 0; i < this._swimlaneGroups.length; i++) {\n        var sg = this._swimlaneGroups[i];\n        if (sg.groupId && user.hasGroupOrRole(sg.groupId)) {\n            allowed.push(sg.swimlaneName);\n        }\n    }\n\n    if (allowed.length > 0) {\n        return { authorized: true, isPower: false, allowedSwimlanes: allowed };\n    }\n\n    return { authorized: false, isPower: false, allowedSwimlanes: [] };\n};\n\n";
+	}
 
-  // Combined mode: override loadData to fetch from two separate integration sources
-  // Content (dbo.*) and Central Forms (reporting.central_forms_*) are different DBs.
-  if (State.mode === 'combined') {
-    combinedBlock = "\n// === COMBINED MODE: Dual-source loadData override ===\n// Content and Forms are separate integration sources merged at runtime.\nDashboardViewModel.prototype.loadData = function() {\n    var self = this;\n    var cfg = this.config;\n    if (typeof integration === 'undefined' || typeof integration.all !== 'function') {\n        self.showError('Integration API not available.');\n        return;\n    }\n    console.log('[Dashboard] Loading combined data: ' + cfg.integration.contentSource + ' + ' + cfg.integration.formsSource);\n    var contentDone = false, formsDone = false;\n    var contentRows = [], formsRows = [];\n    function mergeAndRender() {\n        if (!contentDone || !formsDone) return;\n        var merged = [];\n        contentRows.forEach(function(row) {\n            row.RecordType = 'Document';\n            if (row.url && row.url.charAt(0) === '/' && cfg.contentUrl) {\n                row.url = cfg.contentUrl + row.url;\n            }\n            merged.push(row);\n        });\n        formsRows.forEach(function(row) {\n            row.RecordType = 'Form';\n            if (row.url && row.url.indexOf('/central/') === 0 && cfg.centralUrl) {\n                row.url = cfg.centralUrl + row.url;\n            }\n            merged.push(row);\n        });\n        self.data = merged;\n        console.log('[Dashboard] Combined: ' + contentRows.length + ' docs + ' + formsRows.length + ' forms = ' + merged.length + ' total');\n        if (merged.length > 0) {\n            console.log('[Dashboard] Columns:', Object.keys(merged[0]));\n        }\n        // Auto-resolve filter fields (same logic as single-source)\n        if (merged.length > 0 && cfg.swimlanes) {\n            var allCols = {};\n            merged.forEach(function(row) { Object.keys(row).forEach(function(k) { allCols[k] = true; }); });\n            var cols = Object.keys(allCols);\n            var colsLower = cols.map(function(c) { return c.toLowerCase(); });\n            cfg.swimlanes.forEach(function(sl) {\n                if (!sl.filters) return;\n                sl.filters.forEach(function(f) {\n                    if (cols.indexOf(f.field) !== -1) return;\n                    var lf = f.field.toLowerCase();\n                    var ci = colsLower.indexOf(lf);\n                    if (ci !== -1) { f.field = cols[ci]; return; }\n                    var km = { 'current workflow step': 'CurrentStepName', 'record type': 'RecordType', 'document type': 'DocumentType', 'form status': 'FormStatus' };\n                    if (km[lf] && cols.indexOf(km[lf]) !== -1) { f.field = km[lf]; }\n                });\n            });\n        }\n        // Swimlane diagnostics\n        if (cfg.swimlanes) {\n            cfg.swimlanes.forEach(function(sl) {\n                var mc = merged.filter(function(row) {\n                    if (!sl.filters || sl.filters.length === 0) return true;\n                    return sl.filters.every(function(f) { return f.values.some(function(v) { return String(v) === String(row[f.field]); }); });\n                }).length;\n                console.log('[Dashboard] Swimlane \"' + sl.name + '\": ' + mc + '/' + merged.length + ' rows');\n            });\n        }\n        self.applyFilters();\n        self.render();\n    }\n    // Fetch content source\n    integration.all(cfg.integration.contentSource).then(function(data) {\n        contentRows = data || [];\n        console.log('[Dashboard] Content source: ' + contentRows.length + ' rows');\n        contentDone = true;\n        mergeAndRender();\n    }, function(err) {\n        var errMsg = (err && err.responseText) || (err && err.statusText) || String(err);\n        console.error('[Dashboard] Content source (' + cfg.integration.contentSource + ') FAILED:', errMsg);\n        showToast('Content source \"' + cfg.integration.contentSource + '\" failed. Check integration SQL. Error: ' + errMsg, 'error');\n        contentDone = true;\n        mergeAndRender();\n    });\n    // Fetch forms source\n    integration.all(cfg.integration.formsSource).then(function(data) {\n        formsRows = data || [];\n        console.log('[Dashboard] Forms source: ' + formsRows.length + ' rows');\n        formsDone = true;\n        mergeAndRender();\n    }, function(err) {\n        var errMsg = (err && err.responseText) || (err && err.statusText) || String(err);\n        console.error('[Dashboard] Forms source (' + cfg.integration.formsSource + ') FAILED:', errMsg);\n        showToast('Forms source \"' + cfg.integration.formsSource + '\" failed. Check integration SQL. Error: ' + errMsg, 'error');\n        formsDone = true;\n        mergeAndRender();\n    });\n};\n";
-  }
+	// Combined mode: override loadData to fetch from two separate integration sources
+	// Content (dbo.*) and Central Forms (reporting.central_forms_*) are different DBs.
+	if (State.mode === "combined") {
+		combinedBlock =
+			"\n// === COMBINED MODE: Dual-source loadData override ===\n// Content and Forms are separate integration sources merged at runtime.\nDashboardViewModel.prototype.loadData = function() {\n    var self = this;\n    var cfg = this.config;\n    if (typeof integration === 'undefined' || typeof integration.all !== 'function') {\n        self.showError('Integration API not available.');\n        return;\n    }\n    console.log('[Dashboard] Loading combined data: ' + cfg.integration.contentSource + ' + ' + cfg.integration.formsSource);\n    var contentDone = false, formsDone = false;\n    var contentRows = [], formsRows = [];\n    function mergeAndRender() {\n        if (!contentDone || !formsDone) return;\n        var merged = [];\n        contentRows.forEach(function(row) {\n            row.RecordType = 'Document';\n            if (row.url && row.url.charAt(0) === '/' && cfg.contentUrl) {\n                row.url = cfg.contentUrl + row.url;\n            }\n            merged.push(row);\n        });\n        formsRows.forEach(function(row) {\n            row.RecordType = 'Form';\n            if (row.url && row.url.indexOf('/central/') === 0 && cfg.centralUrl) {\n                row.url = cfg.centralUrl + row.url;\n            }\n            merged.push(row);\n        });\n        self.data = merged;\n        console.log('[Dashboard] Combined: ' + contentRows.length + ' docs + ' + formsRows.length + ' forms = ' + merged.length + ' total');\n        if (merged.length > 0) {\n            console.log('[Dashboard] Columns:', Object.keys(merged[0]));\n        }\n        // Auto-resolve filter fields (same logic as single-source)\n        if (merged.length > 0 && cfg.swimlanes) {\n            var allCols = {};\n            merged.forEach(function(row) { Object.keys(row).forEach(function(k) { allCols[k] = true; }); });\n            var cols = Object.keys(allCols);\n            var colsLower = cols.map(function(c) { return c.toLowerCase(); });\n            cfg.swimlanes.forEach(function(sl) {\n                if (!sl.filters) return;\n                sl.filters.forEach(function(f) {\n                    if (cols.indexOf(f.field) !== -1) return;\n                    var lf = f.field.toLowerCase();\n                    var ci = colsLower.indexOf(lf);\n                    if (ci !== -1) { f.field = cols[ci]; return; }\n                    var km = { 'current workflow step': 'CurrentStepName', 'record type': 'RecordType', 'document type': 'DocumentType', 'form status': 'FormStatus' };\n                    if (km[lf] && cols.indexOf(km[lf]) !== -1) { f.field = km[lf]; }\n                });\n            });\n        }\n        // Swimlane diagnostics\n        if (cfg.swimlanes) {\n            cfg.swimlanes.forEach(function(sl) {\n                var mc = merged.filter(function(row) {\n                    if (!sl.filters || sl.filters.length === 0) return true;\n                    return sl.filters.every(function(f) { return f.values.some(function(v) { return String(v) === String(row[f.field]); }); });\n                }).length;\n                console.log('[Dashboard] Swimlane \"' + sl.name + '\": ' + mc + '/' + merged.length + ' rows');\n            });\n        }\n        self.applyFilters();\n        self.render();\n    }\n    // Fetch content source\n    integration.all(cfg.integration.contentSource).then(function(data) {\n        contentRows = data || [];\n        console.log('[Dashboard] Content source: ' + contentRows.length + ' rows');\n        contentDone = true;\n        mergeAndRender();\n    }, function(err) {\n        var errMsg = (err && err.responseText) || (err && err.statusText) || String(err);\n        console.error('[Dashboard] Content source (' + cfg.integration.contentSource + ') FAILED:', errMsg);\n        showToast('Content source \"' + cfg.integration.contentSource + '\" failed. Check integration SQL. Error: ' + errMsg, 'error');\n        contentDone = true;\n        mergeAndRender();\n    });\n    // Fetch forms source\n    integration.all(cfg.integration.formsSource).then(function(data) {\n        formsRows = data || [];\n        console.log('[Dashboard] Forms source: ' + formsRows.length + ' rows');\n        formsDone = true;\n        mergeAndRender();\n    }, function(err) {\n        var errMsg = (err && err.responseText) || (err && err.statusText) || String(err);\n        console.error('[Dashboard] Forms source (' + cfg.integration.formsSource + ') FAILED:', errMsg);\n        showToast('Forms source \"' + cfg.integration.formsSource + '\" failed. Check integration SQL. Error: ' + errMsg, 'error');\n        formsDone = true;\n        mergeAndRender();\n    });\n};\n";
+	}
 
-  // Cell renderer function (always present; notes-enabled version renders editable inputs)
-  var cellBlock = "\n// Cell renderer\nfunction _cell(row, col) {\n    var val = row[col.field];\n    return '<td>' + _esc(val != null ? val : '') + '</td>';\n}\n";
+	// Cell renderer function (always present; notes-enabled version renders editable inputs)
+	var cellBlock =
+		"\n// Cell renderer\nfunction _cell(row, col) {\n    var val = row[col.field];\n    return '<td>' + _esc(val != null ? val : '') + '</td>';\n}\n";
 
-  if (notesEnabled) {
-    cellBlock = "\n// Cell renderer with notes column support\nfunction _cell(row, col) {\n    if (col.type === 'notes') {\n        var itemId = row.FormID || row.DocumentID || '';\n        var current = (row._note != null) ? row._note : '';\n        return '<td class=\"note-cell\"><input type=\"text\" class=\"note-input\" ' +\n            'value=\"' + _esc(current) + '\" ' +\n            'data-item-id=\"' + _esc(itemId) + '\" ' +\n            'onblur=\"dashboard.saveNote(\\'' + _escJS(itemId) + '\\', this.value)\" ' +\n            'onkeydown=\"if(event.key===\\'Enter\\')this.blur()\" ' +\n            'placeholder=\"Add note...\" /></td>';\n    }\n    var val = row[col.field];\n    return '<td>' + _esc(val != null ? val : '') + '</td>';\n}\n";
+	if (notesEnabled) {
+		cellBlock =
+			"\n// Cell renderer with notes column support\nfunction _cell(row, col) {\n    if (col.type === 'notes') {\n        var itemId = row.FormID || row.DocumentID || '';\n        var current = (row._note != null) ? row._note : '';\n        return '<td class=\"note-cell\"><input type=\"text\" class=\"note-input\" ' +\n            'value=\"' + _esc(current) + '\" ' +\n            'data-item-id=\"' + _esc(itemId) + '\" ' +\n            'onblur=\"dashboard.saveNote(\\'' + _escJS(itemId) + '\\', this.value)\" ' +\n            'onkeydown=\"if(event.key===\\'Enter\\')this.blur()\" ' +\n            'placeholder=\"Add note...\" /></td>';\n    }\n    var val = row[col.field];\n    return '<td>' + _esc(val != null ? val : '') + '</td>';\n}\n";
 
-    notesBlock = "\n// ===== NOTES COLUMN (write-back via Hybrid Server) =====\nDashboardViewModel.prototype._notesMap = {};\n\nDashboardViewModel.prototype.loadNotes = function() {\n    var self = this;\n    if (typeof integration === 'undefined' || typeof getNotesIntegration === 'undefined') return;\n    integration.all(getNotesIntegration).then(function(data) {\n        self._notesMap = {};\n        (data || []).forEach(function(n) { self._notesMap[n.ItemID] = n.NoteText || ''; });\n        console.log('[Dashboard] Notes loaded: ' + Object.keys(self._notesMap).length + ' entries');\n        self.data.forEach(function(row) {\n            var id = row.FormID || row.DocumentID || '';\n            if (self._notesMap[id] !== undefined) { row._note = self._notesMap[id]; }\n        });\n        self.applyFilters();\n        self.render();\n    }, function(err) {\n        console.error('[Dashboard] Failed to load notes:', err);\n    });\n};\n\nDashboardViewModel.prototype.saveNote = function(itemId, noteText) {\n    if (!itemId) return;\n    var prev = this._notesMap[itemId] || '';\n    if (noteText === prev) return;\n    var self = this;\n    if (typeof integration === 'undefined' || typeof saveNoteIntegration === 'undefined') {\n        showToast('Notes integration not configured.', 'error');\n        return;\n    }\n    var updatedBy = (typeof user !== 'undefined' && user.UserName) ? user.UserName : 'unknown';\n    integration.all(saveNoteIntegration, { ItemID: itemId, NoteText: noteText, UpdatedBy: updatedBy }).then(function(resp) {\n        self._notesMap[itemId] = noteText;\n        self.data.forEach(function(row) {\n            var id = row.FormID || row.DocumentID || '';\n            if (id === itemId) { row._note = noteText; }\n        });\n        showToast('Note saved.', 'success');\n    }, function(err) {\n        console.error('[Dashboard] Failed to save note:', err);\n        showToast('Failed to save note. Check integration configuration.', 'error');\n    });\n};\n\n// Auto-load notes after first render\n(function() {\n    var _origRender = DashboardViewModel.prototype.render;\n    var _notesLoaded = false;\n    DashboardViewModel.prototype.render = function() {\n        _origRender.call(this);\n        if (!_notesLoaded && this.loadNotes) {\n            _notesLoaded = true;\n            var self = this;\n            setTimeout(function() { self.loadNotes(); }, 200);\n        }\n    };\n})();\n";
-  }
+		notesBlock =
+			"\n// ===== NOTES COLUMN (write-back via Hybrid Server) =====\nDashboardViewModel.prototype._notesMap = {};\n\nDashboardViewModel.prototype.loadNotes = function() {\n    var self = this;\n    if (typeof integration === 'undefined' || typeof getNotesIntegration === 'undefined') return;\n    integration.all(getNotesIntegration).then(function(data) {\n        self._notesMap = {};\n        (data || []).forEach(function(n) { self._notesMap[n.ItemID] = n.NoteText || ''; });\n        console.log('[Dashboard] Notes loaded: ' + Object.keys(self._notesMap).length + ' entries');\n        self.data.forEach(function(row) {\n            var id = row.FormID || row.DocumentID || '';\n            if (self._notesMap[id] !== undefined) { row._note = self._notesMap[id]; }\n        });\n        self.applyFilters();\n        self.render();\n    }, function(err) {\n        console.error('[Dashboard] Failed to load notes:', err);\n    });\n};\n\nDashboardViewModel.prototype.saveNote = function(itemId, noteText) {\n    if (!itemId) return;\n    var prev = this._notesMap[itemId] || '';\n    if (noteText === prev) return;\n    var self = this;\n    if (typeof integration === 'undefined' || typeof saveNoteIntegration === 'undefined') {\n        showToast('Notes integration not configured.', 'error');\n        return;\n    }\n    var updatedBy = (typeof user !== 'undefined' && user.UserName) ? user.UserName : 'unknown';\n    integration.all(saveNoteIntegration, { ItemID: itemId, NoteText: noteText, UpdatedBy: updatedBy }).then(function(resp) {\n        self._notesMap[itemId] = noteText;\n        self.data.forEach(function(row) {\n            var id = row.FormID || row.DocumentID || '';\n            if (id === itemId) { row._note = noteText; }\n        });\n        showToast('Note saved.', 'success');\n    }, function(err) {\n        console.error('[Dashboard] Failed to save note:', err);\n        showToast('Failed to save note. Check integration configuration.', 'error');\n    });\n};\n\n// Auto-load notes after first render\n(function() {\n    var _origRender = DashboardViewModel.prototype.render;\n    var _notesLoaded = false;\n    DashboardViewModel.prototype.render = function() {\n        _origRender.call(this);\n        if (!_notesLoaded && this.loadNotes) {\n            _notesLoaded = true;\n            var self = this;\n            setTimeout(function() { self.loadNotes(); }, 200);\n        }\n    };\n})();\n";
+	}
 
-  // Date-range filter: a _parseDate helper + an applyFilters wrapper that post-filters
-  // filteredData by [_dateFrom, _dateTo] on config.ui.dateField. Appended after the class
-  // so the wrapper captures the real applyFilters method.
-  var dateBlock = "\n// ===== DATE-RANGE FILTER =====\nfunction _parseDate(v) {\n    if (v == null || v === '') return null;\n    var s = String(v).trim();\n    if (s.length >= 10 && s.charAt(4) === '-' && s.charAt(7) === '-') { var y=+s.slice(0,4), mo=+s.slice(5,7), d=+s.slice(8,10); if (y && mo && d) return new Date(y, mo-1, d).getTime(); }\n    if (s.indexOf('/') !== -1) { var p = s.split(' ')[0].split('/'); if (p.length === 3) { var mm=+p[0], dd=+p[1], yy=+p[2]; if (yy) return new Date(yy, mm-1, dd).getTime(); } }\n    var t = Date.parse(s);\n    return isNaN(t) ? null : t;\n}\n(function(){\n    if (typeof DashboardViewModel === 'undefined') return;\n    var _origAF = DashboardViewModel.prototype.applyFilters;\n    DashboardViewModel.prototype.applyFilters = function(){\n        _origAF.call(this);\n        if (this._dateField && (this._dateFrom || this._dateTo)) {\n            var fromT = this._dateFrom ? _parseDate(this._dateFrom) : null;\n            var toT = this._dateTo ? _parseDate(this._dateTo) : null;\n            var fld = this._dateField;\n            this.filteredData = this.filteredData.filter(function(row){\n                var dv = _parseDate(row[fld]);\n                if (dv == null) return false;\n                if (fromT != null && dv < fromT) return false;\n                if (toT != null && dv > toT + 86399999) return false;\n                return true;\n            });\n        }\n    };\n})();\n";
-  // Central Flow API helpers (used by workflow-actions and bulk-actions styles)
-  var flowApiBlock = '';
-  var actionStyle = State.selectedStyle || 'simple-status';
-  if (actionStyle === 'workflow-actions' || actionStyle === 'bulk-actions') {
-    flowApiBlock = "\n// ===== CENTRAL FLOW API (direct workflow transitions) =====\n// Uses the same API as Etrieve Workflow Monitor. Auth via session CSRF token.\n// Reference: Robert Gunning (Softdocs) - 'Approve Packages in Your Inbox' utility.\n\nfunction _getCSRFToken() {\n    var match = document.cookie.split('; ').find(function(row) {\n        return row.indexOf('CSRFToken') === 0;\n    });\n    return match ? match.split('=')[1] : null;\n}\n\nfunction _flowApiRequest(method, url, payload) {\n    var csrfToken = _getCSRFToken();\n    if (!csrfToken) {\n        return Promise.reject(new Error('No CSRF token found. Ensure you are logged into Etrieve Central.'));\n    }\n    var opts = {\n        method: method,\n        headers: {\n            'Content-Type': 'application/json; charset=utf-8',\n            'X-CSRF-Token': csrfToken\n        }\n    };\n    if (payload) { opts.body = JSON.stringify(payload); }\n    return fetch(url, opts).then(function(resp) {\n        var ct = resp.headers.get('content-type');\n        if (ct && ct.indexOf('application/json') !== -1) {\n            return resp.json().then(function(data) {\n                if (!resp.ok) throw new Error(data.message || 'Central API error: HTTP ' + resp.status);\n                return data;\n            });\n        }\n        if (!resp.ok) throw new Error('Central API error: HTTP ' + resp.status);\n        return 'success';\n    });\n}\n\n// Map action labels to Etrieve DecisionOptionIDs\n// Default: Approve=1, Deny=2. Adjust if your workflow uses custom decision options.\nvar _decisionMap = { 'approve': 1, 'deny': 2, 'reject': 2, 'decline': 2 };\nfunction _getDecisionId(actionLabel) {\n    return _decisionMap[(actionLabel || '').toLowerCase()] || 1;\n}\n\n";
-  }
+	// Date-range filter: a _parseDate helper + an applyFilters wrapper that post-filters
+	// filteredData by [_dateFrom, _dateTo] on config.ui.dateField. Appended after the class
+	// so the wrapper captures the real applyFilters method.
+	var dateBlock =
+		"\n// ===== DATE-RANGE FILTER =====\nfunction _parseDate(v) {\n    if (v == null || v === '') return null;\n    var s = String(v).trim();\n    if (s.length >= 10 && s.charAt(4) === '-' && s.charAt(7) === '-') { var y=+s.slice(0,4), mo=+s.slice(5,7), d=+s.slice(8,10); if (y && mo && d) return new Date(y, mo-1, d).getTime(); }\n    if (s.indexOf('/') !== -1) { var p = s.split(' ')[0].split('/'); if (p.length === 3) { var mm=+p[0], dd=+p[1], yy=+p[2]; if (yy) return new Date(yy, mm-1, dd).getTime(); } }\n    var t = Date.parse(s);\n    return isNaN(t) ? null : t;\n}\n(function(){\n    if (typeof DashboardViewModel === 'undefined') return;\n    var _origAF = DashboardViewModel.prototype.applyFilters;\n    DashboardViewModel.prototype.applyFilters = function(){\n        _origAF.call(this);\n        if (this._dateField && (this._dateFrom || this._dateTo)) {\n            var fromT = this._dateFrom ? _parseDate(this._dateFrom) : null;\n            var toT = this._dateTo ? _parseDate(this._dateTo) : null;\n            var fld = this._dateField;\n            this.filteredData = this.filteredData.filter(function(row){\n                var dv = _parseDate(row[fld]);\n                if (dv == null) return false;\n                if (fromT != null && dv < fromT) return false;\n                if (toT != null && dv > toT + 86399999) return false;\n                return true;\n            });\n        }\n    };\n})();\n";
+	// Central Flow API helpers (used by workflow-actions and bulk-actions styles)
+	var flowApiBlock = "";
+	var actionStyle = State.selectedStyle || "simple-status";
+	if (actionStyle === "workflow-actions" || actionStyle === "bulk-actions") {
+		flowApiBlock =
+			"\n// ===== CENTRAL FLOW API (direct workflow transitions) =====\n// Uses the same API as Etrieve Workflow Monitor. Auth via session CSRF token.\n// Reference: Robert Gunning (Softdocs) - 'Approve Packages in Your Inbox' utility.\n\nfunction _getCSRFToken() {\n    var match = document.cookie.split('; ').find(function(row) {\n        return row.indexOf('CSRFToken') === 0;\n    });\n    return match ? match.split('=')[1] : null;\n}\n\nfunction _flowApiRequest(method, url, payload) {\n    var csrfToken = _getCSRFToken();\n    if (!csrfToken) {\n        return Promise.reject(new Error('No CSRF token found. Ensure you are logged into Etrieve Central.'));\n    }\n    var opts = {\n        method: method,\n        headers: {\n            'Content-Type': 'application/json; charset=utf-8',\n            'X-CSRF-Token': csrfToken\n        }\n    };\n    if (payload) { opts.body = JSON.stringify(payload); }\n    return fetch(url, opts).then(function(resp) {\n        var ct = resp.headers.get('content-type');\n        if (ct && ct.indexOf('application/json') !== -1) {\n            return resp.json().then(function(data) {\n                if (!resp.ok) throw new Error(data.message || 'Central API error: HTTP ' + resp.status);\n                return data;\n            });\n        }\n        if (!resp.ok) throw new Error('Central API error: HTTP ' + resp.status);\n        return 'success';\n    });\n}\n\n// Map action labels to Etrieve DecisionOptionIDs\n// Default: Approve=1, Deny=2. Adjust if your workflow uses custom decision options.\nvar _decisionMap = { 'approve': 1, 'deny': 2, 'reject': 2, 'decline': 2 };\nfunction _getDecisionId(actionLabel) {\n    return _decisionMap[(actionLabel || '').toLowerCase()] || 1;\n}\n\n";
+	}
 
-  return flowApiBlock + "// Runtime HTML escaping to prevent XSS from API data\nfunction _esc(str) {\n    if (str == null) return '';\n    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;');\n}\n\n// Runtime JS string escaping for onclick attributes (prevents quote breakout)\n// Also HTML-encodes the result for safe use inside HTML attribute values.\nfunction _escJS(str) {\n    if (str == null) return '';\n    var s = String(str).replace(/\\\\/g,'\\\\\\\\').replace(/'/g,\"\\\\'\").replace(/\"/g,'\\\\\"').replace(/\\n/g,'\\\\n').replace(/\\r/g,'');\n    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\n// URL sanitizer: rejects non-HTTP schemes (defense-in-depth against XSS)\nfunction _safeUrl(url) {\n    if (!url || url === '#') return '#';\n    if (/^https?:\\/\\//i.test(url)) return url;\n    if (url.charAt(0) === '/' && url.charAt(1) !== '/') return url;\n    return '#';\n}\n\n// Toast notification helper\nfunction showToast(msg, type) {\n    var t = document.createElement('div');\n    t.className = 'toast-notification' + (type === 'error' ? ' toast-error' : type === 'success' ? ' toast-success' : '');\n    t.textContent = msg;\n    document.body.appendChild(t);\n    setTimeout(function() { t.classList.add('show'); }, 10);\n    setTimeout(function() { t.remove(); }, 3000);\n}\n\n// Refresh helper (replaces jQuery dependency)\nfunction _refreshDashboard(delayMs) {\n    setTimeout(function() { var rb = document.getElementById('refreshBtn'); if (rb) rb.click(); }, delayMs || 1500);\n}\n\n// Sortable column header helper\nfunction _sortHeader(field, label) {\n    var sf = (typeof dashboard !== 'undefined' && dashboard.sortField === field);\n    var dir = sf ? dashboard.sortDirection : '';\n    var icon = dir === 'asc' ? 'bi-sort-up' : dir === 'desc' ? 'bi-sort-down' : 'bi-arrow-down-up';\n    return '<th onclick=\"dashboard.sortBy(\\'' + _escJS(field) + '\\')\">' + _esc(label) + ' <i class=\"bi ' + icon + ' sort-icon' + (sf ? ' active' : '') + '\"></i></th>';\n}\n\nclass DashboardViewModel {\n    constructor(config) {\n        this.config = config;\n        this.data = [];\n        this.filteredData = [];\n        this.searchTerm = '';\n        this.activeFilters = {};\n        this._dateField = (config.ui && config.ui.dateField) || '';\n        this._dateFrom = '';\n        this._dateTo = '';\n        this.sortField = (config.ui && config.ui.defaultSort) ? config.ui.defaultSort.field : '';\n        this.sortDirection = (config.ui && config.ui.defaultSort) ? config.ui.defaultSort.direction : 'asc';\n" + (secEnabled ? "        this._accessResult = null; // cached access check\n" : "") + "    }\n\n    loadData() {\n        var self = this;\n" + (secEnabled ?
-"        // Security-first: check group membership before loading any data\n        if (this._securityEnabled) {\n            this._accessResult = this._checkAccess();\n            if (!this._accessResult.authorized) {\n                this.showError('Access Denied. You do not have permission to view this dashboard. Contact your supervisor for access.');\n                return;\n            }\n        }\n\n" : "") +
-"        // Use Etrieve integration.all() if available, otherwise fall back to fetch\n        if (typeof integration !== 'undefined' && typeof integration.all === 'function') {\n            console.log('[Dashboard] Loading data from source: ' + this.config.integration.source);\n            integration.all(this.config.integration.source).then(function(data) {\n                self.data = data || [];\n                console.log('[Dashboard] Data loaded: ' + self.data.length + ' rows');\n                if (self.data.length > 0) {\n                    console.log('[Dashboard] Column names:', Object.keys(self.data[0]));\n                    console.log('[Dashboard] First row sample:', JSON.stringify(self.data[0]).substring(0, 500));\n                }\n                // Auto-resolve filter field names: if a filter field doesn't match\n                // any column in the actual data, try to find the correct column.\n                // This self-heals dashboards generated with older wizard versions\n                // that used display names instead of SQL aliases.\n                if (self.data.length > 0 && self.config.swimlanes) {\n                    var cols = Object.keys(self.data[0]);\n                    var colsLower = cols.map(function(c) { return c.toLowerCase(); });\n                    self.config.swimlanes.forEach(function(sl) {\n                        if (!sl.filters) return;\n                        sl.filters.forEach(function(f) {\n                            if (cols.indexOf(f.field) !== -1) return; // exact match, OK\n                            // Try case-insensitive match\n                            var lowerField = f.field.toLowerCase();\n                            var ciIdx = colsLower.indexOf(lowerField);\n                            if (ciIdx !== -1) {\n                                console.warn('[Dashboard] Auto-fix: filter field \"' + f.field + '\" matched column \"' + cols[ciIdx] + '\" (case mismatch)');\n                                f.field = cols[ciIdx];\n                                return;\n                            }\n                            // Try known display-name -> SQL-alias mappings\n                            var knownMap = { 'current workflow step': 'CurrentStepName', 'document type': 'DocumentType', 'category': 'Category', 'record type': 'RecordType', 'form status': 'FormStatus' };\n                            var mapped = knownMap[lowerField];\n                            if (mapped && cols.indexOf(mapped) !== -1) {\n                                console.warn('[Dashboard] Auto-fix: filter field \"' + f.field + '\" resolved to column \"' + mapped + '\" (display name -> SQL alias)');\n                                f.field = mapped;\n                                return;\n                            }\n                            // Try partial match (column name contains filter field or vice versa)\n                            for (var i = 0; i < cols.length; i++) {\n                                if (colsLower[i].indexOf(lowerField.replace(/\\s+/g, '')) !== -1 || lowerField.replace(/\\s+/g, '').indexOf(colsLower[i]) !== -1) {\n                                    console.warn('[Dashboard] Auto-fix: filter field \"' + f.field + '\" fuzzy-matched to column \"' + cols[i] + '\"');\n                                    f.field = cols[i];\n                                    return;\n                                }\n                            }\n                            console.error('[Dashboard] FILTER FIELD MISMATCH: \"' + f.field + '\" does not match any column. Available: ' + cols.join(', '));\n                        });\n                    });\n                }\n                // Prepend the appropriate base URL to view links\n                // Forms mode URLs start with /central/... -> use centralUrl\n                // Content mode URLs start with /# -> use contentUrl\n                var centralBase = self.config.centralUrl || '';\n                var contentBase = self.config.contentUrl || '';\n                // Backward compat: older configs may still have baseUrl\n                if (!centralBase && !contentBase && self.config.baseUrl) {\n                    centralBase = self.config.baseUrl;\n                    contentBase = self.config.baseUrl;\n                }\n                // Defensive: prepend https:// to a scheme-less host so View links are not rejected downstream\n                if (centralBase && centralBase.indexOf('://') === -1) { centralBase = 'https://' + centralBase; }\n                if (contentBase && contentBase.indexOf('://') === -1) { contentBase = 'https://' + contentBase; }\n                if (centralBase || contentBase) {\n                    self.data.forEach(function(row) {\n                        if (!row.url) return;\n                        if (row.url.indexOf('/central/') === 0 && centralBase) {\n                            row.url = centralBase + row.url;\n                        } else if (row.url.charAt(0) === '/' && contentBase) {\n                            row.url = contentBase + row.url;\n                        }\n                    });\n                }\n                // Log swimlane filter diagnostics\n                if (self.config.swimlanes) {\n                    self.config.swimlanes.forEach(function(sl) {\n                        var filterDesc = (!sl.filters || sl.filters.length === 0) ? 'NO FILTERS (shows all)' : sl.filters.map(function(f) {\n                            var sampleValues = self.data.slice(0, 10).map(function(r) { return r[f.field]; }).filter(function(v) { return v !== undefined; });\n                            return f.field + ' IN [' + f.values.join(', ') + '] (actual data samples: [' + sampleValues.join(', ') + '])';\n                        }).join('; ');\n                        var matchCount = self.data.filter(function(row) {\n                            if (!sl.filters || sl.filters.length === 0) return true;\n                            return sl.filters.every(function(f) { return f.values.some(function(v) { return String(v) === String(row[f.field]); }); });\n                        }).length;\n                        console.log('[Dashboard] Swimlane \"' + sl.name + '\": ' + filterDesc + ' => ' + matchCount + '/' + self.data.length + ' rows');\n                    });\n                }\n" + (secEnabled ?
-"                // Security-first: filter data to only authorized swimlanes\n                if (self._securityEnabled && self._accessResult && !self._accessResult.isPower) {\n                    var allowed = self._accessResult.allowedSwimlanes;\n                    self.data = self.data.filter(function(row) {\n                        return self.config.swimlanes.some(function(sl) {\n                            if (allowed.indexOf(sl.name) === -1) return false;\n                            if (!sl.filters || sl.filters.length === 0) return true;\n                            return sl.filters.every(function(f) { return f.values.some(function(v) { return String(v) === String(row[f.field]); }); });\n                        });\n                    });\n                }\n" : "") +
-"                self.applyFilters();\n                self.render();\n            }).catch(function(error) {\n                console.error('Failed to load dashboard data:', error);\n                self.showError('Unable to load data. Please try again.');\n            });\n        } else {\n            fetch('/api/integration/' + this.config.integration.source)\n                .then(function(r) { return r.json(); })\n                .then(function(data) {\n                    self.data = data || [];\n                    self.applyFilters();\n                    self.render();\n                })\n                .catch(function(error) {\n                    console.error('Failed to load dashboard data:', error);\n                    self.showError('Unable to load data. Please try again.');\n                });\n        }\n    }\n\n    applyFilters() {\n        this.filteredData = this.data.filter(row => {\n            if (this.searchTerm) {\n                const searchLower = this.searchTerm.toLowerCase();\n                const matches = Object.values(row).some(val => String(val).toLowerCase().includes(searchLower));\n                if (!matches) return false;\n            }\n            for (const [field, value] of Object.entries(this.activeFilters)) {\n                if (value && row[field] !== value) return false;\n            }\n            return true;\n        });\n        this.applySorting();\n    }\n\n    sortBy(field) {\n        if (this.sortField === field) {\n            this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';\n        } else {\n            this.sortField = field;\n            this.sortDirection = 'asc';\n        }\n        this.applySorting();\n        this.render();\n    }\n\n    applySorting() {\n        if (!this.sortField) return;\n        var field = this.sortField;\n        var dir = this.sortDirection === 'desc' ? -1 : 1;\n        var dateRe = /^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/;\n        this.filteredData.sort(function(a, b) {\n            var va = a[field], vb = b[field];\n            if (va == null) va = '';\n            if (vb == null) vb = '';\n            // Try date comparison (MM/DD/YYYY)\n            var da = String(va).match(dateRe), db = String(vb).match(dateRe);\n            if (da && db) {\n                var ta = new Date(da[3], da[1]-1, da[2]).getTime();\n                var tb = new Date(db[3], db[1]-1, db[2]).getTime();\n                return (ta - tb) * dir;\n            }\n            // Try numeric comparison\n            var na = Number(va), nb = Number(vb);\n            if (!isNaN(na) && !isNaN(nb) && va !== '' && vb !== '') return (na - nb) * dir;\n            return String(va).localeCompare(String(vb)) * dir;\n        });\n    }\n\n    getRowsForSwimlane(swimlane) {\n" + (secEnabled ?
-"        // Security-first: hide swimlanes the user doesn't have access to\n        if (this._securityEnabled && this._accessResult && !this._accessResult.isPower) {\n            var allowed = this._accessResult.allowedSwimlanes;\n            if (allowed.indexOf(swimlane.name) === -1) return [];\n        }\n" : "") +
-"        return this.filteredData.filter(row => {\n            if (!swimlane.filters || swimlane.filters.length === 0) return true;\n            return swimlane.filters.every(f => f.values.some(v => String(v) === String(row[f.field])));\n        });\n    }\n\n    showError(message) {\n        const container = document.getElementById('dashboardContent');\n        if (container) {\n            container.innerHTML = '<div class=\"error-message\"><i class=\"bi bi-exclamation-triangle\"></i> ' + _esc(message) + '</div>';\n        }\n    }\n}\n" + combinedBlock + securityBlock + cellBlock + notesBlock + dateBlock;
+	return (
+		flowApiBlock +
+		"// Runtime HTML escaping to prevent XSS from API data\nfunction _esc(str) {\n    if (str == null) return '';\n    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;');\n}\n\n// Runtime JS string escaping for onclick attributes (prevents quote breakout)\n// Also HTML-encodes the result for safe use inside HTML attribute values.\nfunction _escJS(str) {\n    if (str == null) return '';\n    var s = String(str).replace(/\\\\/g,'\\\\\\\\').replace(/'/g,\"\\\\'\").replace(/\"/g,'\\\\\"').replace(/\\n/g,'\\\\n').replace(/\\r/g,'');\n    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\n// URL sanitizer: rejects non-HTTP schemes (defense-in-depth against XSS)\nfunction _safeUrl(url) {\n    if (!url || url === '#') return '#';\n    if (/^https?:\\/\\//i.test(url)) return url;\n    if (url.charAt(0) === '/' && url.charAt(1) !== '/') return url;\n    return '#';\n}\n\n// Toast notification helper\nfunction showToast(msg, type) {\n    var t = document.createElement('div');\n    t.className = 'toast-notification' + (type === 'error' ? ' toast-error' : type === 'success' ? ' toast-success' : '');\n    t.textContent = msg;\n    document.body.appendChild(t);\n    setTimeout(function() { t.classList.add('show'); }, 10);\n    setTimeout(function() { t.remove(); }, 3000);\n}\n\n// Refresh helper (replaces jQuery dependency)\nfunction _refreshDashboard(delayMs) {\n    setTimeout(function() { var rb = document.getElementById('refreshBtn'); if (rb) rb.click(); }, delayMs || 1500);\n}\n\n// Sortable column header helper\nfunction _sortHeader(field, label) {\n    var sf = (typeof dashboard !== 'undefined' && dashboard.sortField === field);\n    var dir = sf ? dashboard.sortDirection : '';\n    var icon = dir === 'asc' ? 'bi-sort-up' : dir === 'desc' ? 'bi-sort-down' : 'bi-arrow-down-up';\n    return '<th onclick=\"dashboard.sortBy(\\'' + _escJS(field) + '\\')\">' + _esc(label) + ' <i class=\"bi ' + icon + ' sort-icon' + (sf ? ' active' : '') + '\"></i></th>';\n}\n\nclass DashboardViewModel {\n    constructor(config) {\n        this.config = config;\n        this.data = [];\n        this.filteredData = [];\n        this.searchTerm = '';\n        this.activeFilters = {};\n        this._dateField = (config.ui && config.ui.dateField) || '';\n        this._dateFrom = '';\n        this._dateTo = '';\n        this.sortField = (config.ui && config.ui.defaultSort) ? config.ui.defaultSort.field : '';\n        this.sortDirection = (config.ui && config.ui.defaultSort) ? config.ui.defaultSort.direction : 'asc';\n" +
+		(secEnabled
+			? "        this._accessResult = null; // cached access check\n"
+			: "") +
+		"    }\n\n    loadData() {\n        var self = this;\n" +
+		(secEnabled
+			? "        // Security-first: check group membership before loading any data\n        if (this._securityEnabled) {\n            this._accessResult = this._checkAccess();\n            if (!this._accessResult.authorized) {\n                this.showError('Access Denied. You do not have permission to view this dashboard. Contact your supervisor for access.');\n                return;\n            }\n        }\n\n"
+			: "") +
+		"        // Use Etrieve integration.all() if available, otherwise fall back to fetch\n        if (typeof integration !== 'undefined' && typeof integration.all === 'function') {\n            console.log('[Dashboard] Loading data from source: ' + this.config.integration.source);\n            integration.all(this.config.integration.source).then(function(data) {\n                self.data = data || [];\n                console.log('[Dashboard] Data loaded: ' + self.data.length + ' rows');\n                if (self.data.length > 0) {\n                    console.log('[Dashboard] Column names:', Object.keys(self.data[0]));\n                    console.log('[Dashboard] First row sample:', JSON.stringify(self.data[0]).substring(0, 500));\n                }\n                // Auto-resolve filter field names: if a filter field doesn't match\n                // any column in the actual data, try to find the correct column.\n                // This self-heals dashboards generated with older wizard versions\n                // that used display names instead of SQL aliases.\n                if (self.data.length > 0 && self.config.swimlanes) {\n                    var cols = Object.keys(self.data[0]);\n                    var colsLower = cols.map(function(c) { return c.toLowerCase(); });\n                    self.config.swimlanes.forEach(function(sl) {\n                        if (!sl.filters) return;\n                        sl.filters.forEach(function(f) {\n                            if (cols.indexOf(f.field) !== -1) return; // exact match, OK\n                            // Try case-insensitive match\n                            var lowerField = f.field.toLowerCase();\n                            var ciIdx = colsLower.indexOf(lowerField);\n                            if (ciIdx !== -1) {\n                                console.warn('[Dashboard] Auto-fix: filter field \"' + f.field + '\" matched column \"' + cols[ciIdx] + '\" (case mismatch)');\n                                f.field = cols[ciIdx];\n                                return;\n                            }\n                            // Try known display-name -> SQL-alias mappings\n                            var knownMap = { 'current workflow step': 'CurrentStepName', 'document type': 'DocumentType', 'category': 'Category', 'record type': 'RecordType', 'form status': 'FormStatus' };\n                            var mapped = knownMap[lowerField];\n                            if (mapped && cols.indexOf(mapped) !== -1) {\n                                console.warn('[Dashboard] Auto-fix: filter field \"' + f.field + '\" resolved to column \"' + mapped + '\" (display name -> SQL alias)');\n                                f.field = mapped;\n                                return;\n                            }\n                            // Try partial match (column name contains filter field or vice versa)\n                            for (var i = 0; i < cols.length; i++) {\n                                if (colsLower[i].indexOf(lowerField.replace(/\\s+/g, '')) !== -1 || lowerField.replace(/\\s+/g, '').indexOf(colsLower[i]) !== -1) {\n                                    console.warn('[Dashboard] Auto-fix: filter field \"' + f.field + '\" fuzzy-matched to column \"' + cols[i] + '\"');\n                                    f.field = cols[i];\n                                    return;\n                                }\n                            }\n                            console.error('[Dashboard] FILTER FIELD MISMATCH: \"' + f.field + '\" does not match any column. Available: ' + cols.join(', '));\n                        });\n                    });\n                }\n                // Prepend the appropriate base URL to view links\n                // Forms mode URLs start with /central/... -> use centralUrl\n                // Content mode URLs start with /# -> use contentUrl\n                var centralBase = self.config.centralUrl || '';\n                var contentBase = self.config.contentUrl || '';\n                // Backward compat: older configs may still have baseUrl\n                if (!centralBase && !contentBase && self.config.baseUrl) {\n                    centralBase = self.config.baseUrl;\n                    contentBase = self.config.baseUrl;\n                }\n                // Defensive: prepend https:// to a scheme-less host so View links are not rejected downstream\n                if (centralBase && centralBase.indexOf('://') === -1) { centralBase = 'https://' + centralBase; }\n                if (contentBase && contentBase.indexOf('://') === -1) { contentBase = 'https://' + contentBase; }\n                if (centralBase || contentBase) {\n                    self.data.forEach(function(row) {\n                        if (!row.url) return;\n                        if (row.url.indexOf('/central/') === 0 && centralBase) {\n                            row.url = centralBase + row.url;\n                        } else if (row.url.charAt(0) === '/' && contentBase) {\n                            row.url = contentBase + row.url;\n                        }\n                    });\n                }\n                // Log swimlane filter diagnostics\n                if (self.config.swimlanes) {\n                    self.config.swimlanes.forEach(function(sl) {\n                        var filterDesc = (!sl.filters || sl.filters.length === 0) ? 'NO FILTERS (shows all)' : sl.filters.map(function(f) {\n                            var sampleValues = self.data.slice(0, 10).map(function(r) { return r[f.field]; }).filter(function(v) { return v !== undefined; });\n                            return f.field + ' IN [' + f.values.join(', ') + '] (actual data samples: [' + sampleValues.join(', ') + '])';\n                        }).join('; ');\n                        var matchCount = self.data.filter(function(row) {\n                            if (!sl.filters || sl.filters.length === 0) return true;\n                            return sl.filters.every(function(f) { return f.values.some(function(v) { return String(v) === String(row[f.field]); }); });\n                        }).length;\n                        console.log('[Dashboard] Swimlane \"' + sl.name + '\": ' + filterDesc + ' => ' + matchCount + '/' + self.data.length + ' rows');\n                    });\n                }\n" +
+		(secEnabled
+			? "                // Security-first: filter data to only authorized swimlanes\n                if (self._securityEnabled && self._accessResult && !self._accessResult.isPower) {\n                    var allowed = self._accessResult.allowedSwimlanes;\n                    self.data = self.data.filter(function(row) {\n                        return self.config.swimlanes.some(function(sl) {\n                            if (allowed.indexOf(sl.name) === -1) return false;\n                            if (!sl.filters || sl.filters.length === 0) return true;\n                            return sl.filters.every(function(f) { return f.values.some(function(v) { return String(v) === String(row[f.field]); }); });\n                        });\n                    });\n                }\n"
+			: "") +
+		"                self.applyFilters();\n                self.render();\n            }).catch(function(error) {\n                console.error('Failed to load dashboard data:', error);\n                self.showError('Unable to load data. Please try again.');\n            });\n        } else {\n            fetch('/api/integration/' + this.config.integration.source)\n                .then(function(r) { return r.json(); })\n                .then(function(data) {\n                    self.data = data || [];\n                    self.applyFilters();\n                    self.render();\n                })\n                .catch(function(error) {\n                    console.error('Failed to load dashboard data:', error);\n                    self.showError('Unable to load data. Please try again.');\n                });\n        }\n    }\n\n    applyFilters() {\n        this.filteredData = this.data.filter(row => {\n            if (this.searchTerm) {\n                const searchLower = this.searchTerm.toLowerCase();\n                const matches = Object.values(row).some(val => String(val).toLowerCase().includes(searchLower));\n                if (!matches) return false;\n            }\n            for (const [field, value] of Object.entries(this.activeFilters)) {\n                if (value && row[field] !== value) return false;\n            }\n            return true;\n        });\n        this.applySorting();\n    }\n\n    sortBy(field) {\n        if (this.sortField === field) {\n            this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';\n        } else {\n            this.sortField = field;\n            this.sortDirection = 'asc';\n        }\n        this.applySorting();\n        this.render();\n    }\n\n    applySorting() {\n        if (!this.sortField) return;\n        var field = this.sortField;\n        var dir = this.sortDirection === 'desc' ? -1 : 1;\n        var dateRe = /^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/;\n        this.filteredData.sort(function(a, b) {\n            var va = a[field], vb = b[field];\n            if (va == null) va = '';\n            if (vb == null) vb = '';\n            // Try date comparison (MM/DD/YYYY)\n            var da = String(va).match(dateRe), db = String(vb).match(dateRe);\n            if (da && db) {\n                var ta = new Date(da[3], da[1]-1, da[2]).getTime();\n                var tb = new Date(db[3], db[1]-1, db[2]).getTime();\n                return (ta - tb) * dir;\n            }\n            // Try numeric comparison\n            var na = Number(va), nb = Number(vb);\n            if (!isNaN(na) && !isNaN(nb) && va !== '' && vb !== '') return (na - nb) * dir;\n            return String(va).localeCompare(String(vb)) * dir;\n        });\n    }\n\n    getRowsForSwimlane(swimlane) {\n" +
+		(secEnabled
+			? "        // Security-first: hide swimlanes the user doesn't have access to\n        if (this._securityEnabled && this._accessResult && !this._accessResult.isPower) {\n            var allowed = this._accessResult.allowedSwimlanes;\n            if (allowed.indexOf(swimlane.name) === -1) return [];\n        }\n"
+			: "") +
+		"        return this.filteredData.filter(row => {\n            if (!swimlane.filters || swimlane.filters.length === 0) return true;\n            return swimlane.filters.every(f => f.values.some(v => String(v) === String(row[f.field])));\n        });\n    }\n\n    showError(message) {\n        const container = document.getElementById('dashboardContent');\n        if (container) {\n            container.innerHTML = '<div class=\"error-message\"><i class=\"bi bi-exclamation-triangle\"></i> ' + _esc(message) + '</div>';\n        }\n    }\n}\n" +
+		combinedBlock +
+		securityBlock +
+		cellBlock +
+		notesBlock +
+		dateBlock
+	);
 }
 function vmInit() {
-  return "\n// ===== SUMMARY CHART (counts per swimlane) =====\n(function(){\n    if (typeof DashboardViewModel === 'undefined') return;\n    var _origR = DashboardViewModel.prototype.render;\n    DashboardViewModel.prototype.render = function(){\n        if (_origR) _origR.call(this);\n        try { _renderSummaryChart(this); } catch(e) {}\n    };\n})();\nfunction _renderSummaryChart(vm){\n    var el = document.getElementById('dashboardChart');\n    if (!el || !vm || !vm.config || !vm.config.swimlanes) return;\n    var lanes = vm.config.swimlanes;\n    var counts = lanes.map(function(sl){ return { name: sl.name, n: vm.getRowsForSwimlane(sl).length }; });\n    var total = counts.reduce(function(a,c){ return a + c.n; }, 0);\n    if (lanes.length < 2 || total === 0) { el.style.display = 'none'; return; }\n    var max = counts.reduce(function(a,c){ return Math.max(a, c.n); }, 0) || 1;\n    var rowsHtml = counts.map(function(c){\n        var pct = Math.round((c.n / max) * 100);\n        return '<div class=\\\"chart-row\\\"><span class=\\\"chart-label\\\" title=\\\"' + _esc(c.name) + '\\\">' + _esc(c.name) + '</span><span class=\\\"chart-bar-wrap\\\"><span class=\\\"chart-bar\\\" style=\\\"width:' + pct + '%;\\\"></span></span><span class=\\\"chart-val\\\">' + c.n + '</span></div>';\n    }).join('');\n    el.innerHTML = '<h3 onclick=\\\"toggleChart(this)\\\"><i class=\\\"bi bi-bar-chart-fill\\\"></i> Overview: ' + total + ' item' + (total === 1 ? '' : 's') + '<i class=\\\"bi bi-chevron-down\\\" style=\\\"margin-left:auto;font-size:0.8rem;\\\"></i></h3><div class=\\\"chart-body\\\">' + rowsHtml + '</div>';\n    el.style.display = 'block';\n}\nfunction toggleChart(h){ var c = h.closest('.summary-chart'); if (c) c.classList.toggle('collapsed'); }\n\nconsole.log('[Dashboard] viewmodel.js loaded');\n\nfunction toggleSwimlane(header) {\n    var content = header.nextElementSibling;\n    var icon = header.querySelector('i');\n    content.classList.toggle('collapsed');\n    icon.classList.toggle('bi-chevron-down');\n    icon.classList.toggle('bi-chevron-right');\n}\n\n// ============================================================\n// Etrieve Viewmodel Registration\n// ============================================================\n// Follows the same pattern as the wizard: unnamed define with\n// vmBase, user, integration, and configuration as dependencies.\n// Etrieve calls vm.onLoad() after the form is ready.\ndefine([\n    'knockout',\n    'vmBase',\n    'user',\n    'integration',\n    'template/configuration'\n], function(ko, vm, user, integration, config) {\n    console.log('[Dashboard] define() callback fired. integration:', typeof integration, ', user:', typeof user, ', config:', typeof config);\n\n    // Make integration available as a global for the DashboardViewModel class\n    window.integration = integration;\n    window.user = user;\n\n    // Use the config module return value, or fall back to global DashboardConfig\n    var cfg = (config && config.integration) ? config : (typeof DashboardConfig !== 'undefined' ? DashboardConfig : null);\n\n    vm.onLoad = function(source, inputValues) {\n        console.log('[Dashboard] onLoad fired');\n        if (!cfg) {\n            console.error('[Dashboard] No DashboardConfig found! Make sure configuration.js is uploaded.');\n            return;\n        }\n        if (typeof DashboardViewModel === 'undefined') {\n            console.error('[Dashboard] DashboardViewModel class not found!');\n            return;\n        }\n\n        // Set current user\n        if (user && user.UserName) {\n            cfg.currentUser = user.UserName;\n            console.log('[Dashboard] Current user: ' + user.UserName);\n        }\n\n        function _startDashboard() {\n            try {\n                console.log('[Dashboard] Initializing with source: ' + (cfg.integration.source || cfg.integration.contentSource || cfg.sourceName));\n                window.dashboard = new DashboardViewModel(cfg);\n                window.dashboard.loadData();\n                if (window._dashboardRefreshTimer) { clearTimeout(window._dashboardRefreshTimer); }\n                var refreshMs = (cfg.integration.refreshInterval == null) ? 300000 : (cfg.integration.refreshInterval === 0 ? 0 : Math.max(cfg.integration.refreshInterval, 30000));\n                if (refreshMs > 0) {\n                    (function scheduleRefresh() {\n                        window._dashboardRefreshTimer = setTimeout(function() {\n                            if (window.dashboard) { window.dashboard.loadData(); }\n                            scheduleRefresh();\n                        }, refreshMs);\n                    })();\n                }\n                console.log('[Dashboard] Initialization complete, loadData() called.');\n            } catch(e) {\n                console.error('[Dashboard] Error during initialization:', e);\n            }\n        }\n\n        // Committee voting: resolve member slot BEFORE loading data\n        if (typeof getUserInfoIntegration !== 'undefined' && getUserInfoIntegration && cfg.currentUser) {\n            integration.all(getUserInfoIntegration, { Username: cfg.currentUser, DocumentID: '' }).then(function(data) {\n                if (data && data.length > 0) {\n                    cfg.memberSlot = data[0].MemberSlot || 'A';\n                    console.log('[Dashboard] Member slot resolved: ' + cfg.memberSlot);\n                } else {\n                    console.warn('[Dashboard] GetUserInfo returned no rows for ' + cfg.currentUser + '. Defaulting to slot A.');\n                    cfg.memberSlot = 'A';\n                }\n                _startDashboard();\n            }, function(err) {\n                console.error('[Dashboard] GetUserInfo failed:', err);\n                cfg.memberSlot = 'A';\n                _startDashboard();\n            });\n        } else {\n            _startDashboard();\n        }\n    };\n\n    vm.setDefaults = function(source, inputValues) {};\n    vm.afterLoad = function() {};\n\n    return vm;\n});\n";
+	return "\n// ===== SUMMARY CHART (counts per swimlane) =====\n(function(){\n    if (typeof DashboardViewModel === 'undefined') return;\n    var _origR = DashboardViewModel.prototype.render;\n    DashboardViewModel.prototype.render = function(){\n        if (_origR) _origR.call(this);\n        try { _renderSummaryChart(this); } catch(e) {}\n    };\n})();\nfunction _renderSummaryChart(vm){\n    var el = document.getElementById('dashboardChart');\n    if (!el || !vm || !vm.config || !vm.config.swimlanes) return;\n    var lanes = vm.config.swimlanes;\n    var counts = lanes.map(function(sl){ return { name: sl.name, n: vm.getRowsForSwimlane(sl).length }; });\n    var total = counts.reduce(function(a,c){ return a + c.n; }, 0);\n    if (lanes.length < 2 || total === 0) { el.style.display = 'none'; return; }\n    var max = counts.reduce(function(a,c){ return Math.max(a, c.n); }, 0) || 1;\n    var rowsHtml = counts.map(function(c){\n        var pct = Math.round((c.n / max) * 100);\n        return '<div class=\\\"chart-row\\\"><span class=\\\"chart-label\\\" title=\\\"' + _esc(c.name) + '\\\">' + _esc(c.name) + '</span><span class=\\\"chart-bar-wrap\\\"><span class=\\\"chart-bar\\\" style=\\\"width:' + pct + '%;\\\"></span></span><span class=\\\"chart-val\\\">' + c.n + '</span></div>';\n    }).join('');\n    el.innerHTML = '<h3 onclick=\\\"toggleChart(this)\\\"><i class=\\\"bi bi-bar-chart-fill\\\"></i> Overview: ' + total + ' item' + (total === 1 ? '' : 's') + '<i class=\\\"bi bi-chevron-down\\\" style=\\\"margin-left:auto;font-size:0.8rem;\\\"></i></h3><div class=\\\"chart-body\\\">' + rowsHtml + '</div>';\n    el.style.display = 'block';\n}\nfunction toggleChart(h){ var c = h.closest('.summary-chart'); if (c) c.classList.toggle('collapsed'); }\n\nconsole.log('[Dashboard] viewmodel.js loaded');\n\nfunction toggleSwimlane(header) {\n    var content = header.nextElementSibling;\n    var icon = header.querySelector('i');\n    content.classList.toggle('collapsed');\n    icon.classList.toggle('bi-chevron-down');\n    icon.classList.toggle('bi-chevron-right');\n}\n\n// ============================================================\n// Etrieve Viewmodel Registration\n// ============================================================\n// Follows the same pattern as the wizard: unnamed define with\n// vmBase, user, integration, and configuration as dependencies.\n// Etrieve calls vm.onLoad() after the form is ready.\ndefine([\n    'knockout',\n    'vmBase',\n    'user',\n    'integration',\n    'template/configuration'\n], function(ko, vm, user, integration, config) {\n    console.log('[Dashboard] define() callback fired. integration:', typeof integration, ', user:', typeof user, ', config:', typeof config);\n\n    // Make integration available as a global for the DashboardViewModel class\n    window.integration = integration;\n    window.user = user;\n\n    // Use the config module return value, or fall back to global DashboardConfig\n    var cfg = (config && config.integration) ? config : (typeof DashboardConfig !== 'undefined' ? DashboardConfig : null);\n\n    vm.onLoad = function(source, inputValues) {\n        console.log('[Dashboard] onLoad fired');\n        if (!cfg) {\n            console.error('[Dashboard] No DashboardConfig found! Make sure configuration.js is uploaded.');\n            return;\n        }\n        if (typeof DashboardViewModel === 'undefined') {\n            console.error('[Dashboard] DashboardViewModel class not found!');\n            return;\n        }\n\n        // Set current user\n        if (user && user.UserName) {\n            cfg.currentUser = user.UserName;\n            console.log('[Dashboard] Current user: ' + user.UserName);\n        }\n\n        function _startDashboard() {\n            try {\n                console.log('[Dashboard] Initializing with source: ' + (cfg.integration.source || cfg.integration.contentSource || cfg.sourceName));\n                window.dashboard = new DashboardViewModel(cfg);\n                window.dashboard.loadData();\n                if (window._dashboardRefreshTimer) { clearTimeout(window._dashboardRefreshTimer); }\n                var refreshMs = (cfg.integration.refreshInterval == null) ? 300000 : (cfg.integration.refreshInterval === 0 ? 0 : Math.max(cfg.integration.refreshInterval, 30000));\n                if (refreshMs > 0) {\n                    (function scheduleRefresh() {\n                        window._dashboardRefreshTimer = setTimeout(function() {\n                            if (window.dashboard) { window.dashboard.loadData(); }\n                            scheduleRefresh();\n                        }, refreshMs);\n                    })();\n                }\n                console.log('[Dashboard] Initialization complete, loadData() called.');\n            } catch(e) {\n                console.error('[Dashboard] Error during initialization:', e);\n            }\n        }\n\n        // Committee voting: resolve member slot BEFORE loading data\n        if (typeof getUserInfoIntegration !== 'undefined' && getUserInfoIntegration && cfg.currentUser) {\n            integration.all(getUserInfoIntegration, { Username: cfg.currentUser, DocumentID: '' }).then(function(data) {\n                if (data && data.length > 0) {\n                    cfg.memberSlot = data[0].MemberSlot || 'A';\n                    console.log('[Dashboard] Member slot resolved: ' + cfg.memberSlot);\n                } else {\n                    console.warn('[Dashboard] GetUserInfo returned no rows for ' + cfg.currentUser + '. Defaulting to slot A.');\n                    cfg.memberSlot = 'A';\n                }\n                _startDashboard();\n            }, function(err) {\n                console.error('[Dashboard] GetUserInfo failed:', err);\n                cfg.memberSlot = 'A';\n                _startDashboard();\n            });\n        } else {\n            _startDashboard();\n        }\n    };\n\n    vm.setDefaults = function(source, inputValues) {};\n    vm.afterLoad = function() {};\n\n    return vm;\n});\n";
 }
 function vmExportFn() {
-  return "\nfunction exportSwimlane(btn) {\n    var table = btn.closest('.swimlane').querySelector('table');\n    if (!table) return;\n    var rows = Array.from(table.querySelectorAll('tr'));\n    var csv = rows.map(function(r) { return Array.from(r.querySelectorAll('th,td')).map(function(c) { var v = c.textContent.trim(); if (/^[=+\\-@\\t\\r]/.test(v)) { v = \"'\" + v; } return '\"' + v.replace(/\"/g, '\"\"') + '\"'; }).join(','); }).join('\\n');\n    var blob = new Blob([csv], {type: 'text/csv'});\n    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'export.csv'; a.click();\n}\n";
+	return "\nfunction exportSwimlane(btn) {\n    var table = btn.closest('.swimlane').querySelector('table');\n    if (!table) return;\n    var rows = Array.from(table.querySelectorAll('tr'));\n    var csv = rows.map(function(r) { return Array.from(r.querySelectorAll('th,td')).map(function(c) { var v = c.textContent.trim(); if (/^[=+\\-@\\t\\r]/.test(v)) { v = \"'\" + v; } return '\"' + v.replace(/\"/g, '\"\"') + '\"'; }).join(','); }).join('\\n');\n    var blob = new Blob([csv], {type: 'text/csv'});\n    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'export.csv'; a.click();\n}\n";
 }
 function generateVM_simple() {
-  return vmPreamble() + vmBaseClass() + "\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    container.innerHTML = this.config.swimlanes.map(function(sl) {\n        var rows = self.getRowsForSwimlane(sl);\n        return self.renderSwimlane(sl, rows);\n    }).join('');\n};\n\nDashboardViewModel.prototype.renderSwimlane = function(swimlane, rows) {\n    var self = this;\n    // Combined mode: render separate tables for Documents vs Forms\n    if (this.config.contentColumns && this.config.formsColumns) {\n        var docRows = rows.filter(function(r) { return r.RecordType === 'Document'; });\n        var formRows = rows.filter(function(r) { return r.RecordType === 'Form'; });\n        var html = '<div class=\"swimlane\">' +\n            '<div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\">' +\n                '<i class=\"bi bi-chevron-down\"></i>' +\n                '<span>' + _esc(swimlane.name) + '</span>' +\n                '<span class=\"count\">' + rows.length + '</span>' +\n                '<button class=\"export-btn\" onclick=\"event.stopPropagation(); exportSwimlane(this)\">Export</button>' +\n            '</div>' +\n            '<div class=\"swimlane-content\">';\n        if (docRows.length > 0) {\n            var dh = this.config.contentColumns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n            var dr = docRows.map(function(row) { return self.renderRowWithCols(row, self.config.contentColumns); }).join('');\n            html += '<h6 style=\"margin:10px 0 5px;color:#666;font-size:0.85rem;\"><i class=\"bi bi-file-earmark-text\"></i> Documents (' + docRows.length + ')</h6>' +\n                '<table class=\"data-table\"><thead><tr>' + dh + '<th>Actions</th></tr></thead><tbody>' + dr + '</tbody></table>';\n        }\n        if (formRows.length > 0) {\n            var fh = this.config.formsColumns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n            var fr = formRows.map(function(row) { return self.renderRowWithCols(row, self.config.formsColumns); }).join('');\n            html += '<h6 style=\"margin:15px 0 5px;color:#666;font-size:0.85rem;\"><i class=\"bi bi-ui-checks\"></i> Forms (' + formRows.length + ')</h6>' +\n                '<table class=\"data-table\"><thead><tr>' + fh + '<th>Actions</th></tr></thead><tbody>' + fr + '</tbody></table>';\n        }\n        if (docRows.length === 0 && formRows.length === 0) {\n            html += '<p style=\"text-align:center;color:#999;padding:20px;\">No items</p>';\n        }\n        html += '</div></div>';\n        return html;\n    }\n    // Standard single-source render\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rowsHtml = rows.map(function(row) { return self.renderRow(row); }).join('');\n    return '<div class=\"swimlane\">' +\n        '<div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\">' +\n            '<i class=\"bi bi-chevron-down\"></i>' +\n            '<span>' + _esc(swimlane.name) + '</span>' +\n            '<span class=\"count\">' + rows.length + '</span>' +\n            '<button class=\"export-btn\" onclick=\"event.stopPropagation(); exportSwimlane(this)\">Export</button>' +\n        '</div>' +\n        '<div class=\"swimlane-content\">' +\n            '<table class=\"data-table\"><thead><tr>' + colHeaders + '<th>Actions</th></tr></thead>' +\n            '<tbody>' + rowsHtml + '</tbody></table>' +\n        '</div></div>';\n};\n\nDashboardViewModel.prototype.renderRowWithCols = function(row, cols) {\n    var cells = cols.map(function(col) { return _cell(row, col); }).join('');\n    return '<tr>' + cells + '<td><a href=\"' + encodeURI(_safeUrl(row.url || '#')) + '\" target=\"_blank\" class=\"view-btn\"><i class=\"bi bi-eye\"></i> View</a></td></tr>';\n};\n\nDashboardViewModel.prototype.renderRow = function(row) {\n    var cells = this.config.columns.map(function(col) { return _cell(row, col); }).join('');\n    return '<tr>' + cells + '<td><a href=\"' + encodeURI(_safeUrl(row.url || '#')) + '\" target=\"_blank\" class=\"view-btn\"><i class=\"bi bi-eye\"></i> View</a></td></tr>';\n};\n" + vmExportFn() + vmInit();
+	return (
+		vmPreamble() +
+		vmBaseClass() +
+		"\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    container.innerHTML = this.config.swimlanes.map(function(sl) {\n        var rows = self.getRowsForSwimlane(sl);\n        return self.renderSwimlane(sl, rows);\n    }).join('');\n};\n\nDashboardViewModel.prototype.renderSwimlane = function(swimlane, rows) {\n    var self = this;\n    // Combined mode: render separate tables for Documents vs Forms\n    if (this.config.contentColumns && this.config.formsColumns) {\n        var docRows = rows.filter(function(r) { return r.RecordType === 'Document'; });\n        var formRows = rows.filter(function(r) { return r.RecordType === 'Form'; });\n        var html = '<div class=\"swimlane\">' +\n            '<div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\">' +\n                '<i class=\"bi bi-chevron-down\"></i>' +\n                '<span>' + _esc(swimlane.name) + '</span>' +\n                '<span class=\"count\">' + rows.length + '</span>' +\n                '<button class=\"export-btn\" onclick=\"event.stopPropagation(); exportSwimlane(this)\">Export</button>' +\n            '</div>' +\n            '<div class=\"swimlane-content\">';\n        if (docRows.length > 0) {\n            var dh = this.config.contentColumns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n            var dr = docRows.map(function(row) { return self.renderRowWithCols(row, self.config.contentColumns); }).join('');\n            html += '<h6 style=\"margin:10px 0 5px;color:#666;font-size:0.85rem;\"><i class=\"bi bi-file-earmark-text\"></i> Documents (' + docRows.length + ')</h6>' +\n                '<table class=\"data-table\"><thead><tr>' + dh + '<th>Actions</th></tr></thead><tbody>' + dr + '</tbody></table>';\n        }\n        if (formRows.length > 0) {\n            var fh = this.config.formsColumns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n            var fr = formRows.map(function(row) { return self.renderRowWithCols(row, self.config.formsColumns); }).join('');\n            html += '<h6 style=\"margin:15px 0 5px;color:#666;font-size:0.85rem;\"><i class=\"bi bi-ui-checks\"></i> Forms (' + formRows.length + ')</h6>' +\n                '<table class=\"data-table\"><thead><tr>' + fh + '<th>Actions</th></tr></thead><tbody>' + fr + '</tbody></table>';\n        }\n        if (docRows.length === 0 && formRows.length === 0) {\n            html += '<p style=\"text-align:center;color:#999;padding:20px;\">No items</p>';\n        }\n        html += '</div></div>';\n        return html;\n    }\n    // Standard single-source render\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rowsHtml = rows.map(function(row) { return self.renderRow(row); }).join('');\n    return '<div class=\"swimlane\">' +\n        '<div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\">' +\n            '<i class=\"bi bi-chevron-down\"></i>' +\n            '<span>' + _esc(swimlane.name) + '</span>' +\n            '<span class=\"count\">' + rows.length + '</span>' +\n            '<button class=\"export-btn\" onclick=\"event.stopPropagation(); exportSwimlane(this)\">Export</button>' +\n        '</div>' +\n        '<div class=\"swimlane-content\">' +\n            '<table class=\"data-table\"><thead><tr>' + colHeaders + '<th>Actions</th></tr></thead>' +\n            '<tbody>' + rowsHtml + '</tbody></table>' +\n        '</div></div>';\n};\n\nDashboardViewModel.prototype.renderRowWithCols = function(row, cols) {\n    var cells = cols.map(function(col) { return _cell(row, col); }).join('');\n    return '<tr>' + cells + '<td><a href=\"' + encodeURI(_safeUrl(row.url || '#')) + '\" target=\"_blank\" class=\"view-btn\"><i class=\"bi bi-eye\"></i> View</a></td></tr>';\n};\n\nDashboardViewModel.prototype.renderRow = function(row) {\n    var cells = this.config.columns.map(function(col) { return _cell(row, col); }).join('');\n    return '<tr>' + cells + '<td><a href=\"' + encodeURI(_safeUrl(row.url || '#')) + '\" target=\"_blank\" class=\"view-btn\"><i class=\"bi bi-eye\"></i> View</a></td></tr>';\n};\n" +
+		vmExportFn() +
+		vmInit()
+	);
 }
 function generateVM_expandable() {
-  var detailFields = State.styleConfig.detailFields || [];
-  var allFields = getAllFields();
-  var detailFieldDefs = detailFields.map(function (id) {
-    var f = allFields.find(function (x) {
-      return x.id === id || x.id === String(id);
-    });
-    return f ? {
-      field: f.alias || f.id,
-      label: f.name
-    } : {
-      field: id,
-      label: String(id)
-    };
-  });
-  var isPdf = State.selectedStyle === 'pdf-signatures';
-  return vmPreamble() + vmBaseClass() + "\nDashboardViewModel.prototype.detailFields = ".concat(JSON.stringify(detailFieldDefs), ";\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    container.innerHTML = this.config.swimlanes.map(function(sl) {\n        var rows = self.getRowsForSwimlane(sl);\n        return self.renderSwimlane(sl, rows);\n    }).join('');\n};\n\nDashboardViewModel.prototype.renderSwimlane = function(swimlane, rows) {\n    var self = this;\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rowsHtml = rows.map(function(row) { return self.renderExpandableRow(row); }).join('');\n    return '<div class=\"swimlane\">' +\n        '<div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\">' +\n            '<i class=\"bi bi-chevron-down\"></i><span>' + _esc(swimlane.name) + '</span><span class=\"count\">' + rows.length + '</span>' +\n            '<button class=\"export-btn\" onclick=\"event.stopPropagation(); exportSwimlane(this)\">Export</button>' +\n        '</div>' +\n        '<div class=\"swimlane-content\"><table class=\"data-table\"><thead><tr><th style=\"width:40px;\"></th>' + colHeaders + '<th>Actions</th></tr></thead>' +\n        '<tbody>' + rowsHtml + '</tbody></table></div></div>';\n};\n\nDashboardViewModel.prototype.renderExpandableRow = function(row) {\n    var cells = this.config.columns.map(function(col) { return _cell(row, col); }).join('');\n    var detailHtml = this.detailFields.map(function(df) {\n        return '<div class=\"detail-item\"><label>' + _esc(df.label) + '</label><span>' + _esc(row[df.field] || '-') + '</span></div>';\n    }).join('');\n    ").concat(isPdf ? "detailHtml += '<div class=\"detail-item\"><label>Signature</label><div class=\"signature-display\">' + _esc(row.Signature || 'Not signed') + '</div></div>';" : '', "\n    var colSpan = this.config.columns.length + 1;\n    return '<tr class=\"data-row\"><td><button class=\"toggle-btn\" onclick=\"toggleExpandableRow(this)\">+</button></td>' + cells +\n        '<td><a href=\"' + encodeURI(_safeUrl(row.url || '#')) + '\" target=\"_blank\" class=\"view-btn\"><i class=\"bi bi-eye\"></i> View</a></td></tr>' +\n        '<tr class=\"child-row\" style=\"display:none;\"><td></td><td colspan=\"' + colSpan + '\"><div class=\"detail-grid\">' + detailHtml + '</div></td></tr>' +\n        '<tr class=\"separator-bar\" style=\"display:none;\"><td colspan=\"' + (colSpan + 1) + '\"></td></tr>';\n};\n\nfunction toggleExpandableRow(btn) {\n    var row = btn.closest('tr');\n    var child = row.nextElementSibling;\n    var sep = child.nextElementSibling;\n    var showing = child.style.display === 'none';\n    child.style.display = showing ? '' : 'none';\n    if (sep && sep.classList.contains('separator-bar')) sep.style.display = showing ? '' : 'none';\n    btn.textContent = showing ? '-' : '+';\n}\n") + vmExportFn() + vmInit();
+	var detailFields = State.styleConfig.detailFields || [];
+	var allFields = getAllFields();
+	var detailFieldDefs = detailFields.map(function (id) {
+		var f = allFields.find(function (x) {
+			return x.id === id || x.id === String(id);
+		});
+		return f
+			? {
+					field: f.alias || f.id,
+					label: f.name,
+				}
+			: {
+					field: id,
+					label: String(id),
+				};
+	});
+	var isPdf = State.selectedStyle === "pdf-signatures";
+	return (
+		vmPreamble() +
+		vmBaseClass() +
+		"\nDashboardViewModel.prototype.detailFields = "
+			.concat(
+				JSON.stringify(detailFieldDefs),
+				";\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    container.innerHTML = this.config.swimlanes.map(function(sl) {\n        var rows = self.getRowsForSwimlane(sl);\n        return self.renderSwimlane(sl, rows);\n    }).join('');\n};\n\nDashboardViewModel.prototype.renderSwimlane = function(swimlane, rows) {\n    var self = this;\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rowsHtml = rows.map(function(row) { return self.renderExpandableRow(row); }).join('');\n    return '<div class=\"swimlane\">' +\n        '<div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\">' +\n            '<i class=\"bi bi-chevron-down\"></i><span>' + _esc(swimlane.name) + '</span><span class=\"count\">' + rows.length + '</span>' +\n            '<button class=\"export-btn\" onclick=\"event.stopPropagation(); exportSwimlane(this)\">Export</button>' +\n        '</div>' +\n        '<div class=\"swimlane-content\"><table class=\"data-table\"><thead><tr><th style=\"width:40px;\"></th>' + colHeaders + '<th>Actions</th></tr></thead>' +\n        '<tbody>' + rowsHtml + '</tbody></table></div></div>';\n};\n\nDashboardViewModel.prototype.renderExpandableRow = function(row) {\n    var cells = this.config.columns.map(function(col) { return _cell(row, col); }).join('');\n    var detailHtml = this.detailFields.map(function(df) {\n        return '<div class=\"detail-item\"><label>' + _esc(df.label) + '</label><span>' + _esc(row[df.field] || '-') + '</span></div>';\n    }).join('');\n    ",
+			)
+			.concat(
+				isPdf
+					? "detailHtml += '<div class=\"detail-item\"><label>Signature</label><div class=\"signature-display\">' + _esc(row.Signature || 'Not signed') + '</div></div>';"
+					: "",
+				"\n    var colSpan = this.config.columns.length + 1;\n    return '<tr class=\"data-row\"><td><button class=\"toggle-btn\" onclick=\"toggleExpandableRow(this)\">+</button></td>' + cells +\n        '<td><a href=\"' + encodeURI(_safeUrl(row.url || '#')) + '\" target=\"_blank\" class=\"view-btn\"><i class=\"bi bi-eye\"></i> View</a></td></tr>' +\n        '<tr class=\"child-row\" style=\"display:none;\"><td></td><td colspan=\"' + colSpan + '\"><div class=\"detail-grid\">' + detailHtml + '</div></td></tr>' +\n        '<tr class=\"separator-bar\" style=\"display:none;\"><td colspan=\"' + (colSpan + 1) + '\"></td></tr>';\n};\n\nfunction toggleExpandableRow(btn) {\n    var row = btn.closest('tr');\n    var child = row.nextElementSibling;\n    var sep = child.nextElementSibling;\n    var showing = child.style.display === 'none';\n    child.style.display = showing ? '' : 'none';\n    if (sep && sep.classList.contains('separator-bar')) sep.style.display = showing ? '' : 'none';\n    btn.textContent = showing ? '-' : '+';\n}\n",
+			) +
+		vmExportFn() +
+		vmInit()
+	);
 }
 function generateVM_alphaSplit() {
-  var nameField = State.styleConfig.nameField || 'LastName';
-  var allFields = getAllFields();
-  var fieldDef = allFields.find(function (f) {
-    return f.id === nameField || f.id === String(nameField);
-  });
-  var fieldAlias = fieldDef ? fieldDef.alias || fieldDef.id : nameField;
-  var ranges = State.styleConfig.alphaRanges || [['A', 'H'], ['I', 'P'], ['Q', 'Z']];
-  return vmPreamble() + vmBaseClass() + "\nDashboardViewModel.prototype.alphaField = '".concat(escapeJS(String(fieldAlias)), "';\nDashboardViewModel.prototype.alphaRanges = ").concat(JSON.stringify(ranges), ";\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    container.innerHTML = this.alphaRanges.map(function(range) {\n        var label = range[0] + ' \- ' + range[1];\n        var rows = self.filteredData.filter(function(row) {\n            var val = (row[self.alphaField] || '').charAt(0).toUpperCase();\n            return val >= range[0] && val <= range[1];\n        });\n        return self.renderSwimlane({ name: label }, rows);\n    }).join('');\n};\n\nDashboardViewModel.prototype.renderSwimlane = function(swimlane, rows) {\n    var self = this;\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rowsHtml = rows.map(function(row) {\n        var cells = self.config.columns.map(function(col) { return _cell(row, col); }).join('');\n        return '<tr>' + cells + '<td><a href=\"' + encodeURI(_safeUrl(row.url || '#')) + '\" target=\"_blank\" class=\"view-btn\"><i class=\"bi bi-eye\"></i> View</a></td></tr>';\n    }).join('');\n    return '<div class=\"swimlane\"><div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\">' +\n        '<i class=\"bi bi-chevron-down\"></i><span>' + _esc(swimlane.name) + '</span><span class=\"count\">' + rows.length + '</span></div>' +\n        '<div class=\"swimlane-content\"><table class=\"data-table\"><thead><tr>' + colHeaders + '<th>Actions</th></tr></thead>' +\n        '<tbody>' + rowsHtml + '</tbody></table></div></div>';\n};\n") + vmInit();
+	var nameField = State.styleConfig.nameField || "LastName";
+	var allFields = getAllFields();
+	var fieldDef = allFields.find(function (f) {
+		return f.id === nameField || f.id === String(nameField);
+	});
+	var fieldAlias = fieldDef ? fieldDef.alias || fieldDef.id : nameField;
+	var ranges = State.styleConfig.alphaRanges || [
+		["A", "H"],
+		["I", "P"],
+		["Q", "Z"],
+	];
+	return (
+		vmPreamble() +
+		vmBaseClass() +
+		"\nDashboardViewModel.prototype.alphaField = '"
+			.concat(
+				escapeJS(String(fieldAlias)),
+				"';\nDashboardViewModel.prototype.alphaRanges = ",
+			)
+			.concat(
+				JSON.stringify(ranges),
+				";\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    container.innerHTML = this.alphaRanges.map(function(range) {\n        var label = range[0] + ' \- ' + range[1];\n        var rows = self.filteredData.filter(function(row) {\n            var val = (row[self.alphaField] || '').charAt(0).toUpperCase();\n            return val >= range[0] && val <= range[1];\n        });\n        return self.renderSwimlane({ name: label }, rows);\n    }).join('');\n};\n\nDashboardViewModel.prototype.renderSwimlane = function(swimlane, rows) {\n    var self = this;\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rowsHtml = rows.map(function(row) {\n        var cells = self.config.columns.map(function(col) { return _cell(row, col); }).join('');\n        return '<tr>' + cells + '<td><a href=\"' + encodeURI(_safeUrl(row.url || '#')) + '\" target=\"_blank\" class=\"view-btn\"><i class=\"bi bi-eye\"></i> View</a></td></tr>';\n    }).join('');\n    return '<div class=\"swimlane\"><div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\">' +\n        '<i class=\"bi bi-chevron-down\"></i><span>' + _esc(swimlane.name) + '</span><span class=\"count\">' + rows.length + '</span></div>' +\n        '<div class=\"swimlane-content\"><table class=\"data-table\"><thead><tr>' + colHeaders + '<th>Actions</th></tr></thead>' +\n        '<tbody>' + rowsHtml + '</tbody></table></div></div>';\n};\n",
+			) +
+		vmInit()
+	);
 }
 function generateVM_claims() {
-  var chips = State.styleConfig.filterChips || ['All'];
-  var warn = State.styleConfig.ageBadgeWarning || 30;
-  var crit = State.styleConfig.ageBadgeCritical || 60;
-  return vmPreamble() + vmBaseClass() + "\nDashboardViewModel.prototype.filterChips = ".concat(JSON.stringify(chips), ";\nDashboardViewModel.prototype.activeChip = 'All';\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    var myItems = this.filteredData.filter(function(r) { return r.ClaimedBy === (DashboardConfig.currentUser || ''); });\n\n    var statsHtml = '<div class=\"personal-stats\"><h6><i class=\"bi bi-person-circle\"></i> Your Stats</h6>' +\n        '<div class=\"stat-row\"><div class=\"stat-item\"><div class=\"stat-value\">' + myItems.length + '</div><div class=\"stat-label\">My Claimed</div></div>' +\n        '<div class=\"stat-item\"><div class=\"stat-value\">' + this.filteredData.length + '</div><div class=\"stat-label\">Total</div></div></div></div>';\n\n    var chipsHtml = this.filterChips.map(function(c) {\n        return '<span class=\"filter-chip ' + (self.activeChip === c ? 'active' : '') + '\" onclick=\"dashboard.setChip(\\'' + _escJS(c) + '\\')\">' + _esc(c) + '</span>';\n    }).join('');\n\n    var actionBar = '<div class=\"action-bar\"><div class=\"action-bar-left\">' +\n        '<button class=\"btn-claim\" onclick=\"dashboard.claimSelected()\"><i class=\"bi bi-hand-index\"></i> Claim Selected</button>' +\n        '<button class=\"btn-unclaim\" onclick=\"dashboard.unclaimSelected()\"><i class=\"bi bi-hand-index-thumb\"></i> Unclaim</button></div>' +\n        '<div class=\"action-bar-right\"><div class=\"quick-filters\">' + chipsHtml + '</div></div></div>';\n\n    var swimlanesHtml = this.config.swimlanes.map(function(sl) {\n        var rows = self.getRowsForSwimlane(sl);\n        return self.renderClaimsSwimlane(sl, rows);\n    }).join('');\n\n    container.innerHTML = statsHtml + actionBar + swimlanesHtml;\n};\n\nDashboardViewModel.prototype.renderClaimsSwimlane = function(swimlane, rows) {\n    var self = this;\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rowsHtml = rows.map(function(row) { return self.renderClaimsRow(row); }).join('');\n    return '<div class=\"swimlane\"><div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\">' +\n        '<i class=\"bi bi-chevron-down\"></i><span>' + _esc(swimlane.name) + '</span><span class=\"count\">' + rows.length + '</span></div>' +\n        '<div class=\"swimlane-content\"><table class=\"data-table\" style=\"min-width:1100px;\"><thead><tr>' +\n        '<th style=\"width:40px;\"><input type=\"checkbox\" data-notsaved=\"true\" onchange=\"dashboard.toggleAll(this)\"></th><th>Status</th>' + colHeaders + '<th>Age</th><th>Actions</th></tr></thead>' +\n        '<tbody>' + rowsHtml + '</tbody></table></div></div>';\n};\n\nDashboardViewModel.prototype.renderClaimsRow = function(row) {\n    var age = row.AgeDays || 0;\n    var ageBadge = age >= ").concat(crit, " ? 'age-badge-critical' : age >= ").concat(warn, " ? 'age-badge-warning' : 'age-badge-normal';\n    var claimed = row.ClaimedBy ? '<span class=\"badge-claimed\">' + _esc(row.ClaimedBy) + '</span>' : '<span class=\"badge-unclaimed\">Unclaimed</span>';\n    var cells = this.config.columns.map(function(col) { return _cell(row, col); }).join('');\n    var id = _esc(row.DocumentID || row.FormID || '');\n    return '<tr><td style=\"width:40px;\"><input type=\"checkbox\" class=\"row-checkbox\" data-notsaved=\"true\" data-id=\"' + id + '\"></td>' +\n        '<td>' + claimed + '</td>' + cells +\n        '<td><span class=\"age-badge ' + ageBadge + '\">' + age + 'd</span></td>' +\n        '<td><a href=\"' + encodeURI(_safeUrl(row.url || '#')) + '\" target=\"_blank\" class=\"view-btn\"><i class=\"bi bi-eye\"></i> View</a></td></tr>';\n};\n\nDashboardViewModel.prototype.setChip = function(chip) {\n    this.activeChip = chip;\n    // Apply chip filter to filteredData\n    this.applyFilters(); // Reset to base filters first\n    if (chip && chip.toLowerCase() !== 'all') {\n        var self = this;\n        // Check if chip is an age filter like \"30+ Days\" or \"60+ Days\"\n        var ageMatch = chip.match(/^(\\d+)\\+?\\s*days?$/i);\n        if (ageMatch) {\n            var minAge = parseInt(ageMatch[1], 10);\n            this.filteredData = this.filteredData.filter(function(r) { return (r.AgeDays || 0) >= minAge; });\n        } else if (chip.toLowerCase().indexOf('my') >= 0 || chip.toLowerCase().indexOf('claimed') >= 0) {\n            // \"My Claims\" style filter\n            this.filteredData = this.filteredData.filter(function(r) { return r.ClaimedBy === (DashboardConfig.currentUser || ''); });\n        } else {\n            // Generic text filter: match chip text against any column value\n            var chipLower = chip.toLowerCase();\n            this.filteredData = this.filteredData.filter(function(r) {\n                return Object.values(r).some(function(v) { return String(v).toLowerCase().indexOf(chipLower) >= 0; });\n            });\n        }\n    }\n    this.render();\n};\nDashboardViewModel.prototype.toggleAll = function(cb) { cb.closest('table').querySelectorAll('.row-checkbox').forEach(function(c) { c.checked = cb.checked; }); };\nDashboardViewModel.prototype.claimSelected = function() {\n    var ids = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(function(c) { return c.dataset.id; });\n    if (ids.length === 0) { showToast('Select items first.', 'warning'); return; }\n    if (typeof integration === 'undefined' || !claimIntegration) { showToast('Claimed ' + ids.length + ' item(s) (no integration configured)'); return; }\n    var self = this; var pending = ids.length; var done = 0;\n    document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'flex');\n    ids.forEach(function(id) {\n        integration.all(claimIntegration, { FormID: id, ClaimedBy: (DashboardConfig.currentUser || 'Unknown') }).then(function() {\n            done++; if (done === pending) { showToast('Claimed ' + done + ' item(s)', 'success'); document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none'); _refreshDashboard(1500); }\n        }).catch(function(err) {\n            done++; showToast('Claim failed: ' + (err.message || 'Error'), 'error'); if (done === pending) { document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none'); }\n        });\n    });\n};\nDashboardViewModel.prototype.unclaimSelected = function() {\n    var ids = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(function(c) { return c.dataset.id; });\n    if (ids.length === 0) { showToast('Select items first.', 'warning'); return; }\n    if (typeof integration === 'undefined' || !unclaimIntegration) { showToast('Released ' + ids.length + ' item(s) (no integration configured)'); return; }\n    var self = this; var pending = ids.length; var done = 0;\n    document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'flex');\n    ids.forEach(function(id) {\n        integration.all(unclaimIntegration, { FormID: id, ClaimedBy: (DashboardConfig.currentUser || 'Unknown') }).then(function() {\n            done++; if (done === pending) { showToast('Released ' + done + ' item(s)', 'success'); document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none'); _refreshDashboard(1500); }\n        }).catch(function(err) {\n            done++; showToast('Unclaim failed: ' + (err.message || 'Error'), 'error'); if (done === pending) { document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none'); }\n        });\n    });\n};\n") + vmInit();
+	var chips = State.styleConfig.filterChips || ["All"];
+	var warn = State.styleConfig.ageBadgeWarning || 30;
+	var crit = State.styleConfig.ageBadgeCritical || 60;
+	return (
+		vmPreamble() +
+		vmBaseClass() +
+		"\nDashboardViewModel.prototype.filterChips = "
+			.concat(
+				JSON.stringify(chips),
+				";\nDashboardViewModel.prototype.activeChip = 'All';\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    var myItems = this.filteredData.filter(function(r) { return r.ClaimedBy === (DashboardConfig.currentUser || ''); });\n\n    var statsHtml = '<div class=\"personal-stats\"><h6><i class=\"bi bi-person-circle\"></i> Your Stats</h6>' +\n        '<div class=\"stat-row\"><div class=\"stat-item\"><div class=\"stat-value\">' + myItems.length + '</div><div class=\"stat-label\">My Claimed</div></div>' +\n        '<div class=\"stat-item\"><div class=\"stat-value\">' + this.filteredData.length + '</div><div class=\"stat-label\">Total</div></div></div></div>';\n\n    var chipsHtml = this.filterChips.map(function(c) {\n        return '<span class=\"filter-chip ' + (self.activeChip === c ? 'active' : '') + '\" onclick=\"dashboard.setChip(\\'' + _escJS(c) + '\\')\">' + _esc(c) + '</span>';\n    }).join('');\n\n    var actionBar = '<div class=\"action-bar\"><div class=\"action-bar-left\">' +\n        '<button class=\"btn-claim\" onclick=\"dashboard.claimSelected()\"><i class=\"bi bi-hand-index\"></i> Claim Selected</button>' +\n        '<button class=\"btn-unclaim\" onclick=\"dashboard.unclaimSelected()\"><i class=\"bi bi-hand-index-thumb\"></i> Unclaim</button></div>' +\n        '<div class=\"action-bar-right\"><div class=\"quick-filters\">' + chipsHtml + '</div></div></div>';\n\n    var swimlanesHtml = this.config.swimlanes.map(function(sl) {\n        var rows = self.getRowsForSwimlane(sl);\n        return self.renderClaimsSwimlane(sl, rows);\n    }).join('');\n\n    container.innerHTML = statsHtml + actionBar + swimlanesHtml;\n};\n\nDashboardViewModel.prototype.renderClaimsSwimlane = function(swimlane, rows) {\n    var self = this;\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rowsHtml = rows.map(function(row) { return self.renderClaimsRow(row); }).join('');\n    return '<div class=\"swimlane\"><div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\">' +\n        '<i class=\"bi bi-chevron-down\"></i><span>' + _esc(swimlane.name) + '</span><span class=\"count\">' + rows.length + '</span></div>' +\n        '<div class=\"swimlane-content\"><table class=\"data-table\" style=\"min-width:1100px;\"><thead><tr>' +\n        '<th style=\"width:40px;\"><input type=\"checkbox\" data-notsaved=\"true\" onchange=\"dashboard.toggleAll(this)\"></th><th>Status</th>' + colHeaders + '<th>Age</th><th>Actions</th></tr></thead>' +\n        '<tbody>' + rowsHtml + '</tbody></table></div></div>';\n};\n\nDashboardViewModel.prototype.renderClaimsRow = function(row) {\n    var age = row.AgeDays || 0;\n    var ageBadge = age >= ",
+			)
+			.concat(crit, " ? 'age-badge-critical' : age >= ")
+			.concat(
+				warn,
+				" ? 'age-badge-warning' : 'age-badge-normal';\n    var claimed = row.ClaimedBy ? '<span class=\"badge-claimed\">' + _esc(row.ClaimedBy) + '</span>' : '<span class=\"badge-unclaimed\">Unclaimed</span>';\n    var cells = this.config.columns.map(function(col) { return _cell(row, col); }).join('');\n    var id = _esc(row.DocumentID || row.FormID || '');\n    return '<tr><td style=\"width:40px;\"><input type=\"checkbox\" class=\"row-checkbox\" data-notsaved=\"true\" data-id=\"' + id + '\"></td>' +\n        '<td>' + claimed + '</td>' + cells +\n        '<td><span class=\"age-badge ' + ageBadge + '\">' + age + 'd</span></td>' +\n        '<td><a href=\"' + encodeURI(_safeUrl(row.url || '#')) + '\" target=\"_blank\" class=\"view-btn\"><i class=\"bi bi-eye\"></i> View</a></td></tr>';\n};\n\nDashboardViewModel.prototype.setChip = function(chip) {\n    this.activeChip = chip;\n    // Apply chip filter to filteredData\n    this.applyFilters(); // Reset to base filters first\n    if (chip && chip.toLowerCase() !== 'all') {\n        var self = this;\n        // Check if chip is an age filter like \"30+ Days\" or \"60+ Days\"\n        var ageMatch = chip.match(/^(\\d+)\\+?\\s*days?$/i);\n        if (ageMatch) {\n            var minAge = parseInt(ageMatch[1], 10);\n            this.filteredData = this.filteredData.filter(function(r) { return (r.AgeDays || 0) >= minAge; });\n        } else if (chip.toLowerCase().indexOf('my') >= 0 || chip.toLowerCase().indexOf('claimed') >= 0) {\n            // \"My Claims\" style filter\n            this.filteredData = this.filteredData.filter(function(r) { return r.ClaimedBy === (DashboardConfig.currentUser || ''); });\n        } else {\n            // Generic text filter: match chip text against any column value\n            var chipLower = chip.toLowerCase();\n            this.filteredData = this.filteredData.filter(function(r) {\n                return Object.values(r).some(function(v) { return String(v).toLowerCase().indexOf(chipLower) >= 0; });\n            });\n        }\n    }\n    this.render();\n};\nDashboardViewModel.prototype.toggleAll = function(cb) { cb.closest('table').querySelectorAll('.row-checkbox').forEach(function(c) { c.checked = cb.checked; }); };\nDashboardViewModel.prototype.claimSelected = function() {\n    var ids = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(function(c) { return c.dataset.id; });\n    if (ids.length === 0) { showToast('Select items first.', 'warning'); return; }\n    if (typeof integration === 'undefined' || !claimIntegration) { showToast('Claimed ' + ids.length + ' item(s) (no integration configured)'); return; }\n    var self = this; var pending = ids.length; var done = 0;\n    document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'flex');\n    ids.forEach(function(id) {\n        integration.all(claimIntegration, { FormID: id, ClaimedBy: (DashboardConfig.currentUser || 'Unknown') }).then(function() {\n            done++; if (done === pending) { showToast('Claimed ' + done + ' item(s)', 'success'); document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none'); _refreshDashboard(1500); }\n        }).catch(function(err) {\n            done++; showToast('Claim failed: ' + (err.message || 'Error'), 'error'); if (done === pending) { document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none'); }\n        });\n    });\n};\nDashboardViewModel.prototype.unclaimSelected = function() {\n    var ids = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(function(c) { return c.dataset.id; });\n    if (ids.length === 0) { showToast('Select items first.', 'warning'); return; }\n    if (typeof integration === 'undefined' || !unclaimIntegration) { showToast('Released ' + ids.length + ' item(s) (no integration configured)'); return; }\n    var self = this; var pending = ids.length; var done = 0;\n    document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'flex');\n    ids.forEach(function(id) {\n        integration.all(unclaimIntegration, { FormID: id, ClaimedBy: (DashboardConfig.currentUser || 'Unknown') }).then(function() {\n            done++; if (done === pending) { showToast('Released ' + done + ' item(s)', 'success'); document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none'); _refreshDashboard(1500); }\n        }).catch(function(err) {\n            done++; showToast('Unclaim failed: ' + (err.message || 'Error'), 'error'); if (done === pending) { document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none'); }\n        });\n    });\n};\n",
+			) +
+		vmInit()
+	);
 }
 function generateVM_workflow() {
-  var actionsMap = State.styleConfig.workflowActions || {};
-  return vmPreamble() + vmBaseClass() + "\nDashboardViewModel.prototype.workflowActions = ".concat(JSON.stringify(actionsMap), ";\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    container.innerHTML = this.config.swimlanes.map(function(sl) {\n        var rows = self.getRowsForSwimlane(sl);\n        return self.renderWorkflowSwimlane(sl, rows);\n    }).join('') + '<div id=\"confirmationModal\" class=\"confirmation-modal\"><div class=\"modal-content-custom\">' +\n        '<h5 id=\"modalTitle\"></h5><p id=\"modalMessage\"></p>' +\n        '<div class=\"modal-actions\"><button class=\"btn btn-secondary\" onclick=\"hideConfirmationModal()\">Cancel</button>' +\n        '<button class=\"btn btn-primary\" onclick=\"confirmAction()\">Confirm</button></div></div></div>';\n};\n\nDashboardViewModel.prototype.renderWorkflowSwimlane = function(swimlane, rows) {\n    var self = this;\n    var colors = ['#ffc107', '#17a2b8', '#007bff', '#28a745', '#dc3545', '#6f42c1'];\n    var idx = this.config.swimlanes.indexOf(swimlane);\n    var color = colors[idx % colors.length];\n    var textColor = idx === 0 ? '#000' : '#fff';\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rowsHtml = rows.map(function(row) { return self.renderActionRow(row, swimlane.name); }).join('');\n    return '<div class=\"swimlane\"><div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\" style=\"background:linear-gradient(135deg,' + color + ' 0%,' + color + 'cc 100%);color:' + textColor + ';\">' +\n        '<i class=\"bi bi-chevron-down\"></i><span>' + _esc(swimlane.name) + '</span><span class=\"count\" style=\"background:rgba(0,0,0,0.2);color:#fff;\">' + rows.length + '</span></div>' +\n        '<div class=\"swimlane-content\"><table class=\"data-table\"><thead><tr><th>Actions</th>' + colHeaders + '</tr></thead>' +\n        '<tbody>' + rowsHtml + '</tbody></table></div></div>';\n};\n\nDashboardViewModel.prototype.renderActionRow = function(row, swimlaneName) {\n    var actions = this.workflowActions[swimlaneName] || [];\n    var id = row.DocumentID || row.FormID || '';\n    var taskId = row.TaskID || '';\n    var btns = actions.map(function(a) {\n        if (!taskId) return '<button class=\"btn btn-' + _esc(a.btnStyle) + ' action-btn\" disabled title=\"No active workflow task\"><i class=\"bi ' + _esc(a.icon) + '\"></i> ' + _esc(a.label) + '</button>';\n        return '<button class=\"btn btn-' + _esc(a.btnStyle) + ' action-btn\" onclick=\"showConfirmationModal(\\'' + _escJS(a.label) + '\\',\\'' + _escJS(id) + '\\',\\'' + _escJS(taskId) + '\\')\"><i class=\"bi ' + _esc(a.icon) + '\"></i> ' + _esc(a.label) + '</button>';\n    }).join(' ');\n    var viewBtn = '<button class=\"btn btn-success action-btn\" onclick=\"window.open(\\'' + encodeURI(_safeUrl(row.url || '#')) + '\\')\"><i class=\"bi bi-eye\"></i></button>';\n    var cells = this.config.columns.map(function(col) { return _cell(row, col); }).join('');\n    return '<tr><td style=\"white-space:nowrap;\">' + viewBtn + ' ' + btns + '</td>' + cells + '</tr>';\n};\n\nvar _pendingAction = '';\nvar _pendingFormId = '';\nvar _pendingTaskId = '';\nfunction showConfirmationModal(action, formId, taskId) {\n    document.getElementById('modalTitle').textContent = 'Confirm: ' + action;\n    document.getElementById('modalMessage').textContent = 'Are you sure you want to perform \"' + action + '\" on this item?';\n    document.getElementById('confirmationModal').classList.add('show');\n    _pendingAction = action;\n    _pendingFormId = formId || '';\n    _pendingTaskId = taskId || '';\n}\nfunction hideConfirmationModal() { document.getElementById('confirmationModal').classList.remove('show'); }\nfunction confirmAction() {\n    hideConfirmationModal();\n    if (!_pendingTaskId) {\n        showToast('No active workflow task for this item. It may already be completed.', 'error');\n        return;\n    }\n    var baseUrl = window.location.origin;\n    var taskId = _pendingTaskId;\n    var decisionId = _getDecisionId(_pendingAction);\n    document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'flex');\n    // Step 1: Lock the task (Central Flow API)\n    _flowApiRequest('POST', baseUrl + '/flow/api/WorkQueue/Lock?taskId=' + encodeURIComponent(taskId), {\n        TaskID: taskId, DecisionOptionID: decisionId, ActorFilterValue: null, UDRDecision: null\n    }).then(function(lockResp) {\n        if (!lockResp || !lockResp.IsLockedByCurrentUser) {\n            throw new Error('Could not lock task. It may be locked by another user.');\n        }\n        // Step 2: Execute the decision (approve/deny/move)\n        return _flowApiRequest('PUT', baseUrl + '/flow/api/WorkQueue/PutWorkQueue', {\n            TaskID: taskId, DecisionOptionID: decisionId, ActorFilterValue: null, UDRDecision: null\n        });\n    }).then(function() {\n        document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none');\n        showToast(_pendingAction + ' completed successfully', 'success');\n        _refreshDashboard(1500);\n    }).catch(function(err) {\n        document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none');\n        showToast('Action failed: ' + (err.message || 'Unknown error'), 'error');\n    });\n}\n") + vmInit();
+	var actionsMap = State.styleConfig.workflowActions || {};
+	return (
+		vmPreamble() +
+		vmBaseClass() +
+		"\nDashboardViewModel.prototype.workflowActions = ".concat(
+			JSON.stringify(actionsMap),
+			";\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    container.innerHTML = this.config.swimlanes.map(function(sl) {\n        var rows = self.getRowsForSwimlane(sl);\n        return self.renderWorkflowSwimlane(sl, rows);\n    }).join('') + '<div id=\"confirmationModal\" class=\"confirmation-modal\"><div class=\"modal-content-custom\">' +\n        '<h5 id=\"modalTitle\"></h5><p id=\"modalMessage\"></p>' +\n        '<div class=\"modal-actions\"><button class=\"btn btn-secondary\" onclick=\"hideConfirmationModal()\">Cancel</button>' +\n        '<button class=\"btn btn-primary\" onclick=\"confirmAction()\">Confirm</button></div></div></div>';\n};\n\nDashboardViewModel.prototype.renderWorkflowSwimlane = function(swimlane, rows) {\n    var self = this;\n    var colors = ['#ffc107', '#17a2b8', '#007bff', '#28a745', '#dc3545', '#6f42c1'];\n    var idx = this.config.swimlanes.indexOf(swimlane);\n    var color = colors[idx % colors.length];\n    var textColor = idx === 0 ? '#000' : '#fff';\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rowsHtml = rows.map(function(row) { return self.renderActionRow(row, swimlane.name); }).join('');\n    return '<div class=\"swimlane\"><div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\" style=\"background:linear-gradient(135deg,' + color + ' 0%,' + color + 'cc 100%);color:' + textColor + ';\">' +\n        '<i class=\"bi bi-chevron-down\"></i><span>' + _esc(swimlane.name) + '</span><span class=\"count\" style=\"background:rgba(0,0,0,0.2);color:#fff;\">' + rows.length + '</span></div>' +\n        '<div class=\"swimlane-content\"><table class=\"data-table\"><thead><tr><th>Actions</th>' + colHeaders + '</tr></thead>' +\n        '<tbody>' + rowsHtml + '</tbody></table></div></div>';\n};\n\nDashboardViewModel.prototype.renderActionRow = function(row, swimlaneName) {\n    var actions = this.workflowActions[swimlaneName] || [];\n    var id = row.DocumentID || row.FormID || '';\n    var taskId = row.TaskID || '';\n    var btns = actions.map(function(a) {\n        if (!taskId) return '<button class=\"btn btn-' + _esc(a.btnStyle) + ' action-btn\" disabled title=\"No active workflow task\"><i class=\"bi ' + _esc(a.icon) + '\"></i> ' + _esc(a.label) + '</button>';\n        return '<button class=\"btn btn-' + _esc(a.btnStyle) + ' action-btn\" onclick=\"showConfirmationModal(\\'' + _escJS(a.label) + '\\',\\'' + _escJS(id) + '\\',\\'' + _escJS(taskId) + '\\')\"><i class=\"bi ' + _esc(a.icon) + '\"></i> ' + _esc(a.label) + '</button>';\n    }).join(' ');\n    var viewBtn = '<button class=\"btn btn-success action-btn\" onclick=\"window.open(\\'' + encodeURI(_safeUrl(row.url || '#')) + '\\')\"><i class=\"bi bi-eye\"></i></button>';\n    var cells = this.config.columns.map(function(col) { return _cell(row, col); }).join('');\n    return '<tr><td style=\"white-space:nowrap;\">' + viewBtn + ' ' + btns + '</td>' + cells + '</tr>';\n};\n\nvar _pendingAction = '';\nvar _pendingFormId = '';\nvar _pendingTaskId = '';\nfunction showConfirmationModal(action, formId, taskId) {\n    document.getElementById('modalTitle').textContent = 'Confirm: ' + action;\n    document.getElementById('modalMessage').textContent = 'Are you sure you want to perform \"' + action + '\" on this item?';\n    document.getElementById('confirmationModal').classList.add('show');\n    _pendingAction = action;\n    _pendingFormId = formId || '';\n    _pendingTaskId = taskId || '';\n}\nfunction hideConfirmationModal() { document.getElementById('confirmationModal').classList.remove('show'); }\nfunction confirmAction() {\n    hideConfirmationModal();\n    if (!_pendingTaskId) {\n        showToast('No active workflow task for this item. It may already be completed.', 'error');\n        return;\n    }\n    var baseUrl = window.location.origin;\n    var taskId = _pendingTaskId;\n    var decisionId = _getDecisionId(_pendingAction);\n    document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'flex');\n    // Step 1: Lock the task (Central Flow API)\n    _flowApiRequest('POST', baseUrl + '/flow/api/WorkQueue/Lock?taskId=' + encodeURIComponent(taskId), {\n        TaskID: taskId, DecisionOptionID: decisionId, ActorFilterValue: null, UDRDecision: null\n    }).then(function(lockResp) {\n        if (!lockResp || !lockResp.IsLockedByCurrentUser) {\n            throw new Error('Could not lock task. It may be locked by another user.');\n        }\n        // Step 2: Execute the decision (approve/deny/move)\n        return _flowApiRequest('PUT', baseUrl + '/flow/api/WorkQueue/PutWorkQueue', {\n            TaskID: taskId, DecisionOptionID: decisionId, ActorFilterValue: null, UDRDecision: null\n        });\n    }).then(function() {\n        document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none');\n        showToast(_pendingAction + ' completed successfully', 'success');\n        _refreshDashboard(1500);\n    }).catch(function(err) {\n        document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none');\n        showToast('Action failed: ' + (err.message || 'Unknown error'), 'error');\n    });\n}\n",
+		) +
+		vmInit()
+	);
 }
 function generateVM_survey() {
-  var sc = State.styleConfig;
-  // Resolve field id -> SQL column alias (mirrors generateConfigJS). The picker stores
-  // the field id; the row data is keyed by the SQL column (content alias / form label),
-  // so the raw id would read a nonexistent property and render blank stats + cards.
-  var ratingF = escapeJS(resolveFieldAlias(sc.ratingField) || 'Rating');
-  var commentF = escapeJS(resolveFieldAlias(sc.commentField) || 'Comments');
-  var deptF = escapeJS(resolveFieldAlias(sc.departmentField) || 'Department');
-  return vmPreamble() + vmBaseClass() + "\nDashboardViewModel.prototype.currentView = 'table';\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    var total = this.filteredData.length;\n    var deptSet = {};\n    var ratingSum = 0; var ratingCount = 0;\n    this.filteredData.forEach(function(r) {\n        if (r['".concat(deptF, "']) deptSet[r['").concat(deptF, "']] = true;\n        var v = parseFloat(r['").concat(ratingF, "']);\n        if (!isNaN(v)) { ratingSum += v; ratingCount++; }\n    });\n    var avgRating = ratingCount > 0 ? (ratingSum / ratingCount).toFixed(1) : 'N/A';\n\n    var statsHtml = '<div class=\"survey-stats-row\">' +\n        '<div class=\"survey-stat-card\"><h3>' + total + '</h3><small>Total Responses</small></div>' +\n        '<div class=\"survey-stat-card\"><h3>' + Object.keys(deptSet).length + '</h3><small>Departments</small></div>' +\n        '<div class=\"survey-stat-card\"><h3>' + avgRating + '</h3><small>Avg Rating</small></div></div>';\n\n    var viewToggle = '<div class=\"action-bar\"><div class=\"action-bar-left\"><strong>View Mode:</strong>' +\n        '<button class=\"btn btn-sm ' + (this.currentView==='table'?'btn-primary':'btn-outline-primary') + '\" onclick=\"dashboard.switchView(\\'table\\')\">Table</button>' +\n        '<button class=\"btn btn-sm ' + (this.currentView==='cards'?'btn-primary':'btn-outline-primary') + '\" onclick=\"dashboard.switchView(\\'cards\\')\">Cards</button></div></div>';\n\n    var viewHtml = this.currentView === 'table' ? this.renderTableView() : this.renderCardsView();\n    container.innerHTML = statsHtml + viewToggle + viewHtml;\n};\n\nDashboardViewModel.prototype.renderTableView = function() {\n    var self = this;\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rows = this.filteredData.map(function(row) {\n        return '<tr>' + self.config.columns.map(function(col) { return _cell(row, col); }).join('') + '<td><a href=\"' + encodeURI(_safeUrl(row.url || '#')) + '\" target=\"_blank\" class=\"view-btn\"><i class=\"bi bi-eye\"></i> View</a></td></tr>';\n    }).join('');\n    return '<table class=\"data-table\"><thead><tr>' + colHeaders + '<th>Actions</th></tr></thead><tbody>' + rows + '</tbody></table>';\n};\n\nDashboardViewModel.prototype.renderCardsView = function() {\n    return '<div class=\"survey-cards-grid\">' + this.filteredData.map(function(row) {\n        var rating = row['").concat(ratingF, "'] || 'N/A';\n        var comment = row['").concat(commentF, "'] || '';\n        var dept = row['").concat(deptF, "'] || '';\n        var v = parseFloat(rating);\n        var color = v >= 4 ? '#28a745' : v >= 3 ? '#ffc107' : '#dc3545';\n        return '<div class=\"survey-response-card\" style=\"border-left:4px solid ' + color + ';\">' +\n            '<div style=\"display:flex;justify-content:space-between;margin-bottom:8px;\">' +\n            '<span class=\"badge\" style=\"background:' + color + ';color:#fff;\">' + _esc(rating) + '/5</span>' +\n            '<small style=\"color:#888;\">' + _esc(dept) + '</small></div>' +\n            '<p style=\"font-size:0.9rem;\">' + _esc(comment.substring(0, 200)) + (comment.length > 200 ? '...' : '') + '</p>' + (row.url ? '<a href=\"' + encodeURI(_safeUrl(row.url)) + '\" target=\"_blank\" class=\"view-btn\" style=\"font-size:0.85rem;\"><i class=\"bi bi-eye\"></i> View</a>' : '') + '</div>';\n    }).join('') + '</div>';\n};\n\nDashboardViewModel.prototype.switchView = function(view) { this.currentView = view; this.render(); };\n") + vmInit();
+	var sc = State.styleConfig;
+	// Resolve field id -> SQL column alias (mirrors generateConfigJS). The picker stores
+	// the field id; the row data is keyed by the SQL column (content alias / form label),
+	// so the raw id would read a nonexistent property and render blank stats + cards.
+	var ratingF = escapeJS(resolveFieldAlias(sc.ratingField) || "Rating");
+	var commentF = escapeJS(resolveFieldAlias(sc.commentField) || "Comments");
+	var deptF = escapeJS(resolveFieldAlias(sc.departmentField) || "Department");
+	return (
+		vmPreamble() +
+		vmBaseClass() +
+		"\nDashboardViewModel.prototype.currentView = 'table';\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    var total = this.filteredData.length;\n    var deptSet = {};\n    var ratingSum = 0; var ratingCount = 0;\n    this.filteredData.forEach(function(r) {\n        if (r['"
+			.concat(deptF, "']) deptSet[r['")
+			.concat(deptF, "']] = true;\n        var v = parseFloat(r['")
+			.concat(
+				ratingF,
+				"']);\n        if (!isNaN(v)) { ratingSum += v; ratingCount++; }\n    });\n    var avgRating = ratingCount > 0 ? (ratingSum / ratingCount).toFixed(1) : 'N/A';\n\n    var statsHtml = '<div class=\"survey-stats-row\">' +\n        '<div class=\"survey-stat-card\"><h3>' + total + '</h3><small>Total Responses</small></div>' +\n        '<div class=\"survey-stat-card\"><h3>' + Object.keys(deptSet).length + '</h3><small>Departments</small></div>' +\n        '<div class=\"survey-stat-card\"><h3>' + avgRating + '</h3><small>Avg Rating</small></div></div>';\n\n    var viewToggle = '<div class=\"action-bar\"><div class=\"action-bar-left\"><strong>View Mode:</strong>' +\n        '<button class=\"btn btn-sm ' + (this.currentView==='table'?'btn-primary':'btn-outline-primary') + '\" onclick=\"dashboard.switchView(\\'table\\')\">Table</button>' +\n        '<button class=\"btn btn-sm ' + (this.currentView==='cards'?'btn-primary':'btn-outline-primary') + '\" onclick=\"dashboard.switchView(\\'cards\\')\">Cards</button></div></div>';\n\n    var viewHtml = this.currentView === 'table' ? this.renderTableView() : this.renderCardsView();\n    container.innerHTML = statsHtml + viewToggle + viewHtml;\n};\n\nDashboardViewModel.prototype.renderTableView = function() {\n    var self = this;\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rows = this.filteredData.map(function(row) {\n        return '<tr>' + self.config.columns.map(function(col) { return _cell(row, col); }).join('') + '<td><a href=\"' + encodeURI(_safeUrl(row.url || '#')) + '\" target=\"_blank\" class=\"view-btn\"><i class=\"bi bi-eye\"></i> View</a></td></tr>';\n    }).join('');\n    return '<table class=\"data-table\"><thead><tr>' + colHeaders + '<th>Actions</th></tr></thead><tbody>' + rows + '</tbody></table>';\n};\n\nDashboardViewModel.prototype.renderCardsView = function() {\n    return '<div class=\"survey-cards-grid\">' + this.filteredData.map(function(row) {\n        var rating = row['",
+			)
+			.concat(ratingF, "'] || 'N/A';\n        var comment = row['")
+			.concat(commentF, "'] || '';\n        var dept = row['")
+			.concat(
+				deptF,
+				"'] || '';\n        var v = parseFloat(rating);\n        var color = v >= 4 ? '#28a745' : v >= 3 ? '#ffc107' : '#dc3545';\n        return '<div class=\"survey-response-card\" style=\"border-left:4px solid ' + color + ';\">' +\n            '<div style=\"display:flex;justify-content:space-between;margin-bottom:8px;\">' +\n            '<span class=\"badge\" style=\"background:' + color + ';color:#fff;\">' + _esc(rating) + '/5</span>' +\n            '<small style=\"color:#888;\">' + _esc(dept) + '</small></div>' +\n            '<p style=\"font-size:0.9rem;\">' + _esc(comment.substring(0, 200)) + (comment.length > 200 ? '...' : '') + '</p>' + (row.url ? '<a href=\"' + encodeURI(_safeUrl(row.url)) + '\" target=\"_blank\" class=\"view-btn\" style=\"font-size:0.85rem;\"><i class=\"bi bi-eye\"></i> View</a>' : '') + '</div>';\n    }).join('') + '</div>';\n};\n\nDashboardViewModel.prototype.switchView = function(view) { this.currentView = view; this.render(); };\n",
+			) +
+		vmInit()
+	);
 }
 function generateVM_voting() {
-  var members = State.styleConfig.committeeMembers || [];
-  return vmPreamble() + vmBaseClass() + "\nDashboardViewModel.prototype.members = ".concat(JSON.stringify(members), ";\nDashboardViewModel.prototype.votes = {};\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n\n    var userBar = '<div class=\"voting-user-bar\"><div><i class=\"bi bi-person-circle me-2\"></i><strong>Logged in as:</strong> ' +\n        _esc(DashboardConfig.currentUser || 'Committee Member') + '</div>' +\n        '<div><span class=\"badge\" style=\"background:rgba(255,255,255,0.2);color:#fff;\"><i class=\"bi bi-inbox me-1\"></i>Pending: <strong>' + this.filteredData.length + '</strong></span></div></div>';\n\n    var memberHeaders = this.members.map(function(m) { return '<th style=\"background:' + _esc(m.color) + ';text-align:center;\">' + _esc(m.name) + '</th>'; }).join('');\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n\n    var rows = this.filteredData.map(function(row) {\n        var id = row.DocumentID || row.FormID || '';\n        var memberCells = self.members.map(function(m) {\n            var vote = (self.votes[id] || {})[m.name] || '';\n            var icon = vote === 'approved' ? '<i class=\"bi bi-check-circle-fill\" style=\"color:#28a745;\"></i>' :\n                       vote === 'denied' ? '<i class=\"bi bi-x-circle-fill\" style=\"color:#dc3545;\"></i>' :\n                       vote === 'more-info' ? '<i class=\"bi bi-question-circle-fill\" style=\"color:#ffc107;\"></i>' : '-';\n            return '<td style=\"background:' + _esc(m.color) + ';text-align:center;\">' + icon + '</td>';\n        }).join('');\n        var cells = self.config.columns.map(function(col) { return _cell(row, col); }).join('');\n        return '<tr><td><button class=\"view-btn\" onclick=\"window.open(\\'' + encodeURI(_safeUrl(row.url || '#')) + '\\')\"><i class=\"bi bi-eye\"></i> View</button></td>' + cells + memberCells +\n            '<td style=\"white-space:nowrap;\">' +\n            '<button class=\"vote-btn vote-approve\" onclick=\"dashboard.castVote(\\'' + _escJS(id) + '\\',\\'approved\\')\"><i class=\"bi bi-check-circle\"></i></button>' +\n            '<button class=\"vote-btn vote-deny\" onclick=\"dashboard.castVote(\\'' + _escJS(id) + '\\',\\'denied\\')\"><i class=\"bi bi-x-circle\"></i></button>' +\n            '<button class=\"vote-btn vote-info\" onclick=\"dashboard.castVote(\\'' + _escJS(id) + '\\',\\'more-info\\')\"><i class=\"bi bi-question-circle\"></i></button></td></tr>';\n    }).join('');\n\n    container.innerHTML = userBar + '<div style=\"overflow-x:auto;\"><table class=\"data-table\" style=\"min-width:1200px;\"><thead><tr><th>Document</th>' +\n        colHeaders + memberHeaders + '<th>Your Vote</th></tr></thead><tbody>' + rows + '</tbody></table></div>';\n};\n\nDashboardViewModel.prototype.castVote = function(id, decision) {\n    var user = DashboardConfig.currentUser || (this.members[0] ? this.members[0].name : 'You');\n    var self = this;\n    var voteMap = { approved: 'Approve', denied: 'Deny', 'more-info': 'Abstain' };\n    if (typeof integration !== 'undefined' && castVoteIntegration) {\n        integration.all(castVoteIntegration, { DocumentID: id, MemberSlot: (DashboardConfig.memberSlot || 'A'), Vote: (voteMap[decision] || decision), VotedBy: user, Comment: '' }).then(function() {\n            showToast('Vote recorded: ' + decision, 'success');\n            _refreshDashboard(1500);\n        }).catch(function(err) { showToast('Vote failed: ' + (err.message || 'Error'), 'error'); });\n    } else {\n        if (!this.votes[id]) this.votes[id] = {};\n        this.votes[id][user] = decision;\n        this.render();\n        showToast('Vote recorded: ' + decision);\n    }\n};\n\n") + vmInit();
+	var members = State.styleConfig.committeeMembers || [];
+	return (
+		vmPreamble() +
+		vmBaseClass() +
+		"\nDashboardViewModel.prototype.members = ".concat(
+			JSON.stringify(members),
+			";\nDashboardViewModel.prototype.votes = {};\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n\n    var userBar = '<div class=\"voting-user-bar\"><div><i class=\"bi bi-person-circle me-2\"></i><strong>Logged in as:</strong> ' +\n        _esc(DashboardConfig.currentUser || 'Committee Member') + '</div>' +\n        '<div><span class=\"badge\" style=\"background:rgba(255,255,255,0.2);color:#fff;\"><i class=\"bi bi-inbox me-1\"></i>Pending: <strong>' + this.filteredData.length + '</strong></span></div></div>';\n\n    var memberHeaders = this.members.map(function(m) { return '<th style=\"background:' + _esc(m.color) + ';text-align:center;\">' + _esc(m.name) + '</th>'; }).join('');\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n\n    var rows = this.filteredData.map(function(row) {\n        var id = row.DocumentID || row.FormID || '';\n        var memberCells = self.members.map(function(m) {\n            var vote = (self.votes[id] || {})[m.name] || '';\n            var icon = vote === 'approved' ? '<i class=\"bi bi-check-circle-fill\" style=\"color:#28a745;\"></i>' :\n                       vote === 'denied' ? '<i class=\"bi bi-x-circle-fill\" style=\"color:#dc3545;\"></i>' :\n                       vote === 'more-info' ? '<i class=\"bi bi-question-circle-fill\" style=\"color:#ffc107;\"></i>' : '-';\n            return '<td style=\"background:' + _esc(m.color) + ';text-align:center;\">' + icon + '</td>';\n        }).join('');\n        var cells = self.config.columns.map(function(col) { return _cell(row, col); }).join('');\n        return '<tr><td><button class=\"view-btn\" onclick=\"window.open(\\'' + encodeURI(_safeUrl(row.url || '#')) + '\\')\"><i class=\"bi bi-eye\"></i> View</button></td>' + cells + memberCells +\n            '<td style=\"white-space:nowrap;\">' +\n            '<button class=\"vote-btn vote-approve\" onclick=\"dashboard.castVote(\\'' + _escJS(id) + '\\',\\'approved\\')\"><i class=\"bi bi-check-circle\"></i></button>' +\n            '<button class=\"vote-btn vote-deny\" onclick=\"dashboard.castVote(\\'' + _escJS(id) + '\\',\\'denied\\')\"><i class=\"bi bi-x-circle\"></i></button>' +\n            '<button class=\"vote-btn vote-info\" onclick=\"dashboard.castVote(\\'' + _escJS(id) + '\\',\\'more-info\\')\"><i class=\"bi bi-question-circle\"></i></button></td></tr>';\n    }).join('');\n\n    container.innerHTML = userBar + '<div style=\"overflow-x:auto;\"><table class=\"data-table\" style=\"min-width:1200px;\"><thead><tr><th>Document</th>' +\n        colHeaders + memberHeaders + '<th>Your Vote</th></tr></thead><tbody>' + rows + '</tbody></table></div>';\n};\n\nDashboardViewModel.prototype.castVote = function(id, decision) {\n    var user = DashboardConfig.currentUser || (this.members[0] ? this.members[0].name : 'You');\n    var self = this;\n    var voteMap = { approved: 'Approve', denied: 'Deny', 'more-info': 'Abstain' };\n    if (typeof integration !== 'undefined' && castVoteIntegration) {\n        integration.all(castVoteIntegration, { DocumentID: id, MemberSlot: (DashboardConfig.memberSlot || 'A'), Vote: (voteMap[decision] || decision), VotedBy: user, Comment: '' }).then(function() {\n            showToast('Vote recorded: ' + decision, 'success');\n            _refreshDashboard(1500);\n        }).catch(function(err) { showToast('Vote failed: ' + (err.message || 'Error'), 'error'); });\n    } else {\n        if (!this.votes[id]) this.votes[id] = {};\n        this.votes[id][user] = decision;\n        this.render();\n        showToast('Vote recorded: ' + decision);\n    }\n};\n\n",
+		) +
+		vmInit()
+	);
 }
 function generateVM_cards() {
-  var sc = State.styleConfig;
-  // Resolve field id -> SQL column alias (mirrors generateConfigJS). Without this the
-  // cards read raw field ids and every card renders "Untitled"/"Unknown".
-  var titleField = escapeJS(resolveFieldAlias(sc.cardTitleField) || 'Name');
-  var statusField = escapeJS(resolveFieldAlias(sc.cardStatusField) || 'Status');
-  var leadField = escapeJS(resolveFieldAlias(sc.cardLeadField) || 'Lead');
-  var budgetField = sc.cardBudgetField ? escapeJS(resolveFieldAlias(sc.cardBudgetField)) : '';
-  return vmPreamble() + vmBaseClass() + "\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var statusCounts = {};\n    this.filteredData.forEach(function(r) { var s = r['".concat(statusField, "'] || 'Unknown'; statusCounts[s] = (statusCounts[s] || 0) + 1; });\n    var total = this.filteredData.length;\n    var statusColors = {'On Track':'#059669','At Risk':'#D97706','Delayed':'#DC2626','Complete':'#006747','Pending':'#6366f1','Approved':'#059669','Denied':'#DC2626'};\n\n    var statusList = Object.entries(statusCounts).map(function(e) {\n        return '<div style=\"display:flex;align-items:center;gap:8px;margin-bottom:4px;\">' +\n            '<div style=\"width:12px;height:12px;border-radius:50%;background:' + (statusColors[e[0]]||'#888') + ';\"></div>' +\n            '<span>' + _esc(e[0]) + ': <strong>' + e[1] + '</strong></span></div>';\n    }).join('');\n\n    var metricsHtml = '<div class=\"cards-metrics-row\">' +\n        '<div class=\"cards-metric-card\"><h6>Status Overview</h6><div class=\"cards-status-list\">' + statusList + '</div></div>' +\n        '<div class=\"cards-metric-card\"><h6>Total Items</h6><div style=\"font-size:2.5rem;font-weight:700;color:var(--primary);\">' + total + '</div></div></div>';\n\n    var cardsHtml = '<div class=\"cards-grid\">' + this.filteredData.map(function(row) {\n        var title = row['").concat(titleField, "'] || 'Untitled';\n        var status = row['").concat(statusField, "'] || 'Unknown';\n        var lead = row['").concat(leadField, "'] || '';\n        ").concat(budgetField ? "var budget = row['".concat(budgetField, "'] || '';") : "var budget = '';", "\n        var color = statusColors[status] || '#888';\n        return '<div class=\"item-card\"><div class=\"item-card-header\"><div><div class=\"item-card-title\">' + _esc(title) + '</div>' +\n            '<div class=\"item-card-meta\">' + (lead ? 'Lead: ' + _esc(lead) : '') + '</div></div>' +\n            '<span class=\"status-badge\" style=\"background:' + color + '15;color:' + color + ';border:1px solid ' + color + '30;\">' + _esc(status) + '</span></div>' +\n            '<div class=\"item-card-body\">' + (budget ? '<small style=\"color:#666;\">Budget: ' + _esc(budget) + '</small> ' : '') + (row.url ? '<a href=\"' + encodeURI(_safeUrl(row.url)) + '\" target=\"_blank\" class=\"view-btn\" style=\"font-size:0.85rem;\"><i class=\"bi bi-eye\"></i> View</a>' : '') + '</div></div>';\n    }).join('') + '</div>';\n\n    container.innerHTML = metricsHtml + cardsHtml;\n};\n") + vmInit();
+	var sc = State.styleConfig;
+	// Resolve field id -> SQL column alias (mirrors generateConfigJS). Without this the
+	// cards read raw field ids and every card renders "Untitled"/"Unknown".
+	var titleField = escapeJS(resolveFieldAlias(sc.cardTitleField) || "Name");
+	var statusField = escapeJS(
+		resolveFieldAlias(sc.cardStatusField) || "Status",
+	);
+	var leadField = escapeJS(resolveFieldAlias(sc.cardLeadField) || "Lead");
+	var budgetField = sc.cardBudgetField
+		? escapeJS(resolveFieldAlias(sc.cardBudgetField))
+		: "";
+	return (
+		vmPreamble() +
+		vmBaseClass() +
+		"\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var statusCounts = {};\n    this.filteredData.forEach(function(r) { var s = r['"
+			.concat(
+				statusField,
+				"'] || 'Unknown'; statusCounts[s] = (statusCounts[s] || 0) + 1; });\n    var total = this.filteredData.length;\n    var statusColors = {'On Track':'#059669','At Risk':'#D97706','Delayed':'#DC2626','Complete':'#006747','Pending':'#6366f1','Approved':'#059669','Denied':'#DC2626'};\n\n    var statusList = Object.entries(statusCounts).map(function(e) {\n        return '<div style=\"display:flex;align-items:center;gap:8px;margin-bottom:4px;\">' +\n            '<div style=\"width:12px;height:12px;border-radius:50%;background:' + (statusColors[e[0]]||'#888') + ';\"></div>' +\n            '<span>' + _esc(e[0]) + ': <strong>' + e[1] + '</strong></span></div>';\n    }).join('');\n\n    var metricsHtml = '<div class=\"cards-metrics-row\">' +\n        '<div class=\"cards-metric-card\"><h6>Status Overview</h6><div class=\"cards-status-list\">' + statusList + '</div></div>' +\n        '<div class=\"cards-metric-card\"><h6>Total Items</h6><div style=\"font-size:2.5rem;font-weight:700;color:var(--primary);\">' + total + '</div></div></div>';\n\n    var cardsHtml = '<div class=\"cards-grid\">' + this.filteredData.map(function(row) {\n        var title = row['",
+			)
+			.concat(titleField, "'] || 'Untitled';\n        var status = row['")
+			.concat(statusField, "'] || 'Unknown';\n        var lead = row['")
+			.concat(leadField, "'] || '';\n        ")
+			.concat(
+				budgetField
+					? "var budget = row['".concat(budgetField, "'] || '';")
+					: "var budget = '';",
+				"\n        var color = statusColors[status] || '#888';\n        return '<div class=\"item-card\"><div class=\"item-card-header\"><div><div class=\"item-card-title\">' + _esc(title) + '</div>' +\n            '<div class=\"item-card-meta\">' + (lead ? 'Lead: ' + _esc(lead) : '') + '</div></div>' +\n            '<span class=\"status-badge\" style=\"background:' + color + '15;color:' + color + ';border:1px solid ' + color + '30;\">' + _esc(status) + '</span></div>' +\n            '<div class=\"item-card-body\">' + (budget ? '<small style=\"color:#666;\">Budget: ' + _esc(budget) + '</small> ' : '') + (row.url ? '<a href=\"' + encodeURI(_safeUrl(row.url)) + '\" target=\"_blank\" class=\"view-btn\" style=\"font-size:0.85rem;\"><i class=\"bi bi-eye\"></i> View</a>' : '') + '</div></div>';\n    }).join('') + '</div>';\n\n    container.innerHTML = metricsHtml + cardsHtml;\n};\n",
+			) +
+		vmInit()
+	);
 }
 function generateVM_bulkActions() {
-  var targets = State.styleConfig.reassignTargets || [];
-  return vmPreamble() + vmBaseClass() + "\nDashboardViewModel.prototype.reassignTargets = ".concat(JSON.stringify(targets), ";\nDashboardViewModel.prototype.selectedItems = [];\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    var count = this.selectedItems.length;\n\n    var targetsMenu = this.reassignTargets.map(function(t) { return '<a onclick=\"dashboard.bulkReassign(\\'' + _escJS(t) + '\\')\">' + _esc(t) + '</a>'; }).join('');\n    var actionBar = '<div class=\"action-bar\"><div class=\"action-bar-left\">' +\n        '<button class=\"btn btn-success\" onclick=\"dashboard.bulkAction(\\'approve\\')\" ' + (count===0?'disabled':'') + '><i class=\"bi bi-check-circle me-1\"></i>Bulk Approve (' + count + ')</button>' +\n        '<button class=\"btn btn-danger\" onclick=\"dashboard.bulkAction(\\'deny\\')\" ' + (count===0?'disabled':'') + '><i class=\"bi bi-x-circle me-1\"></i>Bulk Deny (' + count + ')</button>' +\n        '<div class=\"reassign-wrapper\"><button class=\"btn btn-info\" onclick=\"toggleReassignMenu()\"><i class=\"bi bi-arrow-repeat me-1\"></i>Reassign</button>' +\n        '<div class=\"reassign-dropdown\" id=\"reassignMenu\" style=\"display:none;\">' + targetsMenu + '</div></div></div>' +\n        '<div class=\"action-bar-right\"><button class=\"btn btn-warning\" onclick=\"dashboard.exportSelected()\"><i class=\"bi bi-download me-1\"></i>Export Selected</button></div></div>';\n\n    var swimlanesHtml = this.config.swimlanes.map(function(sl) {\n        var rows = self.getRowsForSwimlane(sl);\n        return self.renderBulkSwimlane(sl, rows);\n    }).join('');\n\n    container.innerHTML = actionBar + swimlanesHtml;\n};\n\nDashboardViewModel.prototype.renderBulkSwimlane = function(swimlane, rows) {\n    var self = this;\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rowsHtml = rows.map(function(row) {\n        var id = row.DocumentID || row.FormID || row.RequestID || '';\n        var taskId = row.TaskID || '';\n        var cells = self.config.columns.map(function(col) { return _cell(row, col); }).join('');\n        return '<tr><td><input type=\"checkbox\" class=\"bulk-cb\" data-notsaved=\"true\" data-id=\"' + _esc(id) + '\" data-taskid=\"' + _esc(taskId) + '\" onchange=\"dashboard.updateSelection()\"></td>' + cells +\n            '<td><div class=\"row-action-dropdown\"><button class=\"btn btn-sm btn-secondary\" onclick=\"toggleRowMenu(this)\"><i class=\"bi bi-three-dots-vertical\"></i></button>' +\n            '<div class=\"row-action-menu\"><a onclick=\"window.open(\\'' + encodeURI(_safeUrl(row.url || '#')) + '\\')\">View Details</a>' +\n            (taskId ? '<a onclick=\"dashboard.quickAction(\\'' + _escJS(taskId) + '\\',\\'approve\\')\">Quick Approve</a>' +\n            '<a onclick=\"dashboard.quickAction(\\'' + _escJS(taskId) + '\\',\\'deny\\')\">Quick Deny</a>' : '<a class=\"disabled\">No active task</a>') +\n            '</div></div></td></tr>';\n    }).join('');\n    return '<div class=\"swimlane\"><div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\">' +\n        '<i class=\"bi bi-chevron-down\"></i><span>' + _esc(swimlane.name) + '</span><span class=\"count\">' + rows.length + '</span></div>' +\n        '<div class=\"swimlane-content\"><table class=\"data-table\" style=\"min-width:1200px;\"><thead><tr><th style=\"width:40px;\"><input type=\"checkbox\" data-notsaved=\"true\" onchange=\"dashboard.toggleAllBulk(this)\"></th>' +\n        colHeaders + '<th>Actions</th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div></div>';\n};\n\nDashboardViewModel.prototype.updateSelection = function() {\n    this.selectedItems = Array.from(document.querySelectorAll('.bulk-cb:checked')).map(function(c) {\n        return { formId: c.dataset.id, taskId: c.dataset.taskid || '' };\n    });\n    // Update action bar counts without full re-render\n    var count = this.selectedItems.length;\n    document.querySelectorAll('.action-bar .btn').forEach(function(b) {\n        var m = b.textContent.match(/\\(\\d+\\)/);\n        if (m) { b.textContent = b.textContent.replace(/\\(\\d+\\)/, '(' + count + ')'); b.disabled = (count === 0); }\n    });\n};\nDashboardViewModel.prototype.toggleAllBulk = function(cb) {\n    cb.closest('table').querySelectorAll('.bulk-cb').forEach(function(c) { c.checked = cb.checked; });\n    this.updateSelection();\n};\nDashboardViewModel.prototype.bulkAction = function(action) {\n    if (this.selectedItems.length === 0) return;\n    var self = this;\n    var items = this.selectedItems.filter(function(it) { return it.taskId; });\n    if (items.length === 0) { showToast('No selected items have active workflow tasks.', 'warning'); return; }\n    var baseUrl = window.location.origin;\n    var decisionId = _getDecisionId(action);\n    document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'flex');\n    // Step 1: Lock all tasks\n    Promise.all(items.map(function(it) {\n        return _flowApiRequest('POST', baseUrl + '/flow/api/WorkQueue/Lock?taskId=' + encodeURIComponent(it.taskId), {\n            TaskID: it.taskId, DecisionOptionID: decisionId, ActorFilterValue: null, UDRDecision: null\n        }).catch(function(err) { return { _lockFailed: true, taskId: it.taskId, error: err }; });\n    })).then(function(lockResults) {\n        var locked = items.filter(function(it, i) {\n            var r = lockResults[i];\n            return r && !r._lockFailed && r.IsLockedByCurrentUser;\n        });\n        if (locked.length === 0) throw new Error('Could not lock any tasks. They may be locked by other users.');\n        // Step 2: Execute decisions for all locked tasks\n        return Promise.all(locked.map(function(it) {\n            return _flowApiRequest('PUT', baseUrl + '/flow/api/WorkQueue/PutWorkQueue', {\n                TaskID: it.taskId, DecisionOptionID: decisionId, ActorFilterValue: null, UDRDecision: null\n            });\n        })).then(function() { return locked.length; });\n    }).then(function(count) {\n        document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none');\n        showToast('Bulk ' + action + ' completed for ' + count + ' item(s)', 'success');\n        self.selectedItems = []; _refreshDashboard(2000);\n    }).catch(function(err) {\n        document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none');\n        showToast('Bulk action failed: ' + (err.message || 'Error'), 'error');\n    });\n};\nDashboardViewModel.prototype.bulkReassign = function(target) {\n    if (this.selectedItems.length === 0) return;\n    var self = this; var count = this.selectedItems.length;\n    document.getElementById('reassignMenu').style.display = 'none';\n    // Reassign requires Hybrid Server integration (actor GUID mapping not available via Central API)\n    if (typeof integration !== 'undefined' && typeof bulkDecisionIntegration !== 'undefined' && bulkDecisionIntegration) {\n        document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'flex');\n        var formIds = this.selectedItems.map(function(it) { return it.formId; });\n        integration.all(bulkDecisionIntegration, { FormIDs: formIds.join(','), Decision: 'Reassign', ReassignTarget: target, DecidedBy: (DashboardConfig.currentUser || 'Unknown'), Comment: '' }).then(function() {\n            document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none');\n            showToast('Reassigned ' + count + ' item(s) to ' + target, 'success');\n            self.selectedItems = []; _refreshDashboard(1500);\n        }).catch(function(err) {\n            document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none');\n            showToast('Reassign failed: ' + (err.message || 'Error'), 'error');\n        });\n    } else {\n        showToast('Reassign requires Hybrid Server integration. Configure write-back integrations for this feature.', 'error');\n    }\n};\nDashboardViewModel.prototype.quickAction = function(taskId, action) {\n    if (!taskId) { showToast('No active workflow task for this item.', 'error'); return; }\n    var baseUrl = window.location.origin;\n    var decisionId = _getDecisionId(action);\n    _flowApiRequest('POST', baseUrl + '/flow/api/WorkQueue/Lock?taskId=' + encodeURIComponent(taskId), {\n        TaskID: taskId, DecisionOptionID: decisionId, ActorFilterValue: null, UDRDecision: null\n    }).then(function(lockResp) {\n        if (!lockResp || !lockResp.IsLockedByCurrentUser) throw new Error('Could not lock task.');\n        return _flowApiRequest('PUT', baseUrl + '/flow/api/WorkQueue/PutWorkQueue', {\n            TaskID: taskId, DecisionOptionID: decisionId, ActorFilterValue: null, UDRDecision: null\n        });\n    }).then(function() {\n        showToast(action + ' completed', 'success'); _refreshDashboard(1500);\n    }).catch(function(err) { showToast('Action failed: ' + (err.message || 'Error'), 'error'); });\n};\nDashboardViewModel.prototype.exportSelected = function() {\n    if (this.selectedItems.length === 0) { showToast('Select items first.', 'warning'); return; }\n    var self = this;\n    var selectedIds = this.selectedItems.map(function(it) { return it.formId; });\n    var selected = this.data.filter(function(row) {\n        var id = row.DocumentID || row.FormID || row.RequestID || '';\n        return selectedIds.indexOf(String(id)) !== -1;\n    });\n    if (selected.length === 0) { showToast('No matching rows found.', 'warning'); return; }\n    var headers = self.config.columns.map(function(c) { return c.label; });\n    var csvRows = [headers.join(',')];\n    selected.forEach(function(row) {\n        var cells = self.config.columns.map(function(c) { return '\"' + String(row[c.field] || '').replace(/\"/g, '\"\"') + '\"'; });\n        csvRows.push(cells.join(','));\n    });\n    var blob = new Blob([csvRows.join('\\n')], { type: 'text/csv' });\n    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'selected_export.csv'; a.click();\n    showToast('Exported ' + selected.length + ' item(s)', 'success');\n};\n\nfunction toggleReassignMenu() { var m = document.getElementById('reassignMenu'); m.style.display = m.style.display === 'none' ? 'block' : 'none'; }\nfunction toggleRowMenu(btn) { document.querySelectorAll('.row-action-menu.show').forEach(function(m) { m.classList.remove('show'); }); btn.nextElementSibling.classList.toggle('show'); }\ndocument.addEventListener('click', function(e) { if (!e.target.closest('.row-action-dropdown')) { document.querySelectorAll('.row-action-menu.show').forEach(function(m) { m.classList.remove('show'); }); } });\n") + vmInit();
+	var targets = State.styleConfig.reassignTargets || [];
+	return (
+		vmPreamble() +
+		vmBaseClass() +
+		"\nDashboardViewModel.prototype.reassignTargets = ".concat(
+			JSON.stringify(targets),
+			";\nDashboardViewModel.prototype.selectedItems = [];\n\nDashboardViewModel.prototype.render = function() {\n    var container = document.getElementById('dashboardContent');\n    if (!container) return;\n    var self = this;\n    var count = this.selectedItems.length;\n\n    var targetsMenu = this.reassignTargets.map(function(t) { return '<a onclick=\"dashboard.bulkReassign(\\'' + _escJS(t) + '\\')\">' + _esc(t) + '</a>'; }).join('');\n    var actionBar = '<div class=\"action-bar\"><div class=\"action-bar-left\">' +\n        '<button class=\"btn btn-success\" onclick=\"dashboard.bulkAction(\\'approve\\')\" ' + (count===0?'disabled':'') + '><i class=\"bi bi-check-circle me-1\"></i>Bulk Approve (' + count + ')</button>' +\n        '<button class=\"btn btn-danger\" onclick=\"dashboard.bulkAction(\\'deny\\')\" ' + (count===0?'disabled':'') + '><i class=\"bi bi-x-circle me-1\"></i>Bulk Deny (' + count + ')</button>' +\n        '<div class=\"reassign-wrapper\"><button class=\"btn btn-info\" onclick=\"toggleReassignMenu()\"><i class=\"bi bi-arrow-repeat me-1\"></i>Reassign</button>' +\n        '<div class=\"reassign-dropdown\" id=\"reassignMenu\" style=\"display:none;\">' + targetsMenu + '</div></div></div>' +\n        '<div class=\"action-bar-right\"><button class=\"btn btn-warning\" onclick=\"dashboard.exportSelected()\"><i class=\"bi bi-download me-1\"></i>Export Selected</button></div></div>';\n\n    var swimlanesHtml = this.config.swimlanes.map(function(sl) {\n        var rows = self.getRowsForSwimlane(sl);\n        return self.renderBulkSwimlane(sl, rows);\n    }).join('');\n\n    container.innerHTML = actionBar + swimlanesHtml;\n};\n\nDashboardViewModel.prototype.renderBulkSwimlane = function(swimlane, rows) {\n    var self = this;\n    var colHeaders = this.config.columns.map(function(col) { return _sortHeader(col.field, col.label); }).join('');\n    var rowsHtml = rows.map(function(row) {\n        var id = row.DocumentID || row.FormID || row.RequestID || '';\n        var taskId = row.TaskID || '';\n        var cells = self.config.columns.map(function(col) { return _cell(row, col); }).join('');\n        return '<tr><td><input type=\"checkbox\" class=\"bulk-cb\" data-notsaved=\"true\" data-id=\"' + _esc(id) + '\" data-taskid=\"' + _esc(taskId) + '\" onchange=\"dashboard.updateSelection()\"></td>' + cells +\n            '<td><div class=\"row-action-dropdown\"><button class=\"btn btn-sm btn-secondary\" onclick=\"toggleRowMenu(this)\"><i class=\"bi bi-three-dots-vertical\"></i></button>' +\n            '<div class=\"row-action-menu\"><a onclick=\"window.open(\\'' + encodeURI(_safeUrl(row.url || '#')) + '\\')\">View Details</a>' +\n            (taskId ? '<a onclick=\"dashboard.quickAction(\\'' + _escJS(taskId) + '\\',\\'approve\\')\">Quick Approve</a>' +\n            '<a onclick=\"dashboard.quickAction(\\'' + _escJS(taskId) + '\\',\\'deny\\')\">Quick Deny</a>' : '<a class=\"disabled\">No active task</a>') +\n            '</div></div></td></tr>';\n    }).join('');\n    return '<div class=\"swimlane\"><div class=\"swimlane-header\" onclick=\"toggleSwimlane(this)\">' +\n        '<i class=\"bi bi-chevron-down\"></i><span>' + _esc(swimlane.name) + '</span><span class=\"count\">' + rows.length + '</span></div>' +\n        '<div class=\"swimlane-content\"><table class=\"data-table\" style=\"min-width:1200px;\"><thead><tr><th style=\"width:40px;\"><input type=\"checkbox\" data-notsaved=\"true\" onchange=\"dashboard.toggleAllBulk(this)\"></th>' +\n        colHeaders + '<th>Actions</th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div></div>';\n};\n\nDashboardViewModel.prototype.updateSelection = function() {\n    this.selectedItems = Array.from(document.querySelectorAll('.bulk-cb:checked')).map(function(c) {\n        return { formId: c.dataset.id, taskId: c.dataset.taskid || '' };\n    });\n    // Update action bar counts without full re-render\n    var count = this.selectedItems.length;\n    document.querySelectorAll('.action-bar .btn').forEach(function(b) {\n        var m = b.textContent.match(/\\(\\d+\\)/);\n        if (m) { b.textContent = b.textContent.replace(/\\(\\d+\\)/, '(' + count + ')'); b.disabled = (count === 0); }\n    });\n};\nDashboardViewModel.prototype.toggleAllBulk = function(cb) {\n    cb.closest('table').querySelectorAll('.bulk-cb').forEach(function(c) { c.checked = cb.checked; });\n    this.updateSelection();\n};\nDashboardViewModel.prototype.bulkAction = function(action) {\n    if (this.selectedItems.length === 0) return;\n    var self = this;\n    var items = this.selectedItems.filter(function(it) { return it.taskId; });\n    if (items.length === 0) { showToast('No selected items have active workflow tasks.', 'warning'); return; }\n    var baseUrl = window.location.origin;\n    var decisionId = _getDecisionId(action);\n    document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'flex');\n    // Step 1: Lock all tasks\n    Promise.all(items.map(function(it) {\n        return _flowApiRequest('POST', baseUrl + '/flow/api/WorkQueue/Lock?taskId=' + encodeURIComponent(it.taskId), {\n            TaskID: it.taskId, DecisionOptionID: decisionId, ActorFilterValue: null, UDRDecision: null\n        }).catch(function(err) { return { _lockFailed: true, taskId: it.taskId, error: err }; });\n    })).then(function(lockResults) {\n        var locked = items.filter(function(it, i) {\n            var r = lockResults[i];\n            return r && !r._lockFailed && r.IsLockedByCurrentUser;\n        });\n        if (locked.length === 0) throw new Error('Could not lock any tasks. They may be locked by other users.');\n        // Step 2: Execute decisions for all locked tasks\n        return Promise.all(locked.map(function(it) {\n            return _flowApiRequest('PUT', baseUrl + '/flow/api/WorkQueue/PutWorkQueue', {\n                TaskID: it.taskId, DecisionOptionID: decisionId, ActorFilterValue: null, UDRDecision: null\n            });\n        })).then(function() { return locked.length; });\n    }).then(function(count) {\n        document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none');\n        showToast('Bulk ' + action + ' completed for ' + count + ' item(s)', 'success');\n        self.selectedItems = []; _refreshDashboard(2000);\n    }).catch(function(err) {\n        document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none');\n        showToast('Bulk action failed: ' + (err.message || 'Error'), 'error');\n    });\n};\nDashboardViewModel.prototype.bulkReassign = function(target) {\n    if (this.selectedItems.length === 0) return;\n    var self = this; var count = this.selectedItems.length;\n    document.getElementById('reassignMenu').style.display = 'none';\n    // Reassign requires Hybrid Server integration (actor GUID mapping not available via Central API)\n    if (typeof integration !== 'undefined' && typeof bulkDecisionIntegration !== 'undefined' && bulkDecisionIntegration) {\n        document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'flex');\n        var formIds = this.selectedItems.map(function(it) { return it.formId; });\n        integration.all(bulkDecisionIntegration, { FormIDs: formIds.join(','), Decision: 'Reassign', ReassignTarget: target, DecidedBy: (DashboardConfig.currentUser || 'Unknown'), Comment: '' }).then(function() {\n            document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none');\n            showToast('Reassigned ' + count + ' item(s) to ' + target, 'success');\n            self.selectedItems = []; _refreshDashboard(1500);\n        }).catch(function(err) {\n            document.querySelector('.loading') && (document.querySelector('.loading').style.display = 'none');\n            showToast('Reassign failed: ' + (err.message || 'Error'), 'error');\n        });\n    } else {\n        showToast('Reassign requires Hybrid Server integration. Configure write-back integrations for this feature.', 'error');\n    }\n};\nDashboardViewModel.prototype.quickAction = function(taskId, action) {\n    if (!taskId) { showToast('No active workflow task for this item.', 'error'); return; }\n    var baseUrl = window.location.origin;\n    var decisionId = _getDecisionId(action);\n    _flowApiRequest('POST', baseUrl + '/flow/api/WorkQueue/Lock?taskId=' + encodeURIComponent(taskId), {\n        TaskID: taskId, DecisionOptionID: decisionId, ActorFilterValue: null, UDRDecision: null\n    }).then(function(lockResp) {\n        if (!lockResp || !lockResp.IsLockedByCurrentUser) throw new Error('Could not lock task.');\n        return _flowApiRequest('PUT', baseUrl + '/flow/api/WorkQueue/PutWorkQueue', {\n            TaskID: taskId, DecisionOptionID: decisionId, ActorFilterValue: null, UDRDecision: null\n        });\n    }).then(function() {\n        showToast(action + ' completed', 'success'); _refreshDashboard(1500);\n    }).catch(function(err) { showToast('Action failed: ' + (err.message || 'Error'), 'error'); });\n};\nDashboardViewModel.prototype.exportSelected = function() {\n    if (this.selectedItems.length === 0) { showToast('Select items first.', 'warning'); return; }\n    var self = this;\n    var selectedIds = this.selectedItems.map(function(it) { return it.formId; });\n    var selected = this.data.filter(function(row) {\n        var id = row.DocumentID || row.FormID || row.RequestID || '';\n        return selectedIds.indexOf(String(id)) !== -1;\n    });\n    if (selected.length === 0) { showToast('No matching rows found.', 'warning'); return; }\n    var headers = self.config.columns.map(function(c) { return c.label; });\n    var csvRows = [headers.join(',')];\n    selected.forEach(function(row) {\n        var cells = self.config.columns.map(function(c) { return '\"' + String(row[c.field] || '').replace(/\"/g, '\"\"') + '\"'; });\n        csvRows.push(cells.join(','));\n    });\n    var blob = new Blob([csvRows.join('\\n')], { type: 'text/csv' });\n    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'selected_export.csv'; a.click();\n    showToast('Exported ' + selected.length + ' item(s)', 'success');\n};\n\nfunction toggleReassignMenu() { var m = document.getElementById('reassignMenu'); m.style.display = m.style.display === 'none' ? 'block' : 'none'; }\nfunction toggleRowMenu(btn) { document.querySelectorAll('.row-action-menu.show').forEach(function(m) { m.classList.remove('show'); }); btn.nextElementSibling.classList.toggle('show'); }\ndocument.addEventListener('click', function(e) { if (!e.target.closest('.row-action-dropdown')) { document.querySelectorAll('.row-action-menu.show').forEach(function(m) { m.classList.remove('show'); }); } });\n",
+		) +
+		vmInit()
+	);
 }
 // renderPreview() moved to wizard-preview.js (v3.5.0)
 // generateFakePreviewData() moved to wizard-preview.js (v3.5.0)
 function safeName(title) {
-  if (!title) return 'Dashboard';
-  return title.replace(/[^a-zA-Z0-9_ ]/g, '').replace(/ +/g, '_').substring(0, 50);
+	if (!title) return "Dashboard";
+	return title
+		.replace(/[^a-zA-Z0-9_ ]/g, "")
+		.replace(/ +/g, "_")
+		.substring(0, 50);
 }
 // escapeSQL() is defined in wizard-demo.js (loaded first) - single source of truth
 function needsWriteBack() {
-  var s = State.selectedStyle;
-  // Styles that need on-prem write-back SQL (stored procedures via Hybrid Server)
-  // workflow-actions and bulk-actions now use Central Flow API directly (cloud-only).
-  // Bulk-actions still needs write-back if reassign targets are configured (requires Hybrid Server).
-  return s === 'claims' || s === 'committee-voting' || needsReassignWriteBack() || (State.notesConfig && State.notesConfig.enabled);
+	var s = State.selectedStyle;
+	// Styles that need on-prem write-back SQL (stored procedures via Hybrid Server)
+	// workflow-actions and bulk-actions now use Central Flow API directly (cloud-only).
+	// Bulk-actions still needs write-back if reassign targets are configured (requires Hybrid Server).
+	return (
+		s === "claims" ||
+		s === "committee-voting" ||
+		needsReassignWriteBack() ||
+		(State.notesConfig && State.notesConfig.enabled)
+	);
 }
 function needsReassignWriteBack() {
-  return State.selectedStyle === 'bulk-actions' && State.styleConfig && State.styleConfig.reassignTargets && State.styleConfig.reassignTargets.length > 0;
+	return (
+		State.selectedStyle === "bulk-actions" &&
+		State.styleConfig &&
+		State.styleConfig.reassignTargets &&
+		State.styleConfig.reassignTargets.length > 0
+	);
 }
 function generateSchemaSQL() {
-  var s = State.selectedStyle;
-  var sql = '';
-  // Prepend USE [database] if the user specified their integration database
-  var dbName = (State.hybridConfig && State.hybridConfig.databaseName) ? State.hybridConfig.databaseName.trim() : '';
-  if (dbName) {
-    sql += 'USE [' + dbName.replace(/[\[\]]/g, '') + ']\nGO\n\n';
-  }
-  if (s === 'claims') sql += generateSchema_claims();
-  else if (s === 'committee-voting') sql += generateSchema_voting();
-  // workflow-actions: no schema needed (uses Central Flow API directly)
-  // bulk-actions: only generate reassign tracking schema if reassign targets configured
-  else if (s === 'bulk-actions' && needsReassignWriteBack()) sql += generateSchema_bulkReassign();
-  // Notes schema appended to any style (cross-cutting feature)
-  if (State.notesConfig && State.notesConfig.enabled) {
-    sql += generateSchema_notes();
-  }
-  return sql;
+	var s = State.selectedStyle;
+	var sql = "";
+	// Prepend USE [database] if the user specified their integration database
+	var dbName =
+		State.hybridConfig && State.hybridConfig.databaseName
+			? State.hybridConfig.databaseName.trim()
+			: "";
+	if (dbName) {
+		sql += "USE [" + dbName.replace(/[\[\]]/g, "") + "]\nGO\n\n";
+	}
+	if (s === "claims") sql += generateSchema_claims();
+	else if (s === "committee-voting") sql += generateSchema_voting();
+	// workflow-actions: no schema needed (uses Central Flow API directly)
+	// bulk-actions: only generate reassign tracking schema if reassign targets configured
+	else if (s === "bulk-actions" && needsReassignWriteBack())
+		sql += generateSchema_bulkReassign();
+	// Notes schema appended to any style (cross-cutting feature)
+	if (State.notesConfig && State.notesConfig.enabled) {
+		sql += generateSchema_notes();
+	}
+	return sql;
 }
 function generateSchema_claims() {
-  var n = safeName(State.dashboardTitle);
-  var sql = '';
-  sql += '-- ============================================\n';
-  sql += '-- ' + escapeSQL(State.dashboardTitle || 'Dashboard').replace(/[\r\n]/g, ' ') + ' - Claims System Schema\n';
-  sql += '-- Generated by Dashboard Builder Wizard\n';
-  sql += '-- Requires: On-prem SQL Server via Hybrid Connection\n';
-  sql += '-- ============================================\n\n';
-  sql += 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = \'' + n + '_Claims\')\n';
-  sql += 'BEGIN\n';
-  sql += '    CREATE TABLE [dbo].[' + n + '_Claims] (\n';
-  sql += '        [ClaimID] INT PRIMARY KEY IDENTITY(1,1),\n';
-  sql += '        [FormID] VARCHAR(50) NOT NULL,\n';
-  sql += '        [ClaimedBy] NVARCHAR(100) NULL,\n';
-  sql += '        [ClaimedDate] DATETIME NULL,\n';
-  sql += '        [UnclaimedDate] DATETIME NULL,\n';
-  sql += '        [Status] VARCHAR(20) DEFAULT \'Active\'\n';
-  sql += '    )\n';
-  sql += '    CREATE INDEX IX_' + n + '_Claims_FormID ON [dbo].[' + n + '_Claims]([FormID])\n';
-  sql += '    CREATE INDEX IX_' + n + '_Claims_Status ON [dbo].[' + n + '_Claims]([Status])\n';
-  sql += '    PRINT \'Created table: ' + n + '_Claims\'\n';
-  sql += 'END\nGO\n\n';
-  sql += 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = \'' + n + '_ClaimsAudit\')\n';
-  sql += 'BEGIN\n';
-  sql += '    CREATE TABLE [dbo].[' + n + '_ClaimsAudit] (\n';
-  sql += '        [LogID] INT PRIMARY KEY IDENTITY(1,1),\n';
-  sql += '        [FormID] VARCHAR(50) NULL,\n';
-  sql += '        [Action] VARCHAR(20) NULL,\n';
-  sql += '        [PerformedBy] NVARCHAR(100) NULL,\n';
-  sql += '        [PerformedDate] DATETIME DEFAULT GETDATE()\n';
-  sql += '    )\n';
-  sql += '    CREATE INDEX IX_' + n + '_ClaimsAudit_FormID ON [dbo].[' + n + '_ClaimsAudit]([FormID])\n';
-  sql += '    PRINT \'Created table: ' + n + '_ClaimsAudit\'\n';
-  sql += 'END\nGO\n\n';
-  sql += 'CREATE OR ALTER PROCEDURE [dbo].[sp_' + n + '_ClaimItem]\n';
-  sql += '    @FormID VARCHAR(50),\n';
-  sql += '    @ClaimedBy NVARCHAR(100)\n';
-  sql += 'AS\nBEGIN\n    SET NOCOUNT ON;\n\n';
-  sql += '    IF EXISTS (SELECT 1 FROM [dbo].[' + n + '_Claims] WHERE [FormID] = @FormID AND [Status] = \'Active\')\n';
-  sql += '    BEGIN\n';
-  sql += '        SELECT \'{"success": false, "error": "Item already claimed"}\' AS response\n';
-  sql += '        RETURN\n';
-  sql += '    END\n\n';
-  sql += '    INSERT INTO [dbo].[' + n + '_Claims] ([FormID], [ClaimedBy], [ClaimedDate], [Status])\n';
-  sql += '    VALUES (@FormID, @ClaimedBy, GETDATE(), \'Active\')\n\n';
-  sql += '    INSERT INTO [dbo].[' + n + '_ClaimsAudit] ([FormID], [Action], [PerformedBy])\n';
-  sql += '    VALUES (@FormID, \'Claim\', SYSTEM_USER)\n\n';
-  sql += '    SELECT \'{"success": true, "message": "Item claimed"}\' AS response\n';
-  sql += 'END\nGO\n\n';
-  sql += 'CREATE OR ALTER PROCEDURE [dbo].[sp_' + n + '_UnclaimItem]\n';
-  sql += '    @FormID VARCHAR(50),\n';
-  sql += '    @ClaimedBy NVARCHAR(100)\n';
-  sql += 'AS\nBEGIN\n    SET NOCOUNT ON;\n\n';
-  sql += '    UPDATE [dbo].[' + n + '_Claims]\n';
-  sql += '    SET [UnclaimedDate] = GETDATE(), [Status] = \'Released\'\n';
-  sql += '    WHERE [FormID] = @FormID AND [Status] = \'Active\'\n\n';
-  sql += '    INSERT INTO [dbo].[' + n + '_ClaimsAudit] ([FormID], [Action], [PerformedBy])\n';
-  sql += '    VALUES (@FormID, \'Unclaim\', SYSTEM_USER)\n\n';
-  sql += '    SELECT \'{"success": true, "message": "Item released"}\' AS response\n';
-  sql += 'END\nGO\n\n';
-  sql += 'CREATE OR ALTER PROCEDURE [dbo].[sp_' + n + '_GetClaimsStatus]\nAS\nBEGIN\n    SET NOCOUNT ON;\n\n';
-  sql += '    SELECT [ClaimID], [FormID], [ClaimedBy], [ClaimedDate], [Status]\n';
-  sql += '    FROM [dbo].[' + n + '_Claims] WHERE [Status] = \'Active\'\n';
-  sql += 'END\nGO\n\n';
-  return sql;
+	var n = safeName(State.dashboardTitle);
+	var sql = "";
+	sql += "-- ============================================\n";
+	sql +=
+		"-- " +
+		escapeSQL(State.dashboardTitle || "Dashboard").replace(/[\r\n]/g, " ") +
+		" - Claims System Schema\n";
+	sql += "-- Generated by Dashboard Builder Wizard\n";
+	sql += "-- Requires: On-prem SQL Server via Hybrid Connection\n";
+	sql += "-- ============================================\n\n";
+	sql +=
+		"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '" +
+		n +
+		"_Claims')\n";
+	sql += "BEGIN\n";
+	sql += "    CREATE TABLE [dbo].[" + n + "_Claims] (\n";
+	sql += "        [ClaimID] INT PRIMARY KEY IDENTITY(1,1),\n";
+	sql += "        [FormID] VARCHAR(50) NOT NULL,\n";
+	sql += "        [ClaimedBy] NVARCHAR(100) NULL,\n";
+	sql += "        [ClaimedDate] DATETIME NULL,\n";
+	sql += "        [UnclaimedDate] DATETIME NULL,\n";
+	sql += "        [Status] VARCHAR(20) DEFAULT 'Active'\n";
+	sql += "    )\n";
+	sql +=
+		"    CREATE INDEX IX_" +
+		n +
+		"_Claims_FormID ON [dbo].[" +
+		n +
+		"_Claims]([FormID])\n";
+	sql +=
+		"    CREATE INDEX IX_" +
+		n +
+		"_Claims_Status ON [dbo].[" +
+		n +
+		"_Claims]([Status])\n";
+	sql += "    PRINT 'Created table: " + n + "_Claims'\n";
+	sql += "END\nGO\n\n";
+	sql +=
+		"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '" +
+		n +
+		"_ClaimsAudit')\n";
+	sql += "BEGIN\n";
+	sql += "    CREATE TABLE [dbo].[" + n + "_ClaimsAudit] (\n";
+	sql += "        [LogID] INT PRIMARY KEY IDENTITY(1,1),\n";
+	sql += "        [FormID] VARCHAR(50) NULL,\n";
+	sql += "        [Action] VARCHAR(20) NULL,\n";
+	sql += "        [PerformedBy] NVARCHAR(100) NULL,\n";
+	sql += "        [PerformedDate] DATETIME DEFAULT GETDATE()\n";
+	sql += "    )\n";
+	sql +=
+		"    CREATE INDEX IX_" +
+		n +
+		"_ClaimsAudit_FormID ON [dbo].[" +
+		n +
+		"_ClaimsAudit]([FormID])\n";
+	sql += "    PRINT 'Created table: " + n + "_ClaimsAudit'\n";
+	sql += "END\nGO\n\n";
+	sql += "CREATE OR ALTER PROCEDURE [dbo].[sp_" + n + "_ClaimItem]\n";
+	sql += "    @FormID VARCHAR(50),\n";
+	sql += "    @ClaimedBy NVARCHAR(100)\n";
+	sql += "AS\nBEGIN\n    SET NOCOUNT ON;\n\n";
+	sql +=
+		"    IF EXISTS (SELECT 1 FROM [dbo].[" +
+		n +
+		"_Claims] WHERE [FormID] = @FormID AND [Status] = 'Active')\n";
+	sql += "    BEGIN\n";
+	sql +=
+		'        SELECT \'{"success": false, "error": "Item already claimed"}\' AS response\n';
+	sql += "        RETURN\n";
+	sql += "    END\n\n";
+	sql +=
+		"    INSERT INTO [dbo].[" +
+		n +
+		"_Claims] ([FormID], [ClaimedBy], [ClaimedDate], [Status])\n";
+	sql += "    VALUES (@FormID, @ClaimedBy, GETDATE(), 'Active')\n\n";
+	sql +=
+		"    INSERT INTO [dbo].[" +
+		n +
+		"_ClaimsAudit] ([FormID], [Action], [PerformedBy])\n";
+	sql += "    VALUES (@FormID, 'Claim', SYSTEM_USER)\n\n";
+	sql +=
+		'    SELECT \'{"success": true, "message": "Item claimed"}\' AS response\n';
+	sql += "END\nGO\n\n";
+	sql += "CREATE OR ALTER PROCEDURE [dbo].[sp_" + n + "_UnclaimItem]\n";
+	sql += "    @FormID VARCHAR(50),\n";
+	sql += "    @ClaimedBy NVARCHAR(100)\n";
+	sql += "AS\nBEGIN\n    SET NOCOUNT ON;\n\n";
+	sql += "    UPDATE [dbo].[" + n + "_Claims]\n";
+	sql += "    SET [UnclaimedDate] = GETDATE(), [Status] = 'Released'\n";
+	sql += "    WHERE [FormID] = @FormID AND [Status] = 'Active'\n\n";
+	sql +=
+		"    INSERT INTO [dbo].[" +
+		n +
+		"_ClaimsAudit] ([FormID], [Action], [PerformedBy])\n";
+	sql += "    VALUES (@FormID, 'Unclaim', SYSTEM_USER)\n\n";
+	sql +=
+		'    SELECT \'{"success": true, "message": "Item released"}\' AS response\n';
+	sql += "END\nGO\n\n";
+	sql +=
+		"CREATE OR ALTER PROCEDURE [dbo].[sp_" +
+		n +
+		"_GetClaimsStatus]\nAS\nBEGIN\n    SET NOCOUNT ON;\n\n";
+	sql +=
+		"    SELECT [ClaimID], [FormID], [ClaimedBy], [ClaimedDate], [Status]\n";
+	sql += "    FROM [dbo].[" + n + "_Claims] WHERE [Status] = 'Active'\n";
+	sql += "END\nGO\n\n";
+	return sql;
 }
 function generateSchema_voting() {
-  var n = safeName(State.dashboardTitle);
-  var members = State.styleConfig.committeeMembers || [];
-  var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  var sql = '';
-  sql += '-- ============================================\n';
-  sql += '-- ' + escapeSQL(State.dashboardTitle || 'Dashboard').replace(/[\r\n]/g, ' ') + ' - Committee Voting Schema\n';
-  sql += '-- Generated by Dashboard Builder Wizard\n';
-  sql += '-- Committee Members: ' + members.length + '\n';
-  sql += '-- Requires: On-prem SQL Server via Hybrid Connection\n';
-  sql += '-- ============================================\n\n';
-  sql += 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = \'' + n + '_Votes\')\nBEGIN\n';
-  sql += '    CREATE TABLE [dbo].[' + n + '_Votes] (\n';
-  sql += '        [VoteID] INT PRIMARY KEY IDENTITY(1,1),\n';
-  sql += '        [DocumentID] VARCHAR(50) NOT NULL,\n';
-  for (var i = 0; i < members.length; i++) {
-    var L = letters.charAt(i);
-    sql += '        [Member' + L + '_Vote] VARCHAR(10) NULL,\n';
-    sql += '        [Member' + L + '_VotedBy] NVARCHAR(100) NULL,\n';
-    sql += '        [Member' + L + '_Timestamp] DATETIME NULL,\n';
-    sql += '        [Member' + L + '_Comment] NVARCHAR(500) NULL,\n';
-  }
-  sql += '        [VotesComplete] INT DEFAULT 0,\n';
-  var appParts = [];
-  var denyParts = [];
-  var completeParts = [];
-  for (var i = 0; i < members.length; i++) {
-    var L = letters.charAt(i);
-    appParts.push('(CASE WHEN [Member' + L + '_Vote] = \'Approve\' THEN 1 ELSE 0 END)');
-    denyParts.push('(CASE WHEN [Member' + L + '_Vote] = \'Deny\' THEN 1 ELSE 0 END)');
-    completeParts.push('(CASE WHEN [Member' + L + '_Vote] IS NOT NULL THEN 1 ELSE 0 END)');
-  }
-  sql += '        [ApproveCount] AS (' + appParts.join(' + ') + ') PERSISTED,\n';
-  sql += '        [DenyCount] AS (' + denyParts.join(' + ') + ') PERSISTED,\n';
-  sql += '        [FinalDecision] VARCHAR(10) NULL,\n';
-  sql += '        [FinalDecisionBy] NVARCHAR(100) NULL,\n';
-  sql += '        [FinalDecisionDate] DATETIME NULL,\n';
-  sql += '        [FinalDecisionComment] NVARCHAR(500) NULL,\n';
-  sql += '        [CreatedDate] DATETIME DEFAULT GETDATE(),\n';
-  sql += '        [ModifiedDate] DATETIME DEFAULT GETDATE()\n';
-  for (var i = 0; i < members.length; i++) {
-    var L = letters.charAt(i);
-    sql += '        ,CONSTRAINT CK_' + n + '_M' + L + ' CHECK ([Member' + L + '_Vote] IN (\'Approve\',\'Deny\',\'Abstain\') OR [Member' + L + '_Vote] IS NULL)\n';
-  }
-  sql += '    )\n';
-  sql += '    CREATE INDEX IX_' + n + '_Votes_DocID ON [dbo].[' + n + '_Votes]([DocumentID])\n';
-  sql += '    PRINT \'Created table: ' + n + '_Votes\'\n';
-  sql += 'END\nGO\n\n';
-  sql += 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = \'' + n + '_Members\')\nBEGIN\n';
-  sql += '    CREATE TABLE [dbo].[' + n + '_Members] (\n';
-  sql += '        [MemberID] INT PRIMARY KEY IDENTITY(1,1),\n';
-  sql += '        [MemberSlot] VARCHAR(10) NOT NULL,\n';
-  sql += '        [Username] NVARCHAR(100) NULL,\n';
-  sql += '        [DisplayName] NVARCHAR(100) NULL,\n';
-  sql += '        [Email] NVARCHAR(100) NULL,\n';
-  sql += '        [IsChair] BIT DEFAULT 0,\n';
-  sql += '        [IsActive] BIT DEFAULT 1\n';
-  sql += '    )\n';
-  sql += '    CREATE UNIQUE INDEX IX_' + n + '_Members_Slot ON [dbo].[' + n + '_Members]([MemberSlot])\n\n';
-  sql += '    -- Seed placeholder data (update Username/Email before use)\n';
-  for (var i = 0; i < members.length; i++) {
-    var L = letters.charAt(i);
-    var mName = escapeSQL(members[i].name || 'Member ' + L);
-    sql += '    INSERT INTO [dbo].[' + n + '_Members] ([MemberSlot],[DisplayName],[IsChair],[IsActive]) VALUES (\'' + L + '\',\'' + mName + '\',' + (i === 0 ? '1' : '0') + ',1)\n';
-  }
-  sql += '    PRINT \'Created table: ' + n + '_Members\'\n';
-  sql += 'END\nGO\n\n';
-  sql += 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = \'' + n + '_VoteHistory\')\nBEGIN\n';
-  sql += '    CREATE TABLE [dbo].[' + n + '_VoteHistory] (\n';
-  sql += '        [HistoryID] INT PRIMARY KEY IDENTITY(1,1),\n';
-  sql += '        [VoteID] INT NULL,\n';
-  sql += '        [DocumentID] VARCHAR(50) NULL,\n';
-  sql += '        [Action] VARCHAR(50) NULL,\n';
-  sql += '        [MemberSlot] VARCHAR(10) NULL,\n';
-  sql += '        [OldValue] VARCHAR(50) NULL,\n';
-  sql += '        [NewValue] VARCHAR(50) NULL,\n';
-  sql += '        [PerformedBy] NVARCHAR(100) NULL,\n';
-  sql += '        [PerformedDate] DATETIME DEFAULT GETDATE()\n';
-  sql += '    )\n';
-  sql += '    CREATE INDEX IX_' + n + '_VoteHist_DocID ON [dbo].[' + n + '_VoteHistory]([DocumentID])\n';
-  sql += '    PRINT \'Created table: ' + n + '_VoteHistory\'\n';
-  sql += 'END\nGO\n\n';
-  sql += 'CREATE OR ALTER PROCEDURE [dbo].[sp_' + n + '_CastVote]\n';
-  sql += '    @DocumentID VARCHAR(50),\n    @MemberSlot VARCHAR(10),\n    @Vote VARCHAR(10),\n';
-  sql += '    @VotedBy NVARCHAR(100),\n    @Comment NVARCHAR(500) = NULL\n';
-  sql += 'AS\nBEGIN\n    SET NOCOUNT ON;\n';
-  sql += '    DECLARE @VoteID INT, @OldVote VARCHAR(10), @SQL NVARCHAR(MAX)\n\n';
-  sql += '    -- Validate @MemberSlot against Members table to prevent SQL injection\n';
-  sql += '    IF NOT EXISTS (SELECT 1 FROM [dbo].[' + n + '_Members] WHERE [MemberSlot] = @MemberSlot AND [IsActive] = 1)\n';
-  sql += '    BEGIN\n';
-  sql += '        SELECT \'{"success": false, "error": "Invalid member slot"}\' AS response\n';
-  sql += '        RETURN\n';
-  sql += '    END\n\n';
-  sql += '    -- Auto-create vote record if not exists\n';
-  sql += '    IF NOT EXISTS (SELECT 1 FROM [dbo].[' + n + '_Votes] WHERE [DocumentID] = @DocumentID)\n';
-  sql += '        INSERT INTO [dbo].[' + n + '_Votes] ([DocumentID]) VALUES (@DocumentID)\n\n';
-  sql += '    SELECT @VoteID = [VoteID] FROM [dbo].[' + n + '_Votes] WHERE [DocumentID] = @DocumentID\n\n';
-  sql += '    -- Get old vote for audit\n';
-  sql += '    SET @SQL = N\'SELECT @OldVote = [Member\' + @MemberSlot + \'_Vote] FROM [dbo].[' + n + '_Votes] WHERE [VoteID] = @VoteID\'\n';
-  sql += '    EXEC sp_executesql @SQL, N\'@VoteID INT, @OldVote VARCHAR(10) OUTPUT\', @VoteID, @OldVote OUTPUT\n\n';
-  sql += '    -- Update vote\n';
-  sql += '    SET @SQL = N\'UPDATE [dbo].[' + n + '_Votes] SET \' +\n';
-  sql += '        N\'[Member\' + @MemberSlot + \'_Vote] = @Vote, \' +\n';
-  sql += '        N\'[Member\' + @MemberSlot + \'_VotedBy] = @VotedBy, \' +\n';
-  sql += '        N\'[Member\' + @MemberSlot + \'_Timestamp] = GETDATE(), \' +\n';
-  sql += '        N\'[Member\' + @MemberSlot + \'_Comment] = @Comment, \' +\n';
-  sql += '        N\'[ModifiedDate] = GETDATE() WHERE [VoteID] = @VoteID\'\n';
-  sql += '    EXEC sp_executesql @SQL, N\'@Vote VARCHAR(10), @VotedBy NVARCHAR(100), @Comment NVARCHAR(500), @VoteID INT\',\n';
-  sql += '        @Vote, @VotedBy, @Comment, @VoteID\n\n';
-  sql += '    -- Recalculate VotesComplete\n';
-  sql += '    UPDATE [dbo].[' + n + '_Votes] SET [VotesComplete] = (' + completeParts.join(' + ') + ')\n';
-  sql += '    WHERE [VoteID] = @VoteID\n\n';
-  sql += '    -- Audit\n';
-  sql += '    INSERT INTO [dbo].[' + n + '_VoteHistory] ([VoteID],[DocumentID],[Action],[MemberSlot],[OldValue],[NewValue],[PerformedBy])\n';
-  sql += '    VALUES (@VoteID, @DocumentID, CASE WHEN @OldVote IS NULL THEN \'VoteCast\' ELSE \'VoteChanged\' END, @MemberSlot, @OldVote, @Vote, SYSTEM_USER)\n\n';
-  sql += '    SELECT \'{"success": true}\' AS response\n';
-  sql += 'END\nGO\n\n';
-  sql += 'CREATE OR ALTER PROCEDURE [dbo].[sp_' + n + '_FinalDecision]\n';
-  sql += '    @DocumentID VARCHAR(50),\n    @Decision VARCHAR(10),\n    @DecisionBy NVARCHAR(100),\n    @Comment NVARCHAR(500) = NULL\n';
-  sql += 'AS\nBEGIN\n    SET NOCOUNT ON;\n';
-  sql += '    DECLARE @VoteID INT, @VotesComplete INT\n\n';
-  sql += '    SELECT @VoteID = [VoteID], @VotesComplete = [VotesComplete] FROM [dbo].[' + n + '_Votes] WHERE [DocumentID] = @DocumentID\n\n';
-  sql += '    IF @VoteID IS NULL BEGIN SELECT \'{"success": false, "error": "Vote record not found"}\' AS response RETURN END\n';
-  sql += '    IF @VotesComplete < ' + members.length + ' BEGIN SELECT \'{"success": false, "error": "Not all members have voted"}\' AS response RETURN END\n\n';
-  sql += '    UPDATE [dbo].[' + n + '_Votes] SET [FinalDecision] = @Decision, [FinalDecisionBy] = @DecisionBy,\n';
-  sql += '        [FinalDecisionDate] = GETDATE(), [FinalDecisionComment] = @Comment, [ModifiedDate] = GETDATE()\n';
-  sql += '    WHERE [VoteID] = @VoteID\n\n';
-  sql += '    INSERT INTO [dbo].[' + n + '_VoteHistory] ([VoteID],[DocumentID],[Action],[NewValue],[PerformedBy])\n';
-  sql += '    VALUES (@VoteID, @DocumentID, \'FinalDecision\', @Decision, SYSTEM_USER)\n\n';
-  sql += '    SELECT \'{"success": true}\' AS response\n';
-  sql += 'END\nGO\n\n';
-  sql += 'CREATE OR ALTER PROCEDURE [dbo].[sp_' + n + '_GetDashboard]\n    @StatusFilter VARCHAR(20) = NULL\nAS\nBEGIN\n    SET NOCOUNT ON;\n\n';
-  sql += '    SELECT *, CASE\n';
-  sql += '        WHEN [FinalDecision] IS NOT NULL THEN \'Completed\'\n';
-  sql += '        WHEN [VotesComplete] = ' + members.length + ' THEN \'Ready for Decision\'\n';
-  sql += '        WHEN [VotesComplete] > 0 THEN \'In Progress\'\n';
-  sql += '        ELSE \'Pending\'\n';
-  sql += '    END AS [DashboardStatus],\n';
-  sql += '    CAST([ApproveCount] AS VARCHAR) + \' Approve, \' + CAST([DenyCount] AS VARCHAR) + \' Deny\' AS [VoteSummary]\n';
-  sql += '    FROM [dbo].[' + n + '_Votes]\n';
-  sql += '    ORDER BY [ModifiedDate] DESC\n';
-  sql += 'END\nGO\n\n';
-  sql += 'CREATE OR ALTER PROCEDURE [dbo].[sp_' + n + '_GetUserInfo]\n    @Username NVARCHAR(100), @DocumentID VARCHAR(50)\nAS\nBEGIN\n    SET NOCOUNT ON;\n';
-  sql += '    DECLARE @MemberSlot VARCHAR(10), @IsChair BIT, @CurrentVote VARCHAR(10), @SQL NVARCHAR(MAX)\n\n';
-  sql += '    SELECT @MemberSlot = [MemberSlot], @IsChair = [IsChair] FROM [dbo].[' + n + '_Members] WHERE [Username] = @Username AND [IsActive] = 1\n\n';
-  sql += '    -- @MemberSlot comes from Members table lookup (trusted), but validate anyway\n';
-  sql += '    IF @MemberSlot IS NOT NULL AND @MemberSlot LIKE \'[A-Z]\' BEGIN\n';
-  sql += '        SET @SQL = N\'SELECT @CV = [Member\' + @MemberSlot + \'_Vote] FROM [dbo].[' + n + '_Votes] WHERE [DocumentID] = @DocID\'\n';
-  sql += '        EXEC sp_executesql @SQL, N\'@DocID VARCHAR(50), @CV VARCHAR(10) OUTPUT\', @DocumentID, @CurrentVote OUTPUT\n';
-  sql += '    END\n\n';
-  sql += '    SELECT CASE WHEN @MemberSlot IS NOT NULL THEN 1 ELSE 0 END AS [CanVote],\n';
-  sql += '        ISNULL(@IsChair,0) AS [IsChair], @MemberSlot AS [MemberSlot], @CurrentVote AS [CurrentVote]\n';
-  sql += 'END\nGO\n\n';
-  return sql;
+	var n = safeName(State.dashboardTitle);
+	var members = State.styleConfig.committeeMembers || [];
+	var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	var sql = "";
+	sql += "-- ============================================\n";
+	sql +=
+		"-- " +
+		escapeSQL(State.dashboardTitle || "Dashboard").replace(/[\r\n]/g, " ") +
+		" - Committee Voting Schema\n";
+	sql += "-- Generated by Dashboard Builder Wizard\n";
+	sql += "-- Committee Members: " + members.length + "\n";
+	sql += "-- Requires: On-prem SQL Server via Hybrid Connection\n";
+	sql += "-- ============================================\n\n";
+	sql +=
+		"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '" +
+		n +
+		"_Votes')\nBEGIN\n";
+	sql += "    CREATE TABLE [dbo].[" + n + "_Votes] (\n";
+	sql += "        [VoteID] INT PRIMARY KEY IDENTITY(1,1),\n";
+	sql += "        [DocumentID] VARCHAR(50) NOT NULL,\n";
+	for (var i = 0; i < members.length; i++) {
+		var L = letters.charAt(i);
+		sql += "        [Member" + L + "_Vote] VARCHAR(10) NULL,\n";
+		sql += "        [Member" + L + "_VotedBy] NVARCHAR(100) NULL,\n";
+		sql += "        [Member" + L + "_Timestamp] DATETIME NULL,\n";
+		sql += "        [Member" + L + "_Comment] NVARCHAR(500) NULL,\n";
+	}
+	sql += "        [VotesComplete] INT DEFAULT 0,\n";
+	var appParts = [];
+	var denyParts = [];
+	var completeParts = [];
+	for (var i = 0; i < members.length; i++) {
+		var L = letters.charAt(i);
+		appParts.push(
+			"(CASE WHEN [Member" + L + "_Vote] = 'Approve' THEN 1 ELSE 0 END)",
+		);
+		denyParts.push(
+			"(CASE WHEN [Member" + L + "_Vote] = 'Deny' THEN 1 ELSE 0 END)",
+		);
+		completeParts.push(
+			"(CASE WHEN [Member" + L + "_Vote] IS NOT NULL THEN 1 ELSE 0 END)",
+		);
+	}
+	sql +=
+		"        [ApproveCount] AS (" + appParts.join(" + ") + ") PERSISTED,\n";
+	sql +=
+		"        [DenyCount] AS (" + denyParts.join(" + ") + ") PERSISTED,\n";
+	sql += "        [FinalDecision] VARCHAR(10) NULL,\n";
+	sql += "        [FinalDecisionBy] NVARCHAR(100) NULL,\n";
+	sql += "        [FinalDecisionDate] DATETIME NULL,\n";
+	sql += "        [FinalDecisionComment] NVARCHAR(500) NULL,\n";
+	sql += "        [CreatedDate] DATETIME DEFAULT GETDATE(),\n";
+	sql += "        [ModifiedDate] DATETIME DEFAULT GETDATE()\n";
+	for (var i = 0; i < members.length; i++) {
+		var L = letters.charAt(i);
+		sql +=
+			"        ,CONSTRAINT CK_" +
+			n +
+			"_M" +
+			L +
+			" CHECK ([Member" +
+			L +
+			"_Vote] IN ('Approve','Deny','Abstain') OR [Member" +
+			L +
+			"_Vote] IS NULL)\n";
+	}
+	sql += "    )\n";
+	sql +=
+		"    CREATE INDEX IX_" +
+		n +
+		"_Votes_DocID ON [dbo].[" +
+		n +
+		"_Votes]([DocumentID])\n";
+	sql += "    PRINT 'Created table: " + n + "_Votes'\n";
+	sql += "END\nGO\n\n";
+	sql +=
+		"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '" +
+		n +
+		"_Members')\nBEGIN\n";
+	sql += "    CREATE TABLE [dbo].[" + n + "_Members] (\n";
+	sql += "        [MemberID] INT PRIMARY KEY IDENTITY(1,1),\n";
+	sql += "        [MemberSlot] VARCHAR(10) NOT NULL,\n";
+	sql += "        [Username] NVARCHAR(100) NULL,\n";
+	sql += "        [DisplayName] NVARCHAR(100) NULL,\n";
+	sql += "        [Email] NVARCHAR(100) NULL,\n";
+	sql += "        [IsChair] BIT DEFAULT 0,\n";
+	sql += "        [IsActive] BIT DEFAULT 1\n";
+	sql += "    )\n";
+	sql +=
+		"    CREATE UNIQUE INDEX IX_" +
+		n +
+		"_Members_Slot ON [dbo].[" +
+		n +
+		"_Members]([MemberSlot])\n\n";
+	sql += "    -- Seed placeholder data (update Username/Email before use)\n";
+	for (var i = 0; i < members.length; i++) {
+		var L = letters.charAt(i);
+		var mName = escapeSQL(members[i].name || "Member " + L);
+		sql +=
+			"    INSERT INTO [dbo].[" +
+			n +
+			"_Members] ([MemberSlot],[DisplayName],[IsChair],[IsActive]) VALUES ('" +
+			L +
+			"','" +
+			mName +
+			"'," +
+			(i === 0 ? "1" : "0") +
+			",1)\n";
+	}
+	sql += "    PRINT 'Created table: " + n + "_Members'\n";
+	sql += "END\nGO\n\n";
+	sql +=
+		"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '" +
+		n +
+		"_VoteHistory')\nBEGIN\n";
+	sql += "    CREATE TABLE [dbo].[" + n + "_VoteHistory] (\n";
+	sql += "        [HistoryID] INT PRIMARY KEY IDENTITY(1,1),\n";
+	sql += "        [VoteID] INT NULL,\n";
+	sql += "        [DocumentID] VARCHAR(50) NULL,\n";
+	sql += "        [Action] VARCHAR(50) NULL,\n";
+	sql += "        [MemberSlot] VARCHAR(10) NULL,\n";
+	sql += "        [OldValue] VARCHAR(50) NULL,\n";
+	sql += "        [NewValue] VARCHAR(50) NULL,\n";
+	sql += "        [PerformedBy] NVARCHAR(100) NULL,\n";
+	sql += "        [PerformedDate] DATETIME DEFAULT GETDATE()\n";
+	sql += "    )\n";
+	sql +=
+		"    CREATE INDEX IX_" +
+		n +
+		"_VoteHist_DocID ON [dbo].[" +
+		n +
+		"_VoteHistory]([DocumentID])\n";
+	sql += "    PRINT 'Created table: " + n + "_VoteHistory'\n";
+	sql += "END\nGO\n\n";
+	sql += "CREATE OR ALTER PROCEDURE [dbo].[sp_" + n + "_CastVote]\n";
+	sql +=
+		"    @DocumentID VARCHAR(50),\n    @MemberSlot VARCHAR(10),\n    @Vote VARCHAR(10),\n";
+	sql += "    @VotedBy NVARCHAR(100),\n    @Comment NVARCHAR(500) = NULL\n";
+	sql += "AS\nBEGIN\n    SET NOCOUNT ON;\n";
+	sql +=
+		"    DECLARE @VoteID INT, @OldVote VARCHAR(10), @SQL NVARCHAR(MAX)\n\n";
+	sql +=
+		"    -- Validate @MemberSlot against Members table to prevent SQL injection\n";
+	sql +=
+		"    IF NOT EXISTS (SELECT 1 FROM [dbo].[" +
+		n +
+		"_Members] WHERE [MemberSlot] = @MemberSlot AND [IsActive] = 1)\n";
+	sql += "    BEGIN\n";
+	sql +=
+		'        SELECT \'{"success": false, "error": "Invalid member slot"}\' AS response\n';
+	sql += "        RETURN\n";
+	sql += "    END\n\n";
+	sql += "    -- Auto-create vote record if not exists\n";
+	sql +=
+		"    IF NOT EXISTS (SELECT 1 FROM [dbo].[" +
+		n +
+		"_Votes] WHERE [DocumentID] = @DocumentID)\n";
+	sql +=
+		"        INSERT INTO [dbo].[" +
+		n +
+		"_Votes] ([DocumentID]) VALUES (@DocumentID)\n\n";
+	sql +=
+		"    SELECT @VoteID = [VoteID] FROM [dbo].[" +
+		n +
+		"_Votes] WHERE [DocumentID] = @DocumentID\n\n";
+	sql += "    -- Get old vote for audit\n";
+	sql +=
+		"    SET @SQL = N'SELECT @OldVote = [Member' + @MemberSlot + '_Vote] FROM [dbo].[" +
+		n +
+		"_Votes] WHERE [VoteID] = @VoteID'\n";
+	sql +=
+		"    EXEC sp_executesql @SQL, N'@VoteID INT, @OldVote VARCHAR(10) OUTPUT', @VoteID, @OldVote OUTPUT\n\n";
+	sql += "    -- Update vote\n";
+	sql += "    SET @SQL = N'UPDATE [dbo].[" + n + "_Votes] SET ' +\n";
+	sql += "        N'[Member' + @MemberSlot + '_Vote] = @Vote, ' +\n";
+	sql += "        N'[Member' + @MemberSlot + '_VotedBy] = @VotedBy, ' +\n";
+	sql += "        N'[Member' + @MemberSlot + '_Timestamp] = GETDATE(), ' +\n";
+	sql += "        N'[Member' + @MemberSlot + '_Comment] = @Comment, ' +\n";
+	sql += "        N'[ModifiedDate] = GETDATE() WHERE [VoteID] = @VoteID'\n";
+	sql +=
+		"    EXEC sp_executesql @SQL, N'@Vote VARCHAR(10), @VotedBy NVARCHAR(100), @Comment NVARCHAR(500), @VoteID INT',\n";
+	sql += "        @Vote, @VotedBy, @Comment, @VoteID\n\n";
+	sql += "    -- Recalculate VotesComplete\n";
+	sql +=
+		"    UPDATE [dbo].[" +
+		n +
+		"_Votes] SET [VotesComplete] = (" +
+		completeParts.join(" + ") +
+		")\n";
+	sql += "    WHERE [VoteID] = @VoteID\n\n";
+	sql += "    -- Audit\n";
+	sql +=
+		"    INSERT INTO [dbo].[" +
+		n +
+		"_VoteHistory] ([VoteID],[DocumentID],[Action],[MemberSlot],[OldValue],[NewValue],[PerformedBy])\n";
+	sql +=
+		"    VALUES (@VoteID, @DocumentID, CASE WHEN @OldVote IS NULL THEN 'VoteCast' ELSE 'VoteChanged' END, @MemberSlot, @OldVote, @Vote, SYSTEM_USER)\n\n";
+	sql += "    SELECT '{\"success\": true}' AS response\n";
+	sql += "END\nGO\n\n";
+	sql += "CREATE OR ALTER PROCEDURE [dbo].[sp_" + n + "_FinalDecision]\n";
+	sql +=
+		"    @DocumentID VARCHAR(50),\n    @Decision VARCHAR(10),\n    @DecisionBy NVARCHAR(100),\n    @Comment NVARCHAR(500) = NULL\n";
+	sql += "AS\nBEGIN\n    SET NOCOUNT ON;\n";
+	sql += "    DECLARE @VoteID INT, @VotesComplete INT\n\n";
+	sql +=
+		"    SELECT @VoteID = [VoteID], @VotesComplete = [VotesComplete] FROM [dbo].[" +
+		n +
+		"_Votes] WHERE [DocumentID] = @DocumentID\n\n";
+	sql +=
+		'    IF @VoteID IS NULL BEGIN SELECT \'{"success": false, "error": "Vote record not found"}\' AS response RETURN END\n';
+	sql +=
+		"    IF @VotesComplete < " +
+		members.length +
+		' BEGIN SELECT \'{"success": false, "error": "Not all members have voted"}\' AS response RETURN END\n\n';
+	sql +=
+		"    UPDATE [dbo].[" +
+		n +
+		"_Votes] SET [FinalDecision] = @Decision, [FinalDecisionBy] = @DecisionBy,\n";
+	sql +=
+		"        [FinalDecisionDate] = GETDATE(), [FinalDecisionComment] = @Comment, [ModifiedDate] = GETDATE()\n";
+	sql += "    WHERE [VoteID] = @VoteID\n\n";
+	sql +=
+		"    INSERT INTO [dbo].[" +
+		n +
+		"_VoteHistory] ([VoteID],[DocumentID],[Action],[NewValue],[PerformedBy])\n";
+	sql +=
+		"    VALUES (@VoteID, @DocumentID, 'FinalDecision', @Decision, SYSTEM_USER)\n\n";
+	sql += "    SELECT '{\"success\": true}' AS response\n";
+	sql += "END\nGO\n\n";
+	sql +=
+		"CREATE OR ALTER PROCEDURE [dbo].[sp_" +
+		n +
+		"_GetDashboard]\n    @StatusFilter VARCHAR(20) = NULL\nAS\nBEGIN\n    SET NOCOUNT ON;\n\n";
+	sql += "    SELECT *, CASE\n";
+	sql += "        WHEN [FinalDecision] IS NOT NULL THEN 'Completed'\n";
+	sql +=
+		"        WHEN [VotesComplete] = " +
+		members.length +
+		" THEN 'Ready for Decision'\n";
+	sql += "        WHEN [VotesComplete] > 0 THEN 'In Progress'\n";
+	sql += "        ELSE 'Pending'\n";
+	sql += "    END AS [DashboardStatus],\n";
+	sql +=
+		"    CAST([ApproveCount] AS VARCHAR) + ' Approve, ' + CAST([DenyCount] AS VARCHAR) + ' Deny' AS [VoteSummary]\n";
+	sql += "    FROM [dbo].[" + n + "_Votes]\n";
+	sql += "    ORDER BY [ModifiedDate] DESC\n";
+	sql += "END\nGO\n\n";
+	sql +=
+		"CREATE OR ALTER PROCEDURE [dbo].[sp_" +
+		n +
+		"_GetUserInfo]\n    @Username NVARCHAR(100), @DocumentID VARCHAR(50)\nAS\nBEGIN\n    SET NOCOUNT ON;\n";
+	sql +=
+		"    DECLARE @MemberSlot VARCHAR(10), @IsChair BIT, @CurrentVote VARCHAR(10), @SQL NVARCHAR(MAX)\n\n";
+	sql +=
+		"    SELECT @MemberSlot = [MemberSlot], @IsChair = [IsChair] FROM [dbo].[" +
+		n +
+		"_Members] WHERE [Username] = @Username AND [IsActive] = 1\n\n";
+	sql +=
+		"    -- @MemberSlot comes from Members table lookup (trusted), but validate anyway\n";
+	sql +=
+		"    IF @MemberSlot IS NOT NULL AND @MemberSlot LIKE '[A-Z]' BEGIN\n";
+	sql +=
+		"        SET @SQL = N'SELECT @CV = [Member' + @MemberSlot + '_Vote] FROM [dbo].[" +
+		n +
+		"_Votes] WHERE [DocumentID] = @DocID'\n";
+	sql +=
+		"        EXEC sp_executesql @SQL, N'@DocID VARCHAR(50), @CV VARCHAR(10) OUTPUT', @DocumentID, @CurrentVote OUTPUT\n";
+	sql += "    END\n\n";
+	sql +=
+		"    SELECT CASE WHEN @MemberSlot IS NOT NULL THEN 1 ELSE 0 END AS [CanVote],\n";
+	sql +=
+		"        ISNULL(@IsChair,0) AS [IsChair], @MemberSlot AS [MemberSlot], @CurrentVote AS [CurrentVote]\n";
+	sql += "END\nGO\n\n";
+	return sql;
 }
 // generateSchema_workflowActions: No longer needed. Workflow actions now use
 // the Central Flow API directly (Lock + PutWorkQueue). No on-prem SQL required.
 function generateSchema_workflowActions() {
-  return '-- Workflow Actions: No SQL schema required.\n-- Actions use the Etrieve Central Flow API directly (cloud-only).\n-- See: /flow/api/WorkQueue/Lock and /flow/api/WorkQueue/PutWorkQueue\n\n';
+	return "-- Workflow Actions: No SQL schema required.\n-- Actions use the Etrieve Central Flow API directly (cloud-only).\n-- See: /flow/api/WorkQueue/Lock and /flow/api/WorkQueue/PutWorkQueue\n\n";
 }
 // Simplified schema for bulk-actions reassign feature only (approve/deny use Central API)
 function generateSchema_bulkReassign() {
-  var n = safeName(State.dashboardTitle);
-  var sql = '';
-  sql += '-- ============================================\n';
-  sql += '-- ' + escapeSQL(State.dashboardTitle || 'Dashboard').replace(/[\r\n]/g, ' ') + ' - Bulk Reassign Schema\n';
-  sql += '-- Generated by Dashboard Builder Wizard\n';
-  sql += '-- NOTE: Approve/Deny use Central Flow API (no SQL needed).\n';
-  sql += '-- This schema is ONLY for the Reassign feature.\n';
-  sql += '-- Requires: On-prem SQL Server via Hybrid Connection\n';
-  sql += '-- ============================================\n\n';
-  sql += 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = \'' + n + '_Decisions\')\nBEGIN\n';
-  sql += '    CREATE TABLE [dbo].[' + n + '_Decisions] (\n';
-  sql += '        [DecisionID] INT PRIMARY KEY IDENTITY(1,1),\n';
-  sql += '        [FormID] VARCHAR(50) NOT NULL,\n';
-  sql += '        [Decision] VARCHAR(20) NOT NULL,\n';
-  sql += '        [ReassignTarget] NVARCHAR(100) NULL,\n';
-  sql += '        [DecidedBy] NVARCHAR(100) NULL,\n';
-  sql += '        [DecidedDate] DATETIME DEFAULT GETDATE(),\n';
-  sql += '        [Comment] NVARCHAR(500) NULL\n';
-  sql += '    )\n';
-  sql += '    CREATE INDEX IX_' + n + '_Dec_FormID ON [dbo].[' + n + '_Decisions]([FormID])\n';
-  sql += '    PRINT \'Created table: ' + n + '_Decisions\'\n';
-  sql += 'END\nGO\n\n';
-  sql += 'CREATE OR ALTER PROCEDURE [dbo].[sp_' + n + '_BulkDecision]\n';
-  sql += '    @FormIDs NVARCHAR(MAX), @Decision VARCHAR(20), @DecidedBy NVARCHAR(100),\n';
-  sql += '    @ReassignTarget NVARCHAR(100) = NULL, @Comment NVARCHAR(500) = NULL\n';
-  sql += 'AS\nBEGIN\n    SET NOCOUNT ON;\n    DECLARE @Count INT = 0\n\n';
-  sql += '    DECLARE @ID VARCHAR(50)\n';
-  sql += '    DECLARE cur CURSOR FOR SELECT LTRIM(RTRIM(value)) FROM STRING_SPLIT(@FormIDs, \',\') WHERE LTRIM(RTRIM(value)) <> \'\'\n';
-  sql += '    OPEN cur FETCH NEXT FROM cur INTO @ID\n';
-  sql += '    WHILE @@FETCH_STATUS = 0 BEGIN\n';
-  sql += '        IF EXISTS (SELECT 1 FROM [dbo].[' + n + '_Decisions] WHERE [FormID] = @ID)\n';
-  sql += '            UPDATE [dbo].[' + n + '_Decisions] SET [Decision]=@Decision,[ReassignTarget]=@ReassignTarget,[DecidedBy]=@DecidedBy,[DecidedDate]=GETDATE(),[Comment]=@Comment WHERE [FormID]=@ID\n';
-  sql += '        ELSE\n';
-  sql += '            INSERT INTO [dbo].[' + n + '_Decisions] ([FormID],[Decision],[ReassignTarget],[DecidedBy],[Comment]) VALUES (@ID,@Decision,@ReassignTarget,@DecidedBy,@Comment)\n';
-  sql += '        SET @Count = @Count + 1\n';
-  sql += '        FETCH NEXT FROM cur INTO @ID\n';
-  sql += '    END\n    CLOSE cur DEALLOCATE cur\n\n';
-  sql += '    SELECT \'{"success": true, "count": \' + CAST(@Count AS VARCHAR) + \'}\' AS response\n';
-  sql += 'END\nGO\n\n';
-  return sql;
+	var n = safeName(State.dashboardTitle);
+	var sql = "";
+	sql += "-- ============================================\n";
+	sql +=
+		"-- " +
+		escapeSQL(State.dashboardTitle || "Dashboard").replace(/[\r\n]/g, " ") +
+		" - Bulk Reassign Schema\n";
+	sql += "-- Generated by Dashboard Builder Wizard\n";
+	sql += "-- NOTE: Approve/Deny use Central Flow API (no SQL needed).\n";
+	sql += "-- This schema is ONLY for the Reassign feature.\n";
+	sql += "-- Requires: On-prem SQL Server via Hybrid Connection\n";
+	sql += "-- ============================================\n\n";
+	sql +=
+		"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '" +
+		n +
+		"_Decisions')\nBEGIN\n";
+	sql += "    CREATE TABLE [dbo].[" + n + "_Decisions] (\n";
+	sql += "        [DecisionID] INT PRIMARY KEY IDENTITY(1,1),\n";
+	sql += "        [FormID] VARCHAR(50) NOT NULL,\n";
+	sql += "        [Decision] VARCHAR(20) NOT NULL,\n";
+	sql += "        [ReassignTarget] NVARCHAR(100) NULL,\n";
+	sql += "        [DecidedBy] NVARCHAR(100) NULL,\n";
+	sql += "        [DecidedDate] DATETIME DEFAULT GETDATE(),\n";
+	sql += "        [Comment] NVARCHAR(500) NULL\n";
+	sql += "    )\n";
+	sql +=
+		"    CREATE INDEX IX_" +
+		n +
+		"_Dec_FormID ON [dbo].[" +
+		n +
+		"_Decisions]([FormID])\n";
+	sql += "    PRINT 'Created table: " + n + "_Decisions'\n";
+	sql += "END\nGO\n\n";
+	sql += "CREATE OR ALTER PROCEDURE [dbo].[sp_" + n + "_BulkDecision]\n";
+	sql +=
+		"    @FormIDs NVARCHAR(MAX), @Decision VARCHAR(20), @DecidedBy NVARCHAR(100),\n";
+	sql +=
+		"    @ReassignTarget NVARCHAR(100) = NULL, @Comment NVARCHAR(500) = NULL\n";
+	sql += "AS\nBEGIN\n    SET NOCOUNT ON;\n    DECLARE @Count INT = 0\n\n";
+	sql += "    DECLARE @ID VARCHAR(50)\n";
+	sql +=
+		"    DECLARE cur CURSOR FOR SELECT LTRIM(RTRIM(value)) FROM STRING_SPLIT(@FormIDs, ',') WHERE LTRIM(RTRIM(value)) <> ''\n";
+	sql += "    OPEN cur FETCH NEXT FROM cur INTO @ID\n";
+	sql += "    WHILE @@FETCH_STATUS = 0 BEGIN\n";
+	sql +=
+		"        IF EXISTS (SELECT 1 FROM [dbo].[" +
+		n +
+		"_Decisions] WHERE [FormID] = @ID)\n";
+	sql +=
+		"            UPDATE [dbo].[" +
+		n +
+		"_Decisions] SET [Decision]=@Decision,[ReassignTarget]=@ReassignTarget,[DecidedBy]=@DecidedBy,[DecidedDate]=GETDATE(),[Comment]=@Comment WHERE [FormID]=@ID\n";
+	sql += "        ELSE\n";
+	sql +=
+		"            INSERT INTO [dbo].[" +
+		n +
+		"_Decisions] ([FormID],[Decision],[ReassignTarget],[DecidedBy],[Comment]) VALUES (@ID,@Decision,@ReassignTarget,@DecidedBy,@Comment)\n";
+	sql += "        SET @Count = @Count + 1\n";
+	sql += "        FETCH NEXT FROM cur INTO @ID\n";
+	sql += "    END\n    CLOSE cur DEALLOCATE cur\n\n";
+	sql +=
+		"    SELECT '{\"success\": true, \"count\": ' + CAST(@Count AS VARCHAR) + '}' AS response\n";
+	sql += "END\nGO\n\n";
+	return sql;
 }
 // generateSchema_bulkActions: Removed. Approve/Deny now use Central Flow API.
 // Replaced by generateSchema_bulkReassign() for the optional Reassign feature.
 function generateSchema_notes() {
-  var n = safeName(State.dashboardTitle);
-  var label = (State.notesConfig && State.notesConfig.columnLabel) || 'Notes';
-  var sql = '';
-  sql += '-- ============================================\n';
-  sql += '-- ' + escapeSQL(State.dashboardTitle || 'Dashboard').replace(/[\r\n]/g, ' ') + ' - ' + escapeSQL(label) + ' System Schema\n';
-  sql += '-- Generated by Dashboard Builder Wizard\n';
-  sql += '-- Requires: On-prem SQL Server via Hybrid Connection\n';
-  sql += '-- ============================================\n\n';
-  sql += 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = \'' + n + '_Notes\')\n';
-  sql += 'BEGIN\n';
-  sql += '    CREATE TABLE [dbo].[' + n + '_Notes] (\n';
-  sql += '        [NoteID] INT PRIMARY KEY IDENTITY(1,1),\n';
-  sql += '        [ItemID] VARCHAR(50) NOT NULL,\n';
-  sql += '        [NoteText] NVARCHAR(2000) NULL,\n';
-  sql += '        [UpdatedBy] NVARCHAR(100) NULL,\n';
-  sql += '        [UpdatedDate] DATETIME DEFAULT GETDATE()\n';
-  sql += '    )\n';
-  sql += '    CREATE UNIQUE INDEX IX_' + n + '_Notes_ItemID ON [dbo].[' + n + '_Notes]([ItemID])\n';
-  sql += '    PRINT \'Created table: ' + n + '_Notes\'\n';
-  sql += 'END\nGO\n\n';
-  sql += 'CREATE OR ALTER PROCEDURE [dbo].[sp_' + n + '_SaveNote]\n';
-  sql += '    @ItemID VARCHAR(50),\n';
-  sql += '    @NoteText NVARCHAR(2000),\n';
-  sql += '    @UpdatedBy NVARCHAR(100)\n';
-  sql += 'AS\nBEGIN\n    SET NOCOUNT ON;\n\n';
-  sql += '    IF EXISTS (SELECT 1 FROM [dbo].[' + n + '_Notes] WHERE [ItemID] = @ItemID)\n';
-  sql += '        UPDATE [dbo].[' + n + '_Notes]\n';
-  sql += '        SET [NoteText] = @NoteText, [UpdatedBy] = @UpdatedBy, [UpdatedDate] = GETDATE()\n';
-  sql += '        WHERE [ItemID] = @ItemID\n';
-  sql += '    ELSE\n';
-  sql += '        INSERT INTO [dbo].[' + n + '_Notes] ([ItemID], [NoteText], [UpdatedBy])\n';
-  sql += '        VALUES (@ItemID, @NoteText, @UpdatedBy)\n\n';
-  sql += '    SELECT \'{"success": true}\' AS response\n';
-  sql += 'END\nGO\n\n';
-  sql += 'CREATE OR ALTER PROCEDURE [dbo].[sp_' + n + '_GetNotes]\nAS\nBEGIN\n    SET NOCOUNT ON;\n\n';
-  sql += '    SELECT [NoteID], [ItemID], [NoteText], [UpdatedBy], [UpdatedDate]\n';
-  sql += '    FROM [dbo].[' + n + '_Notes]\n';
-  sql += 'END\nGO\n\n';
-  return sql;
+	var n = safeName(State.dashboardTitle);
+	var label = (State.notesConfig && State.notesConfig.columnLabel) || "Notes";
+	var sql = "";
+	sql += "-- ============================================\n";
+	sql +=
+		"-- " +
+		escapeSQL(State.dashboardTitle || "Dashboard").replace(/[\r\n]/g, " ") +
+		" - " +
+		escapeSQL(label) +
+		" System Schema\n";
+	sql += "-- Generated by Dashboard Builder Wizard\n";
+	sql += "-- Requires: On-prem SQL Server via Hybrid Connection\n";
+	sql += "-- ============================================\n\n";
+	sql +=
+		"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '" +
+		n +
+		"_Notes')\n";
+	sql += "BEGIN\n";
+	sql += "    CREATE TABLE [dbo].[" + n + "_Notes] (\n";
+	sql += "        [NoteID] INT PRIMARY KEY IDENTITY(1,1),\n";
+	sql += "        [ItemID] VARCHAR(50) NOT NULL,\n";
+	sql += "        [NoteText] NVARCHAR(2000) NULL,\n";
+	sql += "        [UpdatedBy] NVARCHAR(100) NULL,\n";
+	sql += "        [UpdatedDate] DATETIME DEFAULT GETDATE()\n";
+	sql += "    )\n";
+	sql +=
+		"    CREATE UNIQUE INDEX IX_" +
+		n +
+		"_Notes_ItemID ON [dbo].[" +
+		n +
+		"_Notes]([ItemID])\n";
+	sql += "    PRINT 'Created table: " + n + "_Notes'\n";
+	sql += "END\nGO\n\n";
+	sql += "CREATE OR ALTER PROCEDURE [dbo].[sp_" + n + "_SaveNote]\n";
+	sql += "    @ItemID VARCHAR(50),\n";
+	sql += "    @NoteText NVARCHAR(2000),\n";
+	sql += "    @UpdatedBy NVARCHAR(100)\n";
+	sql += "AS\nBEGIN\n    SET NOCOUNT ON;\n\n";
+	sql +=
+		"    IF EXISTS (SELECT 1 FROM [dbo].[" +
+		n +
+		"_Notes] WHERE [ItemID] = @ItemID)\n";
+	sql += "        UPDATE [dbo].[" + n + "_Notes]\n";
+	sql +=
+		"        SET [NoteText] = @NoteText, [UpdatedBy] = @UpdatedBy, [UpdatedDate] = GETDATE()\n";
+	sql += "        WHERE [ItemID] = @ItemID\n";
+	sql += "    ELSE\n";
+	sql +=
+		"        INSERT INTO [dbo].[" +
+		n +
+		"_Notes] ([ItemID], [NoteText], [UpdatedBy])\n";
+	sql += "        VALUES (@ItemID, @NoteText, @UpdatedBy)\n\n";
+	sql += "    SELECT '{\"success\": true}' AS response\n";
+	sql += "END\nGO\n\n";
+	sql +=
+		"CREATE OR ALTER PROCEDURE [dbo].[sp_" +
+		n +
+		"_GetNotes]\nAS\nBEGIN\n    SET NOCOUNT ON;\n\n";
+	sql +=
+		"    SELECT [NoteID], [ItemID], [NoteText], [UpdatedBy], [UpdatedDate]\n";
+	sql += "    FROM [dbo].[" + n + "_Notes]\n";
+	sql += "END\nGO\n\n";
+	return sql;
 }
 function generateIntegrationInstructions() {
-  var n = safeName(State.dashboardTitle);
-  var s = State.selectedStyle;
-  var instructions = [];
-  if (s === 'claims') {
-    instructions.push({
-      name: n + '_ClaimItem',
-      method: 'POST',
-      sql: 'EXEC sp_' + n + '_ClaimItem @FormID, @ClaimedBy',
-      desc: 'Claim an item (called by Claim button)'
-    });
-    instructions.push({
-      name: n + '_UnclaimItem',
-      method: 'POST',
-      sql: 'EXEC sp_' + n + '_UnclaimItem @FormID, @ClaimedBy',
-      desc: 'Release a claim (called by Unclaim button)'
-    });
-    instructions.push({
-      name: n + '_GetClaims',
-      method: 'GET',
-      sql: 'EXEC sp_' + n + '_GetClaimsStatus',
-      desc: 'Read active claims (join with form data)'
-    });
-  } else if (s === 'committee-voting') {
-    instructions.push({
-      name: n + '_CastVote',
-      method: 'POST',
-      sql: 'EXEC sp_' + n + '_CastVote @DocumentID, @MemberSlot, @Vote, @VotedBy, @Comment',
-      desc: 'Cast or change a vote'
-    });
-    instructions.push({
-      name: n + '_FinalDecision',
-      method: 'POST',
-      sql: 'EXEC sp_' + n + '_FinalDecision @DocumentID, @Decision, @DecisionBy, @Comment',
-      desc: 'Submit final decision (Chair only)'
-    });
-    instructions.push({
-      name: n + '_GetDashboard',
-      method: 'GET',
-      sql: 'EXEC sp_' + n + '_GetDashboard',
-      desc: 'Read dashboard data with vote status'
-    });
-    instructions.push({
-      name: n + '_GetUserInfo',
-      method: 'GET',
-      sql: 'EXEC sp_' + n + '_GetUserInfo @Username, @DocumentID',
-      desc: 'Check if user can vote and their current vote'
-    });
-  } else if (s === 'workflow-actions') {
-    // No write-back integrations needed - uses Central Flow API directly
-  } else if (s === 'bulk-actions') {
-    // Approve/Deny use Central Flow API. Only reassign needs Hybrid Server.
-    if (State.styleConfig && State.styleConfig.reassignTargets && State.styleConfig.reassignTargets.length > 0) {
-      instructions.push({
-        name: n + '_BulkDecision',
-        method: 'POST',
-        sql: 'EXEC sp_' + n + '_BulkDecision @FormIDs, @Decision, @DecidedBy, @ReassignTarget, @Comment',
-        desc: 'Record bulk reassign decisions (Hybrid Server only)'
-      });
-    }
-  }
-  // Notes integrations (cross-cutting, appended to any style)
-  if (State.notesConfig && State.notesConfig.enabled) {
-    instructions.push({
-      name: n + '_SaveNote',
-      method: 'POST',
-      sql: 'EXEC sp_' + n + '_SaveNote @ItemID, @NoteText, @UpdatedBy',
-      desc: 'Save or update a note (UPSERT by ItemID)'
-    });
-    instructions.push({
-      name: n + '_GetNotes',
-      method: 'GET',
-      sql: 'EXEC sp_' + n + '_GetNotes',
-      desc: 'Read all notes (merged client-side)'
-    });
-  }
-  return instructions;
+	var n = safeName(State.dashboardTitle);
+	var s = State.selectedStyle;
+	var instructions = [];
+	if (s === "claims") {
+		instructions.push({
+			name: n + "_ClaimItem",
+			method: "POST",
+			sql: "EXEC sp_" + n + "_ClaimItem @FormID, @ClaimedBy",
+			desc: "Claim an item (called by Claim button)",
+		});
+		instructions.push({
+			name: n + "_UnclaimItem",
+			method: "POST",
+			sql: "EXEC sp_" + n + "_UnclaimItem @FormID, @ClaimedBy",
+			desc: "Release a claim (called by Unclaim button)",
+		});
+		instructions.push({
+			name: n + "_GetClaims",
+			method: "GET",
+			sql: "EXEC sp_" + n + "_GetClaimsStatus",
+			desc: "Read active claims (join with form data)",
+		});
+	} else if (s === "committee-voting") {
+		instructions.push({
+			name: n + "_CastVote",
+			method: "POST",
+			sql:
+				"EXEC sp_" +
+				n +
+				"_CastVote @DocumentID, @MemberSlot, @Vote, @VotedBy, @Comment",
+			desc: "Cast or change a vote",
+		});
+		instructions.push({
+			name: n + "_FinalDecision",
+			method: "POST",
+			sql:
+				"EXEC sp_" +
+				n +
+				"_FinalDecision @DocumentID, @Decision, @DecisionBy, @Comment",
+			desc: "Submit final decision (Chair only)",
+		});
+		instructions.push({
+			name: n + "_GetDashboard",
+			method: "GET",
+			sql: "EXEC sp_" + n + "_GetDashboard",
+			desc: "Read dashboard data with vote status",
+		});
+		instructions.push({
+			name: n + "_GetUserInfo",
+			method: "GET",
+			sql: "EXEC sp_" + n + "_GetUserInfo @Username, @DocumentID",
+			desc: "Check if user can vote and their current vote",
+		});
+	} else if (s === "workflow-actions") {
+		// No write-back integrations needed - uses Central Flow API directly
+	} else if (s === "bulk-actions") {
+		// Approve/Deny use Central Flow API. Only reassign needs Hybrid Server.
+		if (
+			State.styleConfig &&
+			State.styleConfig.reassignTargets &&
+			State.styleConfig.reassignTargets.length > 0
+		) {
+			instructions.push({
+				name: n + "_BulkDecision",
+				method: "POST",
+				sql:
+					"EXEC sp_" +
+					n +
+					"_BulkDecision @FormIDs, @Decision, @DecidedBy, @ReassignTarget, @Comment",
+				desc: "Record bulk reassign decisions (Hybrid Server only)",
+			});
+		}
+	}
+	// Notes integrations (cross-cutting, appended to any style)
+	if (State.notesConfig && State.notesConfig.enabled) {
+		instructions.push({
+			name: n + "_SaveNote",
+			method: "POST",
+			sql: "EXEC sp_" + n + "_SaveNote @ItemID, @NoteText, @UpdatedBy",
+			desc: "Save or update a note (UPSERT by ItemID)",
+		});
+		instructions.push({
+			name: n + "_GetNotes",
+			method: "GET",
+			sql: "EXEC sp_" + n + "_GetNotes",
+			desc: "Read all notes (merged client-side)",
+		});
+	}
+	return instructions;
 }
 function renderStyleStep() {
-  var categories = ['Basic', 'Advanced', 'Specialized'];
+	var categories = ["Basic", "Advanced", "Specialized"];
 
-  var html = '<div class="step-description">' +
-      '<p><i class="bi bi-lightbulb" style="color:var(--accent);margin-right:8px;"></i>' +
-      'Each style includes different features and layouts. Click one to see what it offers.</p></div>';
+	var html =
+		'<div class="step-description">' +
+		'<p><i class="bi bi-lightbulb" style="color:var(--accent);margin-right:8px;"></i>' +
+		"Each style includes different features and layouts. Click one to see what it offers.</p></div>";
 
-  categories.forEach(function(cat) {
-    var currentMode = State.mode || 'forms';
-    var styles = DashboardStyles.filter(function(s) {
-      return s.category === cat && (!s.modes || s.modes.indexOf(currentMode) >= 0);
-    });
-    if (styles.length === 0) return;
-    html += '<div class="style-category-label">' + cat + '</div><div class="style-grid">';
-    styles.forEach(function(s) {
-      var selected = State.selectedStyle === s.id;
-      var badge = getStyleBadgeHTML(s.id);
-      html += '<div class="style-select-card' + (selected ? ' selected' : '') + '" onclick="selectStyle(\'' + escapeJS(s.id) + '\')">' +
-          '<div class="style-select-icon"><i class="bi ' + escapeHtml(s.icon) + '"></i></div>' +
-          '<div class="style-select-info">' +
-              '<div class="style-select-name">' + escapeHtml(s.name) + ' ' + badge + '</div>' +
-              '<div class="style-select-desc">' + escapeHtml(s.description) + '</div>' +
-              '<div class="style-select-best"><strong>Best for:</strong> ' + escapeHtml(s.bestFor) + '</div>' +
-          '</div>' +
-          (selected ? '<div class="style-select-check"><i class="bi bi-check-circle-fill"></i></div>' : '') +
-      '</div>';
-    });
-    html += '</div>';
+	categories.forEach(function (cat) {
+		var currentMode = State.mode || "forms";
+		var styles = DashboardStyles.filter(function (s) {
+			return (
+				s.category === cat &&
+				(!s.modes || s.modes.indexOf(currentMode) >= 0)
+			);
+		});
+		if (styles.length === 0) return;
+		html +=
+			'<div class="style-category-label">' +
+			cat +
+			'</div><div class="style-grid">';
+		styles.forEach(function (s) {
+			var selected = State.selectedStyle === s.id;
+			var badge = getStyleBadgeHTML(s.id);
+			html +=
+				'<div class="style-select-card' +
+				(selected ? " selected" : "") +
+				'" onclick="selectStyle(\'' +
+				escapeJS(s.id) +
+				"')\">" +
+				'<div class="style-select-icon"><i class="bi ' +
+				escapeHtml(s.icon) +
+				'"></i></div>' +
+				'<div class="style-select-info">' +
+				'<div class="style-select-name">' +
+				escapeHtml(s.name) +
+				" " +
+				badge +
+				"</div>" +
+				'<div class="style-select-desc">' +
+				escapeHtml(s.description) +
+				"</div>" +
+				'<div class="style-select-best"><strong>Best for:</strong> ' +
+				escapeHtml(s.bestFor) +
+				"</div>" +
+				"</div>" +
+				(selected
+					? '<div class="style-select-check"><i class="bi bi-check-circle-fill"></i></div>'
+					: "") +
+				"</div>";
+		});
+		html += "</div>";
 
-    // Show infographic right after the category containing the selected style
-    var selectedInCat = styles.find(function(s) { return s.id === State.selectedStyle; });
-    if (selectedInCat) {
-      html += renderStyleInfoGraphic(selectedInCat);
-    }
-  });
+		// Show infographic right after the category containing the selected style
+		var selectedInCat = styles.find(function (s) {
+			return s.id === State.selectedStyle;
+		});
+		if (selectedInCat) {
+			html += renderStyleInfoGraphic(selectedInCat);
+		}
+	});
 
-  return html;
+	return html;
 }
 
 function renderStyleInfoGraphic(s) {
-  var featuresHtml = (s.features || []).map(function(f) {
-    return '<div class="style-info-feature"><i class="bi bi-check-circle-fill"></i> ' + escapeHtml(f) + '</div>';
-  }).join('');
+	var featuresHtml = (s.features || [])
+		.map(function (f) {
+			return (
+				'<div class="style-info-feature"><i class="bi bi-check-circle-fill"></i> ' +
+				escapeHtml(f) +
+				"</div>"
+			);
+		})
+		.join("");
 
-  var warningsHtml = '';
-  if (s.warnings && s.warnings.length > 0) {
-    warningsHtml = '<div class="style-info-warnings-header"><i class="bi bi-exclamation-triangle-fill"></i> Before You Choose</div>' +
-      s.warnings.map(function(w) {
-        return '<div class="style-info-warning"><i class="bi bi-exclamation-triangle"></i> ' + escapeHtml(w) + '</div>';
-      }).join('');
-  }
+	var warningsHtml = "";
+	if (s.warnings && s.warnings.length > 0) {
+		warningsHtml =
+			'<div class="style-info-warnings-header"><i class="bi bi-exclamation-triangle-fill"></i> Before You Choose</div>' +
+			s.warnings
+				.map(function (w) {
+					return (
+						'<div class="style-info-warning"><i class="bi bi-exclamation-triangle"></i> ' +
+						escapeHtml(w) +
+						"</div>"
+					);
+				})
+				.join("");
+	}
 
-  var stepsHtml = (s.setupSteps || []).map(function(step, i) {
-    return '<div class="style-info-step"><span class="style-info-step-num">' + (i + 1) + '</span> ' + escapeHtml(step) + '</div>';
-  }).join('');
+	var stepsHtml = (s.setupSteps || [])
+		.map(function (step, i) {
+			return (
+				'<div class="style-info-step"><span class="style-info-step-num">' +
+				(i + 1) +
+				"</span> " +
+				escapeHtml(step) +
+				"</div>"
+			);
+		})
+		.join("");
 
-  var dbInputHtml = '';
-  if (s.requiresSQL) {
-    var dbVal = (State.hybridConfig && State.hybridConfig.databaseName) ? escapeHtml(State.hybridConfig.databaseName) : '';
-    dbInputHtml = '<div class="style-info-db-input">' +
-        '<label style="font-size:0.8rem;font-weight:600;color:#555;display:block;margin-bottom:4px;">' +
-            '<i class="bi bi-database"></i> Your Integration Database Name' +
-        '</label>' +
-        '<input type="text" value="' + dbVal + '" placeholder="e.g. etIntegrations" ' +
-            'oninput="State.hybridConfig.databaseName = this.value; saveDraft();" ' +
-            'style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;width:100%;max-width:280px;font-size:0.85rem;">' +
-        '<small style="color:#888;display:block;margin-top:4px;">The Initial Catalog from your Hybrid Server connection string. ' +
-            'Used as <code>USE [database]</code> at the top of schema.sql so tables land in the right place.</small>' +
-    '</div>';
-  }
+	var dbInputHtml = "";
+	if (s.requiresSQL) {
+		var dbVal =
+			State.hybridConfig && State.hybridConfig.databaseName
+				? escapeHtml(State.hybridConfig.databaseName)
+				: "";
+		dbInputHtml =
+			'<div class="style-info-db-input">' +
+			'<label style="font-size:0.8rem;font-weight:600;color:#555;display:block;margin-bottom:4px;">' +
+			'<i class="bi bi-database"></i> Your Integration Database Name' +
+			"</label>" +
+			'<input type="text" value="' +
+			dbVal +
+			'" placeholder="e.g. etIntegrations" ' +
+			'oninput="State.hybridConfig.databaseName = this.value; saveDraft();" ' +
+			'style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;width:100%;max-width:280px;font-size:0.85rem;">' +
+			'<small style="color:#888;display:block;margin-top:4px;">The Initial Catalog from your Hybrid Server connection string. ' +
+			"Used as <code>USE [database]</code> at the top of schema.sql so tables land in the right place.</small>" +
+			"</div>";
+	}
 
-  return '<div class="style-infographic" id="style-infographic">' +
-      '<div class="style-info-cols">' +
-          '<div class="style-info-col">' +
-              '<div class="style-info-section-header"><i class="bi bi-check2-square"></i> What You Get</div>' +
-              featuresHtml +
-              warningsHtml +
-          '</div>' +
-          '<div class="style-info-col">' +
-              '<div class="style-info-section-header"><i class="bi bi-tools"></i> Setup Required</div>' +
-              stepsHtml +
-              dbInputHtml +
-              '<div class="style-info-examples"><strong>Examples:</strong> ' + escapeHtml(s.examples || '') + '</div>' +
-          '</div>' +
-      '</div>' +
-  '</div>';
+	return (
+		'<div class="style-infographic" id="style-infographic">' +
+		'<div class="style-info-cols">' +
+		'<div class="style-info-col">' +
+		'<div class="style-info-section-header"><i class="bi bi-check2-square"></i> What You Get</div>' +
+		featuresHtml +
+		warningsHtml +
+		"</div>" +
+		'<div class="style-info-col">' +
+		'<div class="style-info-section-header"><i class="bi bi-tools"></i> Setup Required</div>' +
+		stepsHtml +
+		dbInputHtml +
+		'<div class="style-info-examples"><strong>Examples:</strong> ' +
+		escapeHtml(s.examples || "") +
+		"</div>" +
+		"</div>" +
+		"</div>" +
+		"</div>"
+	);
 }
 function _buildBaseGenerateStep() {
-  var sql = State.customSQL || generateSQL();
-  var summary = [];
-  summary.push('<strong>Dashboard Name:</strong> ' + escapeHtml(State.dashboardTitle || 'Untitled Dashboard'));
-  if (State.advancedMode) {
-    summary.push('<strong>Source Name:</strong> <code>' + escapeHtml(State.sourceName) + '</code>');
-  }
-  if (State.mode === 'content' && State.selectedArea) {
-    summary.push('<strong>Folder:</strong> ' + escapeHtml(State.selectedArea.name));
-    summary.push('<strong>Document Types:</strong> ' + State.selectedDocTypes.length + ' selected');
-    summary.push('<strong>Columns:</strong> ' + State.selectedFields.length + ' fields');
-  } else if (State.mode === 'forms' && State.selectedTemplate) {
-    summary.push('<strong>Form:</strong> ' + escapeHtml(State.selectedTemplate.name));
-    summary.push('<strong>Fields:</strong> ' + State.selectedInputIds.length + ' selected');
-    summary.push('<strong>Workflow Steps:</strong> ' + State.selectedWorkflowSteps.length + ' tracked');
-  } else if (State.mode === 'combined') {
-    if (State.selectedArea) {
-      summary.push('<strong>Document Folder:</strong> ' + escapeHtml(State.selectedArea.name));
-      summary.push('<strong>Document Types:</strong> ' + State.selectedDocTypes.length + ' selected');
-      summary.push('<strong>Document Fields:</strong> ' + State.selectedFields.length + ' fields');
-    }
-    if (State.selectedTemplate) {
-      summary.push('<strong>Form:</strong> ' + escapeHtml(State.selectedTemplate.name));
-      summary.push('<strong>Form Fields:</strong> ' + State.selectedInputIds.length + ' selected');
-    }
-    if (State.selectedWorkflowSteps.length > 0) {
-      summary.push('<strong>Workflow Steps:</strong> ' + State.selectedWorkflowSteps.length + ' tracked');
-    }
-  }
-  summary.push('<strong>Swimlanes:</strong> ' + State.swimlanes.map(function (s) {
-    return escapeHtml(s.name);
-  }).join(', '));
-  // Security summary
-  if (State.securityConfig && State.securityConfig.enabled) {
-    summary.push('<strong>Access Control:</strong> <span style="color:#059669;">Enabled (security-first)</span>');
-    if (State.securityConfig.powerGroupName) {
-      summary.push('<strong>Power Group:</strong> ' + escapeHtml(State.securityConfig.powerGroupName));
-    }
-    var securedLanes = (State.securityConfig.swimlaneGroups || []).filter(function(g) { return g.groupId; }).length;
-    if (securedLanes > 0) {
-      summary.push('<strong>Secured Swimlanes:</strong> ' + securedLanes + ' of ' + State.swimlanes.length);
-    }
-  } else {
-    summary.push('<strong>Access Control:</strong> <span style="color:#888;">Disabled (all users see all data)</span>');
-  }
-  if (State.advancedMode) {
-    return '\
+	var sql = State.customSQL || generateSQL();
+	var summary = [];
+	summary.push(
+		"<strong>Dashboard Name:</strong> " +
+			escapeHtml(State.dashboardTitle || "Untitled Dashboard"),
+	);
+	if (State.advancedMode) {
+		summary.push(
+			"<strong>Source Name:</strong> <code>" +
+				escapeHtml(State.sourceName) +
+				"</code>",
+		);
+	}
+	if (State.mode === "content" && State.selectedArea) {
+		summary.push(
+			"<strong>Folder:</strong> " + escapeHtml(State.selectedArea.name),
+		);
+		summary.push(
+			"<strong>Document Types:</strong> " +
+				State.selectedDocTypes.length +
+				" selected",
+		);
+		summary.push(
+			"<strong>Columns:</strong> " +
+				State.selectedFields.length +
+				" fields",
+		);
+	} else if (State.mode === "forms" && State.selectedTemplate) {
+		summary.push(
+			"<strong>Form:</strong> " + escapeHtml(State.selectedTemplate.name),
+		);
+		summary.push(
+			"<strong>Fields:</strong> " +
+				State.selectedInputIds.length +
+				" selected",
+		);
+		summary.push(
+			"<strong>Workflow Steps:</strong> " +
+				State.selectedWorkflowSteps.length +
+				" tracked",
+		);
+	} else if (State.mode === "combined") {
+		if (State.selectedArea) {
+			summary.push(
+				"<strong>Document Folder:</strong> " +
+					escapeHtml(State.selectedArea.name),
+			);
+			summary.push(
+				"<strong>Document Types:</strong> " +
+					State.selectedDocTypes.length +
+					" selected",
+			);
+			summary.push(
+				"<strong>Document Fields:</strong> " +
+					State.selectedFields.length +
+					" fields",
+			);
+		}
+		if (State.selectedTemplate) {
+			summary.push(
+				"<strong>Form:</strong> " +
+					escapeHtml(State.selectedTemplate.name),
+			);
+			summary.push(
+				"<strong>Form Fields:</strong> " +
+					State.selectedInputIds.length +
+					" selected",
+			);
+		}
+		if (State.selectedWorkflowSteps.length > 0) {
+			summary.push(
+				"<strong>Workflow Steps:</strong> " +
+					State.selectedWorkflowSteps.length +
+					" tracked",
+			);
+		}
+	}
+	summary.push(
+		"<strong>Swimlanes:</strong> " +
+			State.swimlanes
+				.map(function (s) {
+					return escapeHtml(s.name);
+				})
+				.join(", "),
+	);
+	// Security summary
+	if (State.securityConfig && State.securityConfig.enabled) {
+		summary.push(
+			'<strong>Access Control:</strong> <span style="color:#059669;">Enabled (security-first)</span>',
+		);
+		if (State.securityConfig.powerGroupName) {
+			summary.push(
+				"<strong>Power Group:</strong> " +
+					escapeHtml(State.securityConfig.powerGroupName),
+			);
+		}
+		var securedLanes = (State.securityConfig.swimlaneGroups || []).filter(
+			function (g) {
+				return g.groupId;
+			},
+		).length;
+		if (securedLanes > 0) {
+			summary.push(
+				"<strong>Secured Swimlanes:</strong> " +
+					securedLanes +
+					" of " +
+					State.swimlanes.length,
+			);
+		}
+	} else {
+		summary.push(
+			'<strong>Access Control:</strong> <span style="color:#888;">Disabled (all users see all data)</span>',
+		);
+	}
+	if (State.advancedMode) {
+		return (
+			'\
             <div class="step-description" style="background:rgba(40,167,69,0.1);border-color:var(--success);">\
                 <p><i class="bi bi-check-circle-fill" style="color:var(--success);margin-right:8px;"></i>\
                 Your dashboard is ready! Review and customize the SQL below.</p>\
             </div>\
             <div style="background:#f8f9fa;border-radius:12px;padding:20px;margin:20px 0;">\
                 <h4 style="margin-bottom:15px;color:var(--primary);"><i class="bi bi-clipboard-check"></i> Summary</h4>\
-                <div style="line-height:2;">' + summary.map(function (s) {
-      return '<div>' + s + '</div>';
-    }).join('') + '</div>\
+                <div style="line-height:2;">' +
+			summary
+				.map(function (s) {
+					return "<div>" + s + "</div>";
+				})
+				.join("") +
+			'</div>\
             </div>\
             <!-- writeback-insert-point -->\
             <div class="advanced-section active">\
@@ -1039,9 +2185,15 @@ function _buildBaseGenerateStep() {
                     <button onclick="resetSQL()" title="Reset to generated SQL"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>\
                     <button onclick="copySQL(event)" title="Copy to clipboard"><i class="bi bi-clipboard"></i> Copy</button>\
                     <button onclick="formatSQL()" title="Format SQL"><i class="bi bi-text-indent-left"></i> Format</button>\
-                    ' + (State.customSQL ? '<span style="margin-left:auto;color:var(--accent);font-size:0.8rem;"><i class="bi bi-pencil"></i> Modified</span>' : '') + '\
+                    ' +
+			(State.customSQL
+				? '<span style="margin-left:auto;color:var(--accent);font-size:0.8rem;"><i class="bi bi-pencil"></i> Modified</span>'
+				: "") +
+			'\
                 </div>\
-                <textarea class="sql-editor" id="sqlEditor" oninput="State.customSQL = this.value" spellcheck="false">' + escapeHtml(sql) + '</textarea>\
+                <textarea class="sql-editor" id="sqlEditor" oninput="State.customSQL = this.value" spellcheck="false">' +
+			escapeHtml(sql) +
+			'</textarea>\
                 <small style="color:#666;display:block;margin-top:10px;"><i class="bi bi-info-circle"></i> Edit the SQL directly. Changes will be included in your download.</small>\
             </div>\
             <div class="info-box" style="background:rgba(23,162,184,0.08);margin-top:20px;">\
@@ -1049,52 +2201,70 @@ function _buildBaseGenerateStep() {
                 <ol style="line-height:2;margin:10px 0 0 0;padding-left:20px;">\
                     <li>Click <strong>Get Dashboard Files</strong> below</li>\
                     <li>In Etrieve Central, open <strong>Admin Settings &gt; Sources</strong>, click <strong>Add New Source</strong>, and choose Source Type <strong>Database</strong></li>\
-                    <li>Name it exactly: <code>' + escapeHtml(State.sourceName) + '</code> and set the <strong>Connection</strong> to <strong>Etrieve Content</strong></li>\
+                    <li>Name it exactly: <code>' +
+			escapeHtml(State.sourceName) +
+			"</code> and set the <strong>Connection</strong> to <strong>Etrieve Content</strong></li>\
                     <li>Leave the <strong>Schema</strong> field blank (it defaults to <code>dbo</code>)</li>\
                     <li>On the <strong>Actions</strong> tab, keep <strong>Get</strong>, toggle <strong>Custom</strong> on, and paste <code>integration-query.sql</code> into the <strong>Query Editor</strong></li>\
                     <li>On the <strong>Privileges</strong> tab, add your dashboard users so they can execute the source (without this they get a NotAuthorized / 403)</li>\
                     <li>Go to <strong>Admin Settings &gt; Forms</strong>, create a new form, and upload the 3 files (index.html, configuration.js, viewmodel.js)</li>\
-                    <li>Open the form, select the <strong>Connect</strong> tab, find <code>' + escapeHtml(State.sourceName) + '</code>, and check <strong>Get</strong></li>\
+                    <li>Open the form, select the <strong>Connect</strong> tab, find <code>" +
+			escapeHtml(State.sourceName) +
+			'</code>, and check <strong>Get</strong></li>\
                     <li>On the same <strong>Connect</strong> tab, leave <strong>Run on Load</strong> unchecked for this source (the dashboard calls it on demand)</li>\
                 </ol>\
             </div>\
             <div class="info-box" style="background:rgba(220,53,69,0.06);margin-top:15px;">\
                 <h4><i class="bi bi-exclamation-triangle" style="color:#dc3545;"></i> Common Mistakes</h4>\
                 <ul style="line-height:2;margin:10px 0 0 0;padding-left:20px;">\
-                    <li><strong>Source name must match exactly.</strong> The name in Etrieve must be identical to what is in configuration.js: <code>' + escapeHtml(State.sourceName) + '</code></li>\
+                    <li><strong>Source name must match exactly.</strong> The name in Etrieve must be identical to what is in configuration.js: <code>' +
+			escapeHtml(State.sourceName) +
+			'</code></li>\
                     <li><strong>Leave Schema blank.</strong> Do not enter a schema name when creating the integration source.</li>\
                     <li><strong>Connect the source to the dashboard.</strong> After creating the source, make sure it is linked to the dashboard form.</li>\
                 </ul>\
             </div>\
             <div class="advanced-toggle" style="margin-top:20px;">\
-                <label><input type="checkbox" ' + (State.advancedMode ? 'checked' : '') + ' onchange="toggleAdvancedMode(this.checked)"><span>Advanced Mode</span></label>\
+                <label><input type="checkbox" ' +
+			(State.advancedMode ? "checked" : "") +
+			' onchange="toggleAdvancedMode(this.checked)"><span>Advanced Mode</span></label>\
                 <span class="badge-advanced">Power User</span>\
-            </div>';
-  }
-  return '\
+            </div>'
+		);
+	}
+	return (
+		'\
         <div class="step-description" style="background:rgba(40,167,69,0.1);border-color:var(--success);">\
             <p><i class="bi bi-check-circle-fill" style="color:var(--success);margin-right:8px;"></i>\
             Your dashboard is ready! Review the summary below and download your files.</p>\
         </div>\
         <div style="background:#f8f9fa;border-radius:12px;padding:20px;margin:20px 0;">\
             <h4 style="margin-bottom:15px;color:var(--primary);"><i class="bi bi-clipboard-check"></i> Summary</h4>\
-            <div style="line-height:2;">' + summary.map(function (s) {
-    return '<div>' + s + '</div>';
-  }).join('') + '</div>\
+            <div style="line-height:2;">' +
+		summary
+			.map(function (s) {
+				return "<div>" + s + "</div>";
+			})
+			.join("") +
+		'</div>\
         </div>\
         <!-- writeback-insert-point -->\
         <details style="margin:20px 0;">\
             <summary style="cursor:pointer;font-weight:600;padding:10px 0;color:var(--primary);">\
                 <i class="bi bi-code-slash"></i> View Generated SQL (Technical)\
             </summary>\
-            <div class="sql-preview" style="margin-top:15px;"><pre>' + highlightSQL(sql) + '</pre></div>\
+            <div class="sql-preview" style="margin-top:15px;"><pre>' +
+		highlightSQL(sql) +
+		'</pre></div>\
         </details>\
         <div class="info-box" style="background:rgba(23,162,184,0.08);">\
             <h4><i class="bi bi-arrow-right-circle"></i> What happens next?</h4>\
             <ol style="line-height:2;margin:10px 0 0 0;padding-left:20px;">\
                 <li>Click <strong>Get Dashboard Files</strong> below</li>\
                 <li>Send the files to your Etrieve administrator</li>\
-                <li>They\'ll create a <strong>Database</strong> source (Admin Settings &gt; Sources) named exactly: <code>' + escapeHtml(State.sourceName) + '</code></li>\
+                <li>They\'ll create a <strong>Database</strong> source (Admin Settings &gt; Sources) named exactly: <code>' +
+		escapeHtml(State.sourceName) +
+		'</code></li>\
                 <li>They\'ll go to <strong>Admin Settings &gt; Forms</strong>, create a new form, and upload the 3 files</li>\
                 <li>They\'ll connect the source on the form\'s <strong>Connect</strong> tab (check Get) and grant users Get under the source\'s <strong>Privileges</strong></li>\
             </ol>\
@@ -1103,128 +2273,187 @@ function _buildBaseGenerateStep() {
             </div>\
         </div>\
         <div class="advanced-toggle" style="margin-top:20px;">\
-            <label><input type="checkbox" ' + (State.advancedMode ? 'checked' : '') + ' onchange="toggleAdvancedMode(this.checked)"><span>Advanced Mode</span></label>\
+            <label><input type="checkbox" ' +
+		(State.advancedMode ? "checked" : "") +
+		' onchange="toggleAdvancedMode(this.checked)"><span>Advanced Mode</span></label>\
             <span class="badge-advanced">Power User</span>\
-        </div>';
+        </div>'
+	);
 }
 function renderGenerateStep() {
-  var baseHtml = _buildBaseGenerateStep();
-  if (!needsWriteBack()) {
-    return baseHtml;
-  }
-  var style = State.selectedStyle;
-  var schemaSQL = generateSchemaSQL();
-  var instructions = generateIntegrationInstructions();
-  var styleName = {
-    'claims': 'Claims System',
-    'committee-voting': 'Committee Voting',
-    'workflow-actions': 'Workflow Actions',
-    'bulk-actions': 'Bulk Actions'
-  }[style] || style;
-  var warningBanner = "\n        <div class=\"writeback-warning-banner\">\n            <div style=\"display:flex;align-items:flex-start;gap:12px;\">\n                <i class=\"bi bi-exclamation-triangle-fill\" style=\"font-size:1.4rem;color:#856404;flex-shrink:0;margin-top:2px;\"></i>\n                <div>\n                    <strong>On-Prem SQL Server Required</strong>\n                    <p style=\"margin:6px 0 0;font-size:0.9rem;\">\n                        The <strong>".concat(escapeHtml(styleName), "</strong> style requires an on-prem SQL Server connected via Hybrid Server\n                        to track state (votes, claims, decisions, etc.). The generated SQL schema must be deployed\n                        to your SQL Server <strong>before</strong> the dashboard will work.\n                    </p>\n                </div>\n            </div>\n        </div>");
-  var schemaSection = "\n        <div class=\"writeback-schema-section\">\n            <div class=\"schema-header\" onclick=\"toggleSchemaSection(this)\">\n                <h4 style=\"margin:0;display:flex;align-items:center;gap:8px;\">\n                    <i class=\"bi bi-database-fill-gear\" style=\"color:var(--primary);\"></i>\n                    Database Schema (Run First)\n                    <span class=\"badge-sql-required\">SQL</span>\n                </h4>\n                <div style=\"display:flex;align-items:center;gap:8px;\">\n                    <button class=\"btn btn-sm\" onclick=\"event.stopPropagation();copySchemaSQL(event)\" title=\"Copy schema SQL\">\n                        <i class=\"bi bi-clipboard\"></i> Copy\n                    </button>\n                    <i class=\"bi bi-chevron-down schema-chevron\"></i>\n                </div>\n            </div>\n            <div class=\"schema-body\" style=\"display:none;\">\n                <p style=\"margin:0 0 12px;font-size:0.85rem;color:#666;\">\n                    <i class=\"bi bi-info-circle\"></i> Run this SQL on your on-prem SQL Server before setting up integrations.\n                    Creates all required tables, indexes, and stored procedures.\n                </p>\n                <div class=\"sql-preview schema-sql-preview\">\n                    <pre id=\"schemaPreview\">".concat(escapeHtml(schemaSQL), "</pre>\n                </div>\n            </div>\n        </div>");
-  var instructionRows = instructions.map(function (inst) {
-    return "\n        <tr>\n            <td><code>".concat(escapeHtml(inst.name), "</code></td>\n            <td><span class=\"badge ").concat(inst.method === 'POST' ? 'bg-warning' : 'bg-info', "\" style=\"font-size:0.75rem;\">").concat(inst.method, "</span></td>\n            <td><code style=\"font-size:0.8rem;\">").concat(escapeHtml(inst.sql), "</code></td>\n            <td style=\"font-size:0.85rem;\">").concat(escapeHtml(inst.desc), "</td>\n        </tr>");
-  }).join('');
-  var instructionsSection = "\n        <div class=\"writeback-schema-section\" style=\"margin-top:15px;\">\n            <div class=\"schema-header\" onclick=\"toggleSchemaSection(this)\">\n                <h4 style=\"margin:0;display:flex;align-items:center;gap:8px;\">\n                    <i class=\"bi bi-plug-fill\" style=\"color:var(--accent);\"></i>\n                    Integration Setup Instructions\n                </h4>\n                <i class=\"bi bi-chevron-down schema-chevron\"></i>\n            </div>\n            <div class=\"schema-body\" style=\"display:none;\">\n                <p style=\"margin:0 0 12px;font-size:0.85rem;color:#666;\">\n                    <i class=\"bi bi-info-circle\"></i> Create these integration sources in\n                    <strong>Etrieve Central -> Admin Settings -> Sources</strong>.\n                    Point each to your Hybrid Server connection.\n                </p>\n                <div style=\"overflow-x:auto;\">\n                    <table class=\"integration-table\">\n                        <thead>\n                            <tr>\n                                <th>Integration Name</th>\n                                <th>Method</th>\n                                <th>SQL Command</th>\n                                <th>Description</th>\n                            </tr>\n                        </thead>\n                        <tbody>".concat(instructionRows, "</tbody>\n                    </table>\n                </div>\n                <div style=\"margin-top:12px;padding:10px 14px;background:rgba(23,162,184,0.08);border-radius:8px;font-size:0.85rem;\">\n                    <strong>Important:</strong> After creating each source, go to your dashboard form under\n                    <strong>Connect -> Available Sources</strong> and add it. Check <strong>\"Get\"</strong> for\n                    read sources and <strong>\"Post\"</strong> for write sources.\n                </div>\n            </div>\n        </div>");
-  var summaryEndMarker = '<!-- writeback-insert-point -->';
-  if (baseHtml.indexOf(summaryEndMarker) !== -1) {
-    return baseHtml.replace(summaryEndMarker, warningBanner + schemaSection + instructionsSection);
-  }
-  var stepDescEnd = baseHtml.indexOf('</div>', baseHtml.indexOf('step-description'));
-  if (stepDescEnd !== -1) {
-    var insertPoint = baseHtml.indexOf('</div>', stepDescEnd + 6);
-    if (insertPoint !== -1) {
-      var searchFrom = baseHtml.indexOf('clipboard-check');
-      if (searchFrom !== -1) {
-        var depth = 0;
-        var idx = baseHtml.indexOf('<div', searchFrom - 50);
-        for (var i = idx; i < baseHtml.length; i++) {
-          if (baseHtml.substring(i, i + 4) === '<div') depth++;
-          if (baseHtml.substring(i, i + 6) === '</div>') {
-            depth--;
-            if (depth === 0) {
-              return baseHtml.substring(0, i + 6) + warningBanner + schemaSection + instructionsSection + baseHtml.substring(i + 6);
-            }
-          }
-        }
-      }
-    }
-  }
-  return warningBanner + baseHtml + schemaSection + instructionsSection;
+	var baseHtml = _buildBaseGenerateStep();
+	if (!needsWriteBack()) {
+		return baseHtml;
+	}
+	var style = State.selectedStyle;
+	var schemaSQL = generateSchemaSQL();
+	var instructions = generateIntegrationInstructions();
+	var styleName =
+		{
+			claims: "Claims System",
+			"committee-voting": "Committee Voting",
+			"workflow-actions": "Workflow Actions",
+			"bulk-actions": "Bulk Actions",
+		}[style] || style;
+	var warningBanner =
+		'\n        <div class="writeback-warning-banner">\n            <div style="display:flex;align-items:flex-start;gap:12px;">\n                <i class="bi bi-exclamation-triangle-fill" style="font-size:1.4rem;color:#856404;flex-shrink:0;margin-top:2px;"></i>\n                <div>\n                    <strong>On-Prem SQL Server Required</strong>\n                    <p style="margin:6px 0 0;font-size:0.9rem;">\n                        The <strong>'.concat(
+			escapeHtml(styleName),
+			"</strong> style requires an on-prem SQL Server connected via Hybrid Server\n                        to track state (votes, claims, decisions, etc.). The generated SQL schema must be deployed\n                        to your SQL Server <strong>before</strong> the dashboard will work.\n                    </p>\n                </div>\n            </div>\n        </div>",
+		);
+	var schemaSection =
+		'\n        <div class="writeback-schema-section">\n            <div class="schema-header" onclick="toggleSchemaSection(this)">\n                <h4 style="margin:0;display:flex;align-items:center;gap:8px;">\n                    <i class="bi bi-database-fill-gear" style="color:var(--primary);"></i>\n                    Database Schema (Run First)\n                    <span class="badge-sql-required">SQL</span>\n                </h4>\n                <div style="display:flex;align-items:center;gap:8px;">\n                    <button class="btn btn-sm" onclick="event.stopPropagation();copySchemaSQL(event)" title="Copy schema SQL">\n                        <i class="bi bi-clipboard"></i> Copy\n                    </button>\n                    <i class="bi bi-chevron-down schema-chevron"></i>\n                </div>\n            </div>\n            <div class="schema-body" style="display:none;">\n                <p style="margin:0 0 12px;font-size:0.85rem;color:#666;">\n                    <i class="bi bi-info-circle"></i> Run this SQL on your on-prem SQL Server before setting up integrations.\n                    Creates all required tables, indexes, and stored procedures.\n                </p>\n                <div class="sql-preview schema-sql-preview">\n                    <pre id="schemaPreview">'.concat(
+			escapeHtml(schemaSQL),
+			"</pre>\n                </div>\n            </div>\n        </div>",
+		);
+	var instructionRows = instructions
+		.map(function (inst) {
+			return "\n        <tr>\n            <td><code>"
+				.concat(
+					escapeHtml(inst.name),
+					'</code></td>\n            <td><span class="badge ',
+				)
+				.concat(
+					inst.method === "POST" ? "bg-warning" : "bg-info",
+					'" style="font-size:0.75rem;">',
+				)
+				.concat(
+					inst.method,
+					'</span></td>\n            <td><code style="font-size:0.8rem;">',
+				)
+				.concat(
+					escapeHtml(inst.sql),
+					'</code></td>\n            <td style="font-size:0.85rem;">',
+				)
+				.concat(escapeHtml(inst.desc), "</td>\n        </tr>");
+		})
+		.join("");
+	var instructionsSection =
+		'\n        <div class="writeback-schema-section" style="margin-top:15px;">\n            <div class="schema-header" onclick="toggleSchemaSection(this)">\n                <h4 style="margin:0;display:flex;align-items:center;gap:8px;">\n                    <i class="bi bi-plug-fill" style="color:var(--accent);"></i>\n                    Integration Setup Instructions\n                </h4>\n                <i class="bi bi-chevron-down schema-chevron"></i>\n            </div>\n            <div class="schema-body" style="display:none;">\n                <p style="margin:0 0 12px;font-size:0.85rem;color:#666;">\n                    <i class="bi bi-info-circle"></i> Create these integration sources in\n                    <strong>Etrieve Central -> Admin Settings -> Sources</strong>.\n                    Point each to your Hybrid Server connection.\n                </p>\n                <div style="overflow-x:auto;">\n                    <table class="integration-table">\n                        <thead>\n                            <tr>\n                                <th>Integration Name</th>\n                                <th>Method</th>\n                                <th>SQL Command</th>\n                                <th>Description</th>\n                            </tr>\n                        </thead>\n                        <tbody>'.concat(
+			instructionRows,
+			'</tbody>\n                    </table>\n                </div>\n                <div style="margin-top:12px;padding:10px 14px;background:rgba(23,162,184,0.08);border-radius:8px;font-size:0.85rem;">\n                    <strong>Important:</strong> After creating each source, go to your dashboard form under\n                    <strong>Connect -> Available Sources</strong> and add it. Check <strong>"Get"</strong> for\n                    read sources and <strong>"Post"</strong> for write sources.\n                </div>\n            </div>\n        </div>',
+		);
+	var summaryEndMarker = "<!-- writeback-insert-point -->";
+	if (baseHtml.indexOf(summaryEndMarker) !== -1) {
+		return baseHtml.replace(
+			summaryEndMarker,
+			warningBanner + schemaSection + instructionsSection,
+		);
+	}
+	var stepDescEnd = baseHtml.indexOf(
+		"</div>",
+		baseHtml.indexOf("step-description"),
+	);
+	if (stepDescEnd !== -1) {
+		var insertPoint = baseHtml.indexOf("</div>", stepDescEnd + 6);
+		if (insertPoint !== -1) {
+			var searchFrom = baseHtml.indexOf("clipboard-check");
+			if (searchFrom !== -1) {
+				var depth = 0;
+				var idx = baseHtml.indexOf("<div", searchFrom - 50);
+				for (var i = idx; i < baseHtml.length; i++) {
+					if (baseHtml.substring(i, i + 4) === "<div") depth++;
+					if (baseHtml.substring(i, i + 6) === "</div>") {
+						depth--;
+						if (depth === 0) {
+							return (
+								baseHtml.substring(0, i + 6) +
+								warningBanner +
+								schemaSection +
+								instructionsSection +
+								baseHtml.substring(i + 6)
+							);
+						}
+					}
+				}
+			}
+		}
+	}
+	return warningBanner + baseHtml + schemaSection + instructionsSection;
 }
 function toggleSchemaSection(header) {
-  var body = header.nextElementSibling;
-  var chevron = header.querySelector('.schema-chevron');
-  if (body.style.display === 'none') {
-    body.style.display = 'block';
-    chevron.classList.add('rotated');
-  } else {
-    body.style.display = 'none';
-    chevron.classList.remove('rotated');
-  }
+	var body = header.nextElementSibling;
+	var chevron = header.querySelector(".schema-chevron");
+	if (body.style.display === "none") {
+		body.style.display = "block";
+		chevron.classList.add("rotated");
+	} else {
+		body.style.display = "none";
+		chevron.classList.remove("rotated");
+	}
 }
 function copySchemaSQL(e) {
-  try {
-    var schemaSQL = generateSchemaSQL();
-  } catch (err) {
-    showToast('Failed to generate schema SQL.', 'error');
-    return;
-  }
-  navigator.clipboard.writeText(schemaSQL).then(function () {
-    var btn = e.target.closest('button');
-    if (btn) {
-      var orig = btn.innerHTML;
-      btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
-      setTimeout(function () {
-        btn.innerHTML = orig;
-      }, 2000);
-    }
-  })["catch"](function () {
-    showToast('Failed to copy - try selecting and copying manually.', 'error');
-  });
+	try {
+		var schemaSQL = generateSchemaSQL();
+	} catch (err) {
+		showToast("Failed to generate schema SQL.", "error");
+		return;
+	}
+	navigator.clipboard
+		.writeText(schemaSQL)
+		.then(function () {
+			var btn = e.target.closest("button");
+			if (btn) {
+				var orig = btn.innerHTML;
+				btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+				setTimeout(function () {
+					btn.innerHTML = orig;
+				}, 2000);
+			}
+		})
+		["catch"](function () {
+			showToast(
+				"Failed to copy - try selecting and copying manually.",
+				"error",
+			);
+		});
 }
 function generateDashboardFiles() {
-  var config = generateConfigJS();
-  var viewModel = generateViewModelJS();
-  var indexHtml = generateIndexHTML();
-  var readme = generateReadme();
-  var files = {
-    'configuration.js': config,
-    'viewmodel.js': viewModel,
-    'index.html': indexHtml,
-    'README.md': readme
-  };
-  // Combined mode: two separate SQL files for two integration sources
-  // Content (dbo.*) and Central Forms (reporting.central_forms_*) use different
-  // database connections, so they cannot be in one query.
-  if (State.mode === 'combined') {
-    files['content-query.sql'] = generateContentSQL();
-    files['forms-query.sql'] = generateFormsSQL();
-  } else {
-    var sql = State.customSQL || generateSQL();
-    files['integration-query.sql'] = sql;
-  }
-  if (needsWriteBack()) {
-    var schemaSQL = generateSchemaSQL();
-    if (schemaSQL) {
-      files['schema.sql'] = schemaSQL;
-    }
-  }
-  return files;
+	var config = generateConfigJS();
+	var viewModel = generateViewModelJS();
+	var indexHtml = generateIndexHTML();
+	var readme = generateReadme();
+	var files = {
+		"configuration.js": config,
+		"viewmodel.js": viewModel,
+		"index.html": indexHtml,
+		"README.md": readme,
+	};
+	// Combined mode: two separate SQL files for two integration sources
+	// Content (dbo.*) and Central Forms (reporting.central_forms_*) use different
+	// database connections, so they cannot be in one query.
+	if (State.mode === "combined") {
+		files["content-query.sql"] = generateContentSQL();
+		files["forms-query.sql"] = generateFormsSQL();
+	} else {
+		var sql = State.customSQL || generateSQL();
+		files["integration-query.sql"] = sql;
+	}
+	if (needsWriteBack()) {
+		var schemaSQL = generateSchemaSQL();
+		if (schemaSQL) {
+			files["schema.sql"] = schemaSQL;
+		}
+	}
+	return files;
 }
 function getStyleBadgeHTML(styleId) {
-  var styleDef = DashboardStyles.find(function(s) { return s.id === styleId; });
-  if (styleDef && styleDef.requiresSQL) {
-    return '<span class="badge-hybrid-required" title="Requires on-prem SQL Server + Hybrid Server"><i class="bi bi-hdd-network"></i> Hybrid Server</span>';
-  }
-  return '<span class="badge-cloud-only" title="Cloud-only, no on-prem server needed"><i class="bi bi-cloud-check"></i> Cloud Only</span>';
+	var styleDef = DashboardStyles.find(function (s) {
+		return s.id === styleId;
+	});
+	if (styleDef && styleDef.requiresSQL) {
+		return '<span class="badge-hybrid-required" title="Requires on-prem SQL Server + Hybrid Server"><i class="bi bi-hdd-network"></i> Hybrid Server</span>';
+	}
+	return '<span class="badge-cloud-only" title="Cloud-only, no on-prem server needed"><i class="bi bi-cloud-check"></i> Cloud Only</span>';
 }
-console.log('Dashboard Builder Wizard v' + (typeof WIZARD_VERSION !== 'undefined' ? WIZARD_VERSION : '?') + ' - Style generators + write-back SQL loaded');
-if (typeof define === 'function' && define.amd) {
-  define('template/wizard-generators', ['template/wizard-demo'], function () {
-    return {
-      loaded: true
-    };
-  });
+console.log(
+	"Dashboard Builder Wizard v" +
+		(typeof WIZARD_VERSION !== "undefined" ? WIZARD_VERSION : "?") +
+		" - Style generators + write-back SQL loaded",
+);
+if (typeof define === "function" && define.amd) {
+	define("template/wizard-generators", ["template/wizard-demo"], function () {
+		return {
+			loaded: true,
+		};
+	});
 }
