@@ -6,8 +6,8 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '4.4';
-var WIZARD_BUILD_DATE = '2026-07-17';
+var WIZARD_VERSION = '4.4.1';
+var WIZARD_BUILD_DATE = '2026-08-11';
 
 // Changelog (newest first)
 // 4.4   (2026-07-17) - Generated dashboards: collapsible "Overview" chart (inline-SVG counts per swimlane, updates on search/filter/sort) and a date-range filter (forms SubmittedDate / a content date field; omitted in combined mode where documents have no date). Wizard: pre-flight review on the finish step (warns on blank required field mappings, multiple filterless swimlanes, no data columns, missing source name); Import/Export build files (portable .json) so a build can move between browsers, machines, or teammates instead of living only in this browser's storage. Runtime text search was already built in. Also standardized survey/cards to resolve field id -> SQL column (were rendering blank) and combined-mode field pickers now include form inputs, suffixed "(form)".

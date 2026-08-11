@@ -2,6 +2,11 @@
 
 A wizard that builds dashboards for Softdocs Etrieve. No coding required. Pick a style, point it at your data, and download a ready-to-use dashboard.
 
+## What's New in v4.4.1
+
+- **Fixed: the View button hung on items still in workflow.** Form Tracker dashboards pointed every View link at the archive renderer (`packageId` + `focusMode=true`). That route only resolves once an item's workflow has ended, so clicking View on anything still sitting in someone's queue spun forever. Because a new dashboard is mostly in-flight items, most View clicks hung. The generated SQL now picks the route per row: an item with an active task gets `taskId` + `itemId`, the pattern that loads the live form in the workflow inbox, and an item with no active task keeps `packageId` + `itemId` + `focusMode=true`.
+- **Already built a Form Tracker dashboard? Re-generate its source query.** Only the query changes. The generated dashboard files are unaffected, so leave your dashboard form alone. Steps are under [Something Not Working?](#something-not-working).
+
 ## What's New in v4.4
 
 - **Overview chart** -- Generated dashboards now show a collapsible bar chart of item counts per swimlane at the top. It is drawn as inline SVG (no external chart library, so it loads inside Etrieve) and updates live as you search or filter.
@@ -304,6 +309,16 @@ Pick one, walk through the wizard, and download your finished dashboard. Upload 
 * **403 / NotAuthorized errors** -- Your users need **Get** on each source's **Privileges** tab, and the form's **Connect** tab must have **Get** checked for the source. Also confirm each source's **Connection** points at your Etrieve Content / Central Forms database (not Etrieve Security or another connection).
 * **Source names don't match** -- If you named your sources differently, update the names in `configuration.js` to match.
 * **Wizard won't save in the form editor** -- Make sure you're using the latest files from this repo. Older versions used JavaScript syntax that Etrieve's editor doesn't accept.
+* **View button spins forever** -- Fixed in v4.4.1. Dashboards generated before that put the archive-renderer link (`packageId` + `focusMode=true`) on every row, and that route only resolves once an item's workflow has ended. To confirm that is what you have, click View and read the address of the tab it opens: `packageId` on an item still sitting in someone's queue is the bug. To fix an existing dashboard:
+  1. Pull the latest files from this repo.
+  2. Re-upload `wizard-sql.js` and `wizard-demo.js` to your wizard form (Admin Settings > Forms > your wizard form > Files). The other files are unchanged.
+  3. Open the wizard form and hard-refresh, Ctrl+F5, so Etrieve serves the new JavaScript instead of the cached copy. The footer should read v4.4.1.
+  4. Re-open your build: **Import** the `.json` you exported from the finish step, or walk the steps again with the same answers.
+  5. On the finish step, copy the generated SQL.
+  6. Go to Admin Settings > Sources, open the source feeding your dashboard, paste the new query over the old one, and save.
+  7. Hard-refresh your dashboard and click View on an item that is still in workflow.
+
+  Your dashboard form does not change. Do not re-upload its files.
 * **File upload blocked (403 Forbidden)** -- Cloudflare WAF may block files containing SQL keywords. The SQL generators are in a separate `wizard-sql.js` file with obfuscated keywords for this reason. Make sure you're uploading all 12 files from this repo.
 
 ---

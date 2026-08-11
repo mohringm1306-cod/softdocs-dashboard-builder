@@ -287,10 +287,24 @@ function generateFormsSQL() {
         sql += ',\n   actor.[Name] ' + _Q.AS + ' AssignedTo';
     }
 
+    // View URL. There are TWO routes and they are not interchangeable:
+    //   ACTIVE (still has a TaskQueue row) -> taskId + itemId, NO focusMode.
+    //     This is the only pattern that loads the live form in the workflow inbox.
+    //   ARCHIVED (no TaskQueue row)        -> packageId + itemId + focusMode=true,
+    //     the view-only archive renderer.
+    // Emitting the archive route for an in-flight row makes the View button hang
+    // (the archive renderer never resolves a package that still has an active task).
+    // A brand-new dashboard is mostly in-flight rows, so that reads as "View spins".
+    // Do NOT "simplify" this back to pd.Url: pd is the LatestPackage CTE, which
+    // projects only SourceID/PackageID/rn, and Url is not in the GROUP BY either.
     sql += ',\n' +
-        "   '/central/submissions?packageId=' + " + _Q.CT + '(pd.PackageID ' + _Q.AS + ' ' + _Q.VC + '(50)) +\n' +
-        "   '&itemId=' + " + _Q.CT + '(f.FormID ' + _Q.AS + ' ' + _Q.VC + ") +\n" +
-        "   '&focusMode=true' " + _Q.AS + ' url';
+        '   ' + _Q.CS + ' ' + _Q.WN + ' tq.TaskQueueID ' + _Q.IS + ' ' + _Q.NL + '\n' +
+        "        " + _Q.TN + " '/central/submissions?packageId=' + " + _Q.CT + '(pd.PackageID ' + _Q.AS + ' ' + _Q.VC + '(50))\n' +
+        "             + '&itemId=' + " + _Q.CT + '(f.FormID ' + _Q.AS + ' ' + _Q.VC + ')\n' +
+        "             + '&focusMode=true'\n" +
+        '        ' + _Q.EL + " '/central/submissions?taskId=' + " + _Q.CT + '(tq.TaskQueueID ' + _Q.AS + ' ' + _Q.VC + '(50))\n' +
+        "             + '&itemId=' + " + _Q.CT + '(f.FormID ' + _Q.AS + ' ' + _Q.VC + ')\n' +
+        '   ' + _Q.EN + ' ' + _Q.AS + ' url';
 
     sql += '\n' + _Q.FR + ' reporting.central_forms_Form f\n' +
         _Q.LJ + ' LatestInput iv\n' +
