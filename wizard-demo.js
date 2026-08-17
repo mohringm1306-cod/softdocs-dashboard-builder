@@ -6,10 +6,11 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '4.4.1';
+var WIZARD_VERSION = '4.6.1';
 var WIZARD_BUILD_DATE = '2026-08-11';
 
 // Changelog (newest first)
+// 4.5   (2026-07-23) - Generated README + query SQL now emit as .html (rendered setup guide + copy-friendly SQL code boxes) so they upload to the Etrieve form and stay saved in the cloud (.md/.sql are rejected by form upload). Download popup scales to any screen (dvh cap, pinned buttons, single-row scrollable file tabs) and adds a "Save all files" button. Search/filter box on every long picker (forms, folder, document types, fields), remembered across multi-select re-renders. Mode naming unified across welcome cards, header badge, and progress title (Document Lookup / Form Tracker / Combined View); combined form step retitled "Choose a Form"; Access Control jargon removed.
 // 4.4   (2026-07-17) - Generated dashboards: collapsible "Overview" chart (inline-SVG counts per swimlane, updates on search/filter/sort) and a date-range filter (forms SubmittedDate / a content date field; omitted in combined mode where documents have no date). Wizard: pre-flight review on the finish step (warns on blank required field mappings, multiple filterless swimlanes, no data columns, missing source name); Import/Export build files (portable .json) so a build can move between browsers, machines, or teammates instead of living only in this browser's storage. Runtime text search was already built in. Also standardized survey/cards to resolve field id -> SQL column (were rendering blank) and combined-mode field pickers now include form inputs, suffixed "(form)".
 // 4.3   (2026-07-13) - Forms mode: pivot the CURRENT value of each field via a LatestInput CTE (ROW_NUMBER latest by TimeStamp, rn=1) instead of MAX(CASE...) over all InputValue rows. Fixes fields edited during workflow review showing a stale value (e.g. a reviewer-lowered Level showing the original higher one). Fixes every pivoted column at once.
 // 4.2   (2026-03-25) - Workflow Actions + Bulk Actions now cloud-only: approve/deny use Central Flow API (Lock+PutWorkQueue) instead of SQL queue tables. No Hybrid Server needed. Reassign still uses Hybrid if configured. Fix _cell() infinite recursion. Fix preview crash on action objects. Sync workflow step SQL to Package approach.
@@ -1105,9 +1106,9 @@ function buildSourceBlock(name, keysHtml, sql) {
 function updateModeIndicator() {
     const indicator = document.getElementById('modeIndicator');
     const modeLabels = {
-        'content': { label: 'Document Dashboard', icon: 'bi-file-earmark-text-fill', class: 'content-mode', desc: 'Browse & manage documents' },
-        'forms': { label: 'Forms Dashboard', icon: 'bi-ui-checks-grid', class: 'forms-mode', desc: 'Track form submissions' },
-        'combined': { label: 'Combined Dashboard', icon: 'bi-stack', class: 'combined-mode', desc: 'Documents + Forms' }
+        'content': { label: 'Document Lookup', icon: 'bi-file-earmark-text-fill', class: 'content-mode', desc: 'Browse & manage documents' },
+        'forms': { label: 'Form Tracker', icon: 'bi-ui-checks-grid', class: 'forms-mode', desc: 'Track form submissions' },
+        'combined': { label: 'Combined View', icon: 'bi-stack', class: 'combined-mode', desc: 'Documents + Forms' }
     };
 
     const mode = modeLabels[State.mode] || modeLabels['content'];
@@ -1164,6 +1165,12 @@ function nextStep() {
             return;
         }
         if (step.id === 'setup') {
+            // Re-normalize here, not only on blur. Leaving a path on either URL (pasting
+            // Central's address bar, which ends in /central) doubles it into every View link.
+            if (typeof normalizeUrl === 'function') {
+                if (State.centralUrl) { State.centralUrl = normalizeUrl(State.centralUrl); }
+                if (State.contentUrl) { State.contentUrl = normalizeUrl(State.contentUrl); }
+            }
             if ((State.mode === 'forms' || State.mode === 'combined') && !State.centralUrl.trim()) {
                 showToast('Please enter your Etrieve Central URL (e.g., https://yoursite.etrieve.cloud).', 'warning');
                 return;
@@ -1456,13 +1463,13 @@ function importBuildFile(input) {
 function renderMyDashboardsPanel() {
     var lib = loadLibrary();
     var list = lib.length === 0
-        ? '<p style="color:#888;padding:12px 0;">No saved dashboards yet. Build one and click <strong>Save current build</strong>, or just download it (downloads are saved here automatically).</p>'
+        ? '<p style="color:var(--wz-muted);padding:12px 0;">No saved dashboards yet. Build one and click <strong>Save current build</strong>, or just download it (downloads are saved here automatically).</p>'
         : lib.map(function (d) {
             var when = formatDraftTime(d.savedAt);
             var modeLabel = d.mode === 'content' ? 'Document' : d.mode === 'forms' ? 'Form' : 'Combined';
             return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #eee;">' +
                 '<div style="flex:1;min-width:0;"><strong>' + escapeHtml(d.name) + '</strong>' +
-                '<div style="font-size:0.8rem;color:#888;">' + escapeHtml(modeLabel) + ' dashboard &middot; saved ' + escapeHtml(when) + '</div></div>' +
+                '<div style="font-size:0.8rem;color:var(--wz-muted);">' + escapeHtml(modeLabel) + ' dashboard &middot; saved ' + escapeHtml(when) + '</div></div>' +
                 '<button class="btn btn-primary btn-sm" onclick="openFromLibrary(\'' + escapeJSAttr(d.id) + '\')"><i class="bi bi-pencil-square"></i> Open</button>' +
                 '<button class="btn btn-secondary btn-sm" onclick="deleteFromLibrary(\'' + escapeJSAttr(d.id) + '\')" title="Remove"><i class="bi bi-trash"></i></button>' +
                 '</div>';
@@ -1538,6 +1545,45 @@ function ensureMyDashboardsButton() {
     var iv = setInterval(function () {
         tries++;
         if (document.getElementById('myDashboardsBtn') || tries > 20) { clearInterval(iv); }
+        else { tryInject(); }
+    }, 300);
+})();
+
+// ============================================================================
+// LIGHT / DARK THEME TOGGLE (injected into the header so it works in the
+// Etrieve-hosted builder too, where index.html is not used)
+// ============================================================================
+function ensureThemeToggle() {
+    if (document.getElementById('wizThemeToggle')) return;
+    var header = document.querySelector('.header-bar');
+    if (!header) return;
+    var right = (header.children && header.children.length > 1) ? header.children[header.children.length - 1] : header;
+    var btn = document.createElement('button');
+    btn.id = 'wizThemeToggle';
+    btn.className = 'theme-toggle-btn';
+    btn.type = 'button';
+    btn.title = 'Toggle light / dark';
+    btn.setAttribute('aria-label', 'Toggle dark mode');
+    btn.innerHTML = '<i class="bi bi-circle-half"><\/i>';
+    btn.onclick = function () {
+        var h = document.documentElement;
+        var c = h.getAttribute('data-theme');
+        var n = c === 'dark' ? 'light' : (c === 'light' ? 'dark' : ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark'));
+        h.setAttribute('data-theme', n);
+        try { localStorage.setItem('wizTheme', n); } catch (e) {}
+    };
+    var ref = (right.querySelector ? (right.querySelector('#myDashboardsBtn') || right.querySelector('.setup-guide-btn')) : null);
+    if (ref && ref.parentNode === right) right.insertBefore(btn, ref); else right.appendChild(btn);
+}
+(function initThemeToggleUI() {
+    try { var t = localStorage.getItem('wizTheme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    function tryInject() { try { ensureThemeToggle(); } catch (e) {} }
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', tryInject); }
+    else { tryInject(); }
+    var tries = 0;
+    var iv = setInterval(function () {
+        tries++;
+        if (document.getElementById('wizThemeToggle') || tries > 20) { clearInterval(iv); }
         else { tryInject(); }
     }, 300);
 })();

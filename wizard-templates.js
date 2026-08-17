@@ -7,17 +7,29 @@
 
 console.log('Dashboard Builder Wizard v' + (typeof WIZARD_VERSION !== 'undefined' ? WIZARD_VERSION : '?') + ' - Template renderers loaded');
 
-// Normalize URL: auto-add https:// if the user omits or mistypes the scheme
+// Normalize URL: reduce to the bare origin (https://host[:port]), auto-adding https://
+// if the user omits or mistypes the scheme.
+//
+// The path MUST be stripped. These inputs are used as a prefix for a relative link that
+// already carries its own path (the generated View link starts with /central/submissions),
+// so anything left here is duplicated. The natural thing to paste is Central's address bar,
+// which reads https://yoursite.etrieve.cloud/central, and that produced
+// /central/central/submissions?taskId=... View links that hang the SPA router.
+// Reported by Oakton 2026-08-17.
 function normalizeUrl(val) {
     val = (val || '').trim().replace(/\/+$/, '');
     if (!val) return '';
-    // Already correct
-    if (/^https:\/\//i.test(val)) return val;
-    // Correct http:// to https://
-    if (/^http:\/\//i.test(val)) return 'https://' + val.substring(7);
-    // Strip common typos/partial schemes before re-adding https://
-    // Handles: htts://, htp://, htps://, https:, http:, https//, http//, ://, //, etc.
-    val = val.replace(/^h?t?t?p?s?:?\/?\/?\s*/i, '');
+    if (/^https:\/\//i.test(val)) {
+        val = val.substring(8);
+    } else if (/^http:\/\//i.test(val)) {
+        val = val.substring(7);
+    } else {
+        // Strip common typos/partial schemes before re-adding https://
+        // Handles: htts://, htp://, htps://, https:, http:, https//, http//, ://, //, etc.
+        val = val.replace(/^h?t?t?p?s?:?\/?\/?\s*/i, '');
+    }
+    // Keep host[:port] only, dropping any path, query or hash the user pasted.
+    val = val.replace(/[\/?#].*$/, '');
     if (!val) return '';
     return 'https://' + val;
 }
@@ -90,9 +102,9 @@ function renderProgress() {
     const percent = ((State.currentStep + 1) / steps.length) * 100;
 
     document.getElementById('progressTitle').textContent =
-        State.mode === 'content' ? 'Building Document Dashboard' :
-        State.mode === 'forms' ? 'Building Forms Dashboard' :
-        'Building Combined Dashboard';
+        State.mode === 'content' ? 'Building Document Lookup' :
+        State.mode === 'forms' ? 'Building Form Tracker' :
+        'Building Combined View';
     document.getElementById('stepCounter').textContent =
         `Step ${State.currentStep + 1} of ${steps.length}`;
     document.getElementById('progressFill').style.width = percent + '%';
@@ -140,7 +152,7 @@ function renderStep() {
         'area': { title: isCombined ? 'Documents: Choose Folder' : 'Choose a Folder', desc: isCombined ? 'First, select where your documents are stored' : 'Where are the documents you want to see?' },
         'docTypes': { title: isCombined ? 'Documents: Pick Types' : 'Pick Document Types', desc: 'What kinds of documents should appear?' },
         'docFields': { title: 'Documents: Choose Fields', desc: 'Pick the document information you want to see' },
-        'template': { title: isCombined ? 'Forms: Choose Template' : 'Choose a Form', desc: isCombined ? 'Now, select which form to track' : 'Which form submissions do you want to track?' },
+        'template': { title: isCombined ? 'Forms: Choose a Form' : 'Choose a Form', desc: isCombined ? 'Now, select which form to track' : 'Which form submissions do you want to track?' },
         'formFields': { title: 'Forms: Choose Fields', desc: 'Pick the form fields you want to see' },
         'fields': { title: 'Choose What to Show', desc: 'Pick the information you want to see in your dashboard' },
         'workflow': { title: isCombined ? 'Forms: Track Approvals' : 'Track Approvals', desc: 'See where items are in the approval process' },
@@ -153,7 +165,7 @@ function renderStep() {
         'cardsConfig': { title: 'Card Layout', desc: 'Map fields to the card title, status, lead, and budget' },
         'bulkConfig': { title: 'Bulk Actions', desc: 'Configure reassignment targets and bulk operations' },
         'swimlanes': { title: 'Organize Your View', desc: 'Sort items into swimlanes like "In Progress" and "Completed"' },
-        'securityConfig': { title: 'Access Control', desc: 'Optionally restrict data loading to authorized groups (security-first model)' },
+        'securityConfig': { title: 'Access Control', desc: 'Optionally limit who can see the data to specific groups' },
         'generate': { title: 'All Done!', desc: 'Your dashboard is ready to download' }
     };
 
@@ -189,6 +201,9 @@ function renderStep() {
     }
 
     document.getElementById('wizardMain').innerHTML = html;
+
+    // Re-apply any active picker search filters (survives multi-select re-renders)
+    reapplyPickerFilters();
 
     // Update preview
     renderPreview();
@@ -246,15 +261,23 @@ function renderSetupStep() {
                 ${COLOR_PRESETS.map(p => `<button type="button" title="${escapeHtml(p.name)}" aria-label="${escapeHtml(p.name)} colors" onclick="applyColorPreset('${p.primary}','${p.accent}')" style="width:30px;height:30px;border-radius:6px;cursor:pointer;background:linear-gradient(135deg, ${p.primary} 0 60%, ${p.accent} 60% 100%);border:2px solid ${(State.colors.primary || '').toLowerCase() === p.primary.toLowerCase() ? '#111' : 'rgba(0,0,0,0.15)'};"></button>`).join('')}
             </div>
             <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
-                <label style="display:flex;align-items:center;gap:6px;font-size:0.9rem;color:#444;">Primary
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.9rem;color:var(--wz-text);">Primary
                     <input type="color" id="colorPrimary" value="${escapeHtml(State.colors.primary || '#006341')}" oninput="setDashboardColor('primary', this.value)" style="width:42px;height:30px;padding:0;border:1px solid #ccc;border-radius:5px;cursor:pointer;">
                 </label>
-                <label style="display:flex;align-items:center;gap:6px;font-size:0.9rem;color:#444;">Accent
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.9rem;color:var(--wz-text);">Accent
                     <input type="color" id="colorAccent" value="${escapeHtml(State.colors.accent || '#f4b41a')}" oninput="setDashboardColor('accent', this.value)" style="width:42px;height:30px;padding:0;border:1px solid #ccc;border-radius:5px;cursor:pointer;">
                 </label>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="applyColorPreset('#006341','#f4b41a')"><i class="bi bi-arrow-counterclockwise"></i> COD green</button>
             </div>
-            <small style="color:#666;display:block;margin-top:6px;">Sets the header, buttons, and highlights on your dashboard. Watch the live preview update.</small>
+            <small style="color:var(--wz-muted);display:block;margin-top:6px;">Sets the header, buttons, and highlights on your dashboard. Watch the live preview update.</small>
+        </div>
+
+        <div class="form-group">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;color:var(--dark);">
+                <input type="checkbox" ${State.includePopOut !== false ? 'checked' : ''} onchange="State.includePopOut = this.checked; saveDraft();" style="width:18px;height:18px;accent-color:var(--primary);">
+                <span><i class="bi bi-arrows-fullscreen" style="margin-right:6px;color:var(--primary);"></i>Add a Pop-out button</span>
+            </label>
+            <small style="color:var(--wz-muted);display:block;margin-top:6px;margin-left:28px;">Puts a Pop out control in the dashboard header so users can open it full-screen (falls back to a new window if the form blocks full-screen).</small>
         </div>
 
         ${State.mode === 'forms' || State.mode === 'combined' ? `
@@ -265,7 +288,7 @@ function renderSetupStep() {
                    value="${escapeHtml(State.centralUrl)}"
                    oninput="State.centralUrl = this.value.replace(/\\/+$/, ''); saveDraft();"
                    onblur="this.value = normalizeUrl(this.value); State.centralUrl = this.value; saveDraft();">
-            <small style="color:#666;">Your Etrieve Central domain. <code>https://</code> is added automatically if omitted.</small>
+            <small style="color:var(--wz-muted);">Your Etrieve Central domain. <code>https://</code> is added automatically if omitted.</small>
         </div>` : ''}
 
         ${State.mode === 'content' || State.mode === 'combined' ? `
@@ -276,7 +299,7 @@ function renderSetupStep() {
                    value="${escapeHtml(State.contentUrl)}"
                    oninput="State.contentUrl = this.value.replace(/\\/+$/, ''); saveDraft();"
                    onblur="this.value = normalizeUrl(this.value); State.contentUrl = this.value; saveDraft();">
-            <small style="color:#666;">Your Etrieve Content domain. <code>https://</code> is added automatically if omitted.</small>
+            <small style="color:var(--wz-muted);">Your Etrieve Content domain. <code>https://</code> is added automatically if omitted.</small>
         </div>` : ''}
 
         <div id="techNameDisplay" style="background:#f0f7f4;border-radius:10px;padding:15px 20px;border:1px solid #c3e6cb;display:${State.dashboardTitle && !State.advancedMode ? 'block' : 'none'};">
@@ -295,7 +318,7 @@ function renderSetupStep() {
                            placeholder="e.g., FinAid_Dashboard"
                            value="${escapeHtml(State.sourceName)}"
                            oninput="State.sourceName = this.value.replace(/[^a-zA-Z0-9_]/g, '_'); saveDraft()">
-                    <small style="color:#666;">Technical name for Etrieve Central. Letters, numbers, and underscores only. This must match the source name you create in Admin &gt; Sources.</small>
+                    <small style="color:var(--wz-muted);">Technical name for Etrieve Central. Letters, numbers, and underscores only. This must match the source name you create in Admin &gt; Sources.</small>
                 </div>
             </div>
         ` : ''}
@@ -306,7 +329,7 @@ function renderSetupStep() {
                 <span>Advanced Mode</span>
             </label>
             <span class="badge-advanced">Power User</span>
-            <small style="display:block;color:#888;font-size:0.8rem;margin-top:4px;">Shows the SQL editor and technical setup details. Leave unchecked if you plan to send files to an admin.</small>
+            <small style="display:block;color:var(--wz-muted);font-size:0.8rem;margin-top:4px;">Shows the SQL editor and technical setup details. Leave unchecked if you plan to send files to an admin.</small>
         </div>
     `;
 }
@@ -539,12 +562,12 @@ function renderClaimsConfigStep() {
             <label><i class="bi bi-clock" style="margin-right:8px;color:var(--primary);"></i>Age Badge Thresholds (days)</label>
             <div style="display:flex;gap:20px;align-items:center;">
                 <div>
-                    <small style="color:#666;">Warning (yellow)</small>
+                    <small style="color:var(--wz-muted);">Warning (yellow)</small>
                     <input type="number" class="form-control" value="${escapeHtml(String(State.styleConfig.ageBadgeWarning))}"
                            oninput="State.styleConfig.ageBadgeWarning = parseInt(this.value) || 30; saveDraft();" style="width:80px;">
                 </div>
                 <div>
-                    <small style="color:#666;">Critical (red)</small>
+                    <small style="color:var(--wz-muted);">Critical (red)</small>
                     <input type="number" class="form-control" value="${escapeHtml(String(State.styleConfig.ageBadgeCritical))}"
                            oninput="State.styleConfig.ageBadgeCritical = parseInt(this.value) || 60; saveDraft();" style="width:80px;">
                 </div>
@@ -747,12 +770,12 @@ function renderCardsConfigStep() {
             return `
                 <div class="form-group" style="margin-top:15px;">
                     <label><i class="bi ${escapeHtml(info.icon)}" style="margin-right:8px;color:var(--primary);"></i>${escapeHtml(info.label)}
-                        <small style="color:#888;margin-left:8px;">${escapeHtml(info.desc)}</small></label>
+                        <small style="color:var(--wz-muted);margin-left:8px;">${escapeHtml(info.desc)}</small></label>
                     <div class="field-selection-grid">
                         <div class="field-item ${!State.styleConfig[configKey] ? 'selected' : ''}"
                              onclick="State.styleConfig['${escapeJSAttr(configKey)}'] = null; renderStep(); saveDraft();">
                             <input type="radio" name="${escapeHtml(configKey)}" ${!State.styleConfig[configKey] ? 'checked' : ''}>
-                            <span style="color:#999;">None</span>
+                            <span style="color:var(--wz-muted);">None</span>
                         </div>
                         ${fields.map(f => `
                             <div class="field-item ${State.styleConfig[configKey] === f.id ? 'selected' : ''}"
@@ -824,9 +847,12 @@ function renderAreaStep() {
             Documents in Etrieve are organized into folders. Select the folder that contains what you need.</p>
         </div>
 
-        <div class="field-grid" style="grid-template-columns: repeat(2, 1fr);">
-            ${areasHtml || '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:#666;"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:10px;"></i>No document folders found. Contact your Etrieve administrator to set up areas.</div>'}
+        ${pickerSearchBar(SimulatedData.areas.length, 'areaFilter', 'areaGrid', 'areaFilterEmpty', 'folders', 8)}
+
+        <div class="field-grid" id="areaGrid" style="grid-template-columns: repeat(2, 1fr);max-height:52vh;max-height:52dvh;overflow:auto;">
+            ${areasHtml || '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--wz-muted);"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:10px;"></i>No document folders found. Contact your Etrieve administrator to set up areas.</div>'}
         </div>
+        ${pickerEmptyState('areaFilterEmpty')}
 
         ${State.selectedArea ? `
             <div style="margin-top:20px;padding:15px 20px;background:rgba(var(--primary-rgb),0.08);border-radius:10px;display:flex;align-items:center;gap:10px;">
@@ -879,9 +905,12 @@ function renderDocTypesStep() {
             </button>
         </div>
 
-        <div class="field-grid">
-            ${docTypesHtml || '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:#666;"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:10px;"></i>No document types found in this folder. Try selecting a different folder.</div>'}
+        ${pickerSearchBar(docTypes.length, 'docTypeFilter', 'docTypeGrid', 'docTypeFilterEmpty', 'document types', 8)}
+
+        <div class="field-grid" id="docTypeGrid" style="max-height:48vh;max-height:48dvh;overflow:auto;">
+            ${docTypesHtml || '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--wz-muted);"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:10px;"></i>No document types found in this folder. Try selecting a different folder.</div>'}
         </div>
+        ${pickerEmptyState('docTypeFilterEmpty')}
     `;
 }
 
@@ -916,15 +945,21 @@ function renderTemplateStep() {
         </div>
     `).join('');
 
+    const templateCount = SimulatedData.formTemplates.length;
+    const searchBar = pickerSearchBar(templateCount, 'templateFilter', 'templateGrid', 'templateFilterEmpty', 'forms', 0);
+
     return `
         <div class="step-description">
             <p><i class="bi bi-ui-checks" style="color:var(--accent);margin-right:8px;"></i>
             Choose the form you want to track. You'll see all submissions in your dashboard.</p>
         </div>
 
-        <div class="field-grid" style="grid-template-columns: 1fr;">
-            ${templatesHtml || '<div style="text-align:center;padding:40px 20px;color:#666;"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:10px;"></i>No form templates available. Make sure forms are published in Etrieve Central.</div>'}
+        ${searchBar}
+
+        <div class="field-grid" id="templateGrid" style="grid-template-columns: 1fr;max-height:48vh;max-height:48dvh;overflow:auto;">
+            ${templatesHtml || '<div style="text-align:center;padding:40px 20px;color:var(--wz-muted);"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:10px;"></i>No form templates available. Make sure forms are published in Etrieve Central.</div>'}
         </div>
+        ${pickerEmptyState('templateFilterEmpty')}
 
         ${State.selectedTemplate ? `
             <div style="margin-top:20px;padding:15px 20px;background:rgba(var(--primary-rgb),0.08);border-radius:10px;display:flex;align-items:center;gap:10px;">
@@ -933,6 +968,60 @@ function renderTemplateStep() {
             </div>
         ` : ''}
     `;
+}
+
+// Client-side filter for a long picker list: hides rows in `gridId` whose text
+// doesn't contain the query typed in `inputId`, and toggles an optional empty-state.
+// DOM-based (no re-render) so the search box keeps focus while typing.
+function filterPickerList(inputId, gridId, emptyId) {
+    var input = document.getElementById(inputId);
+    var grid = document.getElementById(gridId);
+    if (!input || !grid) return;
+    if (window.State) { State.pickerQueries = State.pickerQueries || {}; State.pickerQueries[inputId] = { q: (input.value || ''), gridId: gridId, emptyId: emptyId }; }
+    var q = (input.value || '').trim().toLowerCase();
+    var shown = 0;
+    for (var i = 0; i < grid.children.length; i++) {
+        var row = grid.children[i];
+        var match = !q || (row.textContent || '').toLowerCase().indexOf(q) !== -1;
+        row.style.display = match ? '' : 'none';
+        if (match) shown++;
+    }
+    if (emptyId) {
+        var empty = document.getElementById(emptyId);
+        if (empty) empty.style.display = (q && shown === 0) ? 'block' : 'none';
+    }
+}
+
+// Reusable search box for a long picker list. Renders only when count > threshold.
+// Pre-fills from the remembered query so the filter survives multi-select re-renders.
+function pickerSearchBar(count, inputId, gridId, emptyId, noun, threshold) {
+    if (count <= (threshold || 0)) return '';
+    var pq = (window.State && State.pickerQueries && State.pickerQueries[inputId]) ? State.pickerQueries[inputId].q : '';
+    return '<div style="position:relative;margin-bottom:14px;">' +
+        '<i class="bi bi-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--wz-muted);pointer-events:none;"></i>' +
+        '<input type="text" id="' + inputId + '" class="form-control" autocomplete="off" value="' + escapeHtml(pq) + '" ' +
+            'placeholder="Search ' + count + ' ' + noun + '..." style="padding-left:40px;" ' +
+            'oninput="filterPickerList(\'' + inputId + '\',\'' + gridId + '\',\'' + emptyId + '\')" ' +
+            'onkeydown="if(event.key===\'Escape\'){this.value=\'\';filterPickerList(\'' + inputId + '\',\'' + gridId + '\',\'' + emptyId + '\');}">' +
+        '</div>';
+}
+
+function pickerEmptyState(emptyId) {
+    return '<div id="' + emptyId + '" style="display:none;text-align:center;padding:24px 20px;color:var(--wz-muted);">' +
+        '<i class="bi bi-search" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:.5;"></i>' +
+        'No matches for your search.</div>';
+}
+
+// After a step re-renders, re-apply any remembered picker filters (input value is
+// restored by pickerSearchBar; this hides the non-matching rows again).
+function reapplyPickerFilters() {
+    if (!window.State || !State.pickerQueries) return;
+    Object.keys(State.pickerQueries).forEach(function(inputId) {
+        var entry = State.pickerQueries[inputId];
+        if (entry && document.getElementById(inputId)) {
+            filterPickerList(inputId, entry.gridId, entry.emptyId);
+        }
+    });
 }
 
 function selectTemplate(id, keepSelections) {
@@ -996,19 +1085,22 @@ function renderContentFieldsStep() {
             <span class="selection-counter">
                 <i class="bi bi-check2-square"></i> ${selectedCount} columns selected
             </span>
-            <span style="font-size:0.75rem;color:#888;">
+            <span style="font-size:0.75rem;color:var(--wz-muted);">
                 <i class="bi bi-person" style="color:#7c3aed;"></i> Party
                 <i class="bi bi-calendar" style="color:#0d6efd;margin-left:8px;"></i> Date
                 <i class="bi bi-123" style="color:#198754;margin-left:8px;"></i> Number
             </span>
         </div>
 
-        <div class="field-grid">
-            ${fieldsHtml || '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#666;background:#f8f9fa;border-radius:8px;"><i class="bi bi-exclamation-circle" style="font-size:1.5rem;display:block;margin-bottom:10px;color:#ffc107;"></i>No fields found for this folder. Try going back and selecting a different folder.</div>'}
+        ${pickerSearchBar(fields.length, 'contentFieldFilter', 'contentFieldGrid', 'contentFieldFilterEmpty', 'fields', 8)}
+
+        <div class="field-grid" id="contentFieldGrid" style="max-height:44vh;max-height:44dvh;overflow:auto;">
+            ${fieldsHtml || '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--wz-muted);background:var(--wz-surface-2);border-radius:8px;"><i class="bi bi-exclamation-circle" style="font-size:1.5rem;display:block;margin-bottom:10px;color:#ffc107;"></i>No fields found for this folder. Try going back and selecting a different folder.</div>'}
         </div>
+        ${pickerEmptyState('contentFieldFilterEmpty')}
 
         ${selectedCount > 0 ? `
-            <h4 style="margin-top:25px;margin-bottom:10px;color:#555;">Your Columns:</h4>
+            <h4 style="margin-top:25px;margin-bottom:10px;color:var(--wz-muted);">Your Columns:</h4>
             <div class="selected-fields">
                 ${selectedTags}
             </div>
@@ -1027,7 +1119,7 @@ function renderFormFieldsStep() {
     // If we have saved selections but no field data yet, show loading state
     // (data is being fetched asynchronously from Etrieve)
     if (inputs.length === 0 && selectedCount > 0) {
-        return '<div style="text-align:center;padding:40px;"><i class="bi bi-hourglass-split" style="font-size:2rem;color:var(--accent);"></i><p style="margin-top:15px;color:#aaa;">Loading form fields...</p></div>';
+        return '<div style="text-align:center;padding:40px;"><i class="bi bi-hourglass-split" style="font-size:2rem;color:var(--accent);"></i><p style="margin-top:15px;color:var(--wz-muted);">Loading form fields...</p></div>';
     }
 
     // Add virtual "Current Workflow Step" field if template has workflow steps
@@ -1041,7 +1133,7 @@ function renderFormFieldsStep() {
             <input type="checkbox" ${stepSelected ? 'checked' : ''}>
             <i class="bi bi-signpost-split" style="color:var(--accent);"></i>
             <span class="field-name">Current Workflow Step</span>
-            <span style="font-size:0.7rem;color:#888;margin-left:auto;">auto-joined</span>
+            <span style="font-size:0.7rem;color:var(--wz-muted);margin-left:auto;">auto-joined</span>
         </div>`;
         var assigneeSelected = State.selectedInputIds.includes('__assignedTo__');
         virtualFieldHtml += `
@@ -1050,12 +1142,12 @@ function renderFormFieldsStep() {
             <input type="checkbox" ${assigneeSelected ? 'checked' : ''}>
             <i class="bi bi-person-badge" style="color:#17a2b8;"></i>
             <span class="field-name">Current Assignee</span>
-            <span style="font-size:0.7rem;color:#888;margin-left:auto;">auto-joined</span>
+            <span style="font-size:0.7rem;color:var(--wz-muted);margin-left:auto;">auto-joined</span>
         </div>`;
         if (assigneeSelected) {
             virtualFieldHtml += `
             <div style="padding:8px 12px;background:#f0f7fa;border-radius:6px;border-left:3px solid #17a2b8;">
-                <small style="color:#555;display:block;font-size:0.8rem;">Shows who currently has the task. The name is filled in for you automatically, no setup needed.</small>
+                <small style="color:var(--wz-muted);display:block;font-size:0.8rem;">Shows who currently has the task. The name is filled in for you automatically, no setup needed.</small>
             </div>`;
         }
     }
@@ -1084,9 +1176,12 @@ function renderFormFieldsStep() {
         </div>
 
         ${virtualFieldHtml ? '<div class="field-grid" style="margin-bottom:12px;">' + virtualFieldHtml + '</div><hr style="border:none;border-top:1px solid #eee;margin:0 0 12px;">' : ''}
-        <div class="field-grid">
-            ${inputsHtml || '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#666;background:#f8f9fa;border-radius:8px;"><i class="bi bi-exclamation-circle" style="font-size:1.5rem;display:block;margin-bottom:10px;color:#ffc107;"></i>No form fields found for this template. This form may not have any submitted data yet, or the template has no input fields.</div>'}
+        ${pickerSearchBar(inputs.length, 'formFieldFilter', 'formFieldGrid', 'formFieldFilterEmpty', 'fields', 8)}
+
+        <div class="field-grid" id="formFieldGrid" style="max-height:44vh;max-height:44dvh;overflow:auto;">
+            ${inputsHtml || '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--wz-muted);background:var(--wz-surface-2);border-radius:8px;"><i class="bi bi-exclamation-circle" style="font-size:1.5rem;display:block;margin-bottom:10px;color:#ffc107;"></i>No form fields found for this template. This form may not have any submitted data yet, or the template has no input fields.</div>'}
         </div>
+        ${pickerEmptyState('formFieldFilterEmpty')}
     `;
 }
 
@@ -1204,8 +1299,8 @@ function renderSwimlanesStep() {
     // Notes config panel (cross-cutting, available for any style)
     var notesEnabled = State.notesConfig && State.notesConfig.enabled;
     var notesPanelHtml = `
-    <div style="margin-bottom:20px;background:#f8f9fa;border-radius:8px;padding:15px 20px;border-left:3px solid #17a2b8;">
-        <h6 style="margin:0 0 10px;color:#333;"><i class="bi bi-pencil-square" style="color:#17a2b8;margin-right:6px;"></i>Optional Features</h6>
+    <div style="margin-bottom:20px;background:var(--wz-surface-2);border-radius:8px;padding:15px 20px;border-left:3px solid #17a2b8;">
+        <h6 style="margin:0 0 10px;color:var(--wz-text);"><i class="bi bi-pencil-square" style="color:#17a2b8;margin-right:6px;"></i>Optional Features</h6>
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
             <input type="checkbox" ${notesEnabled ? 'checked' : ''}
                    onchange="State.notesConfig.enabled = this.checked; saveDraft(); renderStep();">
@@ -1214,12 +1309,12 @@ function renderSwimlanesStep() {
         </label>
         ${notesEnabled ? `
         <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
-            <label style="font-size:0.8rem;color:#666;white-space:nowrap;">Column label:</label>
+            <label style="font-size:0.8rem;color:var(--wz-muted);white-space:nowrap;">Column label:</label>
             <input type="text" value="${escapeHtml(State.notesConfig.columnLabel || 'Notes')}"
                    oninput="State.notesConfig.columnLabel = this.value; saveDraft();"
                    style="padding:5px 10px;border:1px solid #ddd;border-radius:4px;width:180px;font-size:0.85rem;">
         </div>
-        <small style="color:#999;margin-top:6px;display:block;">Requires on-prem SQL Server tables via Hybrid Server. Schema SQL is generated automatically.</small>
+        <small style="color:var(--wz-muted);margin-top:6px;display:block;">Requires on-prem SQL Server tables via Hybrid Server. Schema SQL is generated automatically.</small>
         ` : ''}
     </div>`;
 
@@ -1662,7 +1757,7 @@ function updateFilterValues() {
                     data-notsaved="true"
                     style="width:100%;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:0.9rem;"
                     oninput="updateManualFilterValues(this.value)">
-                <small style="color:#888;margin-top:4px;display:block;">Separate multiple values with commas. These must match your data exactly.</small>
+                <small style="color:var(--wz-muted);margin-top:4px;display:block;">Separate multiple values with commas. These must match your data exactly.</small>
             </div>`;
     }
 
@@ -1888,34 +1983,34 @@ function renderSecurityConfigStep() {
             true confidentiality, filter by user or group in the source SQL.</p>
         </div>
 
-        <div style="background:#f8f9fa;border-radius:12px;padding:20px;margin:20px 0;">
+        <div style="background:var(--wz-surface-2);border-radius:12px;padding:20px;margin:20px 0;">
             <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:1rem;">
                 <input type="checkbox" ${sc.enabled ? 'checked' : ''}
                     onchange="toggleSecurityEnabled(this.checked)"
                     style="width:20px;height:20px;accent-color:var(--primary);">
                 <span><strong>Enable access control</strong></span>
             </label>
-            <p style="margin:8px 0 0 32px;color:#666;font-size:0.85rem;">
+            <p style="margin:8px 0 0 32px;color:var(--wz-muted);font-size:0.85rem;">
                 When disabled, all users with dashboard access see all data (current default behavior).
             </p>
         </div>
 
         <div id="securityDetails" style="display:${sc.enabled ? 'block' : 'none'};">
-            <div style="background:white;border:2px solid var(--primary);border-radius:12px;padding:20px;margin:20px 0;">
+            <div style="background:var(--wz-surface);border:2px solid var(--primary);border-radius:12px;padding:20px;margin:20px 0;">
                 <h5 style="color:var(--primary);margin-bottom:15px;"><i class="bi bi-person-badge"></i> Power User / Supervisor Group</h5>
-                <p style="color:#666;font-size:0.85rem;margin-bottom:12px;">
+                <p style="color:var(--wz-muted);font-size:0.85rem;margin-bottom:12px;">
                     Members of this group see <strong>all swimlanes</strong> and load the full unfiltered dataset.
                 </p>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div>
-                        <label style="font-size:0.8rem;color:#888;font-weight:600;text-transform:uppercase;">Group ID (GUID)</label>
+                        <label style="font-size:0.8rem;color:var(--wz-muted);font-weight:600;text-transform:uppercase;">Group ID (GUID)</label>
                         <input type="text" value="${escapeHtml(sc.powerGroupId || '')}"
                             placeholder="e.g. f8eab38d-e771-47dd-a112-13a09cd63e44"
                             oninput="State.securityConfig.powerGroupId = this.value; saveDraft()"
                             style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-family:Consolas,monospace;font-size:0.85rem;">
                     </div>
                     <div>
-                        <label style="font-size:0.8rem;color:#888;font-weight:600;text-transform:uppercase;">Display Name</label>
+                        <label style="font-size:0.8rem;color:var(--wz-muted);font-weight:600;text-transform:uppercase;">Display Name</label>
                         <input type="text" value="${escapeHtml(sc.powerGroupName || '')}"
                             placeholder="e.g. FA Supervisors"
                             oninput="State.securityConfig.powerGroupName = this.value; saveDraft()"
@@ -1924,9 +2019,9 @@ function renderSecurityConfigStep() {
                 </div>
             </div>
 
-            <div style="background:white;border:1px solid #e0e0e0;border-radius:12px;padding:20px;margin:20px 0;">
+            <div style="background:var(--wz-surface);border:1px solid var(--wz-border);border-radius:12px;padding:20px;margin:20px 0;">
                 <h5 style="color:var(--primary);margin-bottom:8px;"><i class="bi bi-diagram-3"></i> Per-Swimlane Group Assignments</h5>
-                <p style="color:#666;font-size:0.85rem;margin-bottom:15px;">
+                <p style="color:var(--wz-muted);font-size:0.85rem;margin-bottom:15px;">
                     Assign an Azure AD group to each swimlane. Users in that group see only their swimlane.
                     Leave blank for swimlanes that don't need restriction (visible to all).
                     Your Etrieve or IT admin can provide the group ID (GUID).
@@ -1934,15 +2029,15 @@ function renderSecurityConfigStep() {
                 ${swimlanes.length > 0 ? `
                     <table style="width:100%;border-collapse:collapse;">
                         <thead>
-                            <tr style="background:#f8f9fa;">
-                                <th style="padding:10px 15px;text-align:left;font-size:0.8rem;text-transform:uppercase;color:#888;border-bottom:2px solid #e0e0e0;">Swimlane</th>
-                                <th style="padding:10px 15px;text-align:left;font-size:0.8rem;text-transform:uppercase;color:#888;border-bottom:2px solid #e0e0e0;">Group ID</th>
-                                <th style="padding:10px 15px;text-align:left;font-size:0.8rem;text-transform:uppercase;color:#888;border-bottom:2px solid #e0e0e0;">Group Name</th>
+                            <tr style="background:var(--wz-surface-2);">
+                                <th style="padding:10px 15px;text-align:left;font-size:0.8rem;text-transform:uppercase;color:var(--wz-muted);border-bottom:2px solid var(--wz-border);">Swimlane</th>
+                                <th style="padding:10px 15px;text-align:left;font-size:0.8rem;text-transform:uppercase;color:var(--wz-muted);border-bottom:2px solid var(--wz-border);">Group ID</th>
+                                <th style="padding:10px 15px;text-align:left;font-size:0.8rem;text-transform:uppercase;color:var(--wz-muted);border-bottom:2px solid var(--wz-border);">Group Name</th>
                             </tr>
                         </thead>
                         <tbody>${swimlaneGroupRows}</tbody>
                     </table>
-                ` : '<p style="color:#999;text-align:center;padding:20px;">Define swimlanes in the previous step first.</p>'}
+                ` : '<p style="color:var(--wz-muted);text-align:center;padding:20px;">Define swimlanes in the previous step first.</p>'}
             </div>
 
             <div style="background:rgba(23,162,184,0.08);border-radius:10px;padding:16px 20px;margin:20px 0;font-size:0.85rem;line-height:1.7;">
@@ -2043,7 +2138,7 @@ function renderPreflightPanel() {
         ? '<h4 style="color:#B45309;margin-bottom:10px;"><i class="bi bi-clipboard-check"></i> Pre-flight check: ' + warns.length + ' thing' + (warns.length === 1 ? '' : 's') + ' to review</h4>'
         : '<h4 style="color:var(--primary);margin-bottom:10px;"><i class="bi bi-clipboard-check"></i> Pre-flight notes</h4>';
     return '<div style="background:' + bg + ';border:1px solid ' + bd + ';border-radius:12px;padding:16px 20px;margin:20px 0;">' + head + rowsHtml +
-        '<div style="font-size:0.8rem;color:#888;margin-top:8px;">These are advisory. You can still download, or go back to adjust.</div></div>';
+        '<div style="font-size:0.8rem;color:var(--wz-muted);margin-top:8px;">These are advisory. You can still download, or go back to adjust.</div></div>';
 }
 function renderGenerateStep() {
     const sql = State.customSQL || generateSQL();
@@ -2091,7 +2186,7 @@ function renderGenerateStep() {
             summary.push(`<strong>Secured Swimlanes:</strong> ${securedLanes} of ${State.swimlanes.length}`);
         }
     } else {
-        summary.push(`<strong>Access Control:</strong> <span style="color:#888;">Disabled (all users see all data)</span>`);
+        summary.push(`<strong>Access Control:</strong> <span style="color:var(--wz-muted);">Disabled (all users see all data)</span>`);
     }
 
     if (State.advancedMode) {
@@ -2102,7 +2197,7 @@ function renderGenerateStep() {
                 Your dashboard is ready! Review and customize the SQL below.</p>
             </div>
 
-            <div style="background:#f8f9fa;border-radius:12px;padding:20px;margin:20px 0;">
+            <div style="background:var(--wz-surface-2);border-radius:12px;padding:20px;margin:20px 0;">
                 <h4 style="margin-bottom:15px;color:var(--primary);"><i class="bi bi-clipboard-check"></i> Summary</h4>
                 <div style="line-height:2;">
                     ${summary.map(s => `<div>${s}</div>`).join('')}
@@ -2132,7 +2227,7 @@ function renderGenerateStep() {
                 <textarea class="sql-editor" id="sqlEditor"
                           oninput="State.customSQL = this.value; saveDraft()"
                           spellcheck="false">${escapeHtml(sql)}</textarea>
-                <small style="color:#666;display:block;margin-top:10px;">
+                <small style="color:var(--wz-muted);display:block;margin-top:10px;">
                     <i class="bi bi-info-circle"></i> Edit the SQL directly. Changes will be included in your download.
                 </small>
             </div>
@@ -2169,7 +2264,7 @@ function renderGenerateStep() {
             Your dashboard is ready! Review the summary below and download your files.</p>
         </div>
 
-        <div style="background:#f8f9fa;border-radius:12px;padding:20px;margin:20px 0;">
+        <div style="background:var(--wz-surface-2);border-radius:12px;padding:20px;margin:20px 0;">
             <h4 style="margin-bottom:15px;color:var(--primary);"><i class="bi bi-clipboard-check"></i> Summary</h4>
             <div style="line-height:2;">
                 ${summary.map(s => `<div>${s}</div>`).join('')}
@@ -2232,54 +2327,52 @@ function showDownloadModal(files) {
     }).join('');
 
     // Build initial content
-    var initialContent = '<pre style="margin:0;padding:20px;background:#1e1e1e;color:#d4d4d4;font-family:Consolas,monospace;font-size:0.85rem;overflow:auto;max-height:100%;">' + escapeHtml(files[firstFile]) + '</pre>';
+    var initialContent = '<pre style="margin:0;padding:20px;background:#1e1e1e;color:#d4d4d4;font-family:Consolas,monospace;font-size:0.85rem;overflow:auto;">' + escapeHtml(files[firstFile]) + '</pre>';
 
     modal.innerHTML =
-        '<div class="draft-modal-content" style="max-width:850px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;">' +
-            // Header with instructions
-            '<div style="padding:20px 30px 16px;border-bottom:1px solid #e9ecef;flex-shrink:0;">' +
+        '<div class="draft-modal-content" style="max-width:850px;width:100%;max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px);overflow:hidden;display:flex;flex-direction:column;padding:0;">' +
+            // Header with instructions (shrinks + scrolls on short screens so the buttons never get pushed off)
+            '<div style="padding:20px 30px 16px;border-bottom:1px solid var(--wz-border);flex-shrink:1;min-height:0;overflow:auto;">' +
                 '<h3 style="margin:0 0 10px;display:flex;align-items:center;gap:10px;">' +
                     '<i class="bi bi-files" style="color:var(--primary);"></i>' +
                     'Your Dashboard Files' +
                 '</h3>' +
                 '<div style="background:#e8f4fd;border:1px solid #b6d4fe;border-radius:8px;padding:12px 16px;font-size:0.9rem;line-height:1.6;">' +
-                    '<strong><i class="bi bi-info-circle"></i> How to save each file:</strong>' +
-                    '<ol style="margin:6px 0 0;padding-left:22px;">' +
-                        '<li>Click <strong>Copy</strong> to copy the file contents to your clipboard</li>' +
-                        '<li>Open <strong>Notepad</strong> (Windows) or <strong>TextEdit</strong> (Mac)</li>' +
-                        '<li>Paste with <strong>Ctrl+V</strong> (or Cmd+V on Mac)</li>' +
-                        '<li>Save with <strong>File &gt; Save As</strong> using the filename shown above the code</li>' +
-                    '</ol>' +
-                    '<div style="margin-top:6px;color:#664d03;"><i class="bi bi-exclamation-triangle"></i> Repeat for each tab. You need all <strong>' + fileCount + ' files</strong>.</div>' +
+                    '<strong><i class="bi bi-info-circle"></i> Easiest way:</strong> click <strong>Save all ' + fileCount + ' files</strong> to download them together (your browser may ask permission to download multiple files, click Allow).' +
+                    '<div style="margin-top:6px;">Prefer one at a time? Use <strong>Save File</strong> on the current tab. No download prompt at all? Use <strong>Copy to Clipboard</strong>, then paste into Notepad (Windows) or TextEdit (Mac) and save with the filename shown.</div>' +
+                    '<div style="margin-top:6px;color:#664d03;"><i class="bi bi-exclamation-triangle"></i> You need all <strong>' + fileCount + ' files</strong>.</div>' +
                 '</div>' +
             '</div>' +
             // File tabs
-            '<div class="file-tabs-bar" style="display:flex;border-bottom:1px solid #e9ecef;overflow-x:auto;flex-shrink:0;flex-wrap:wrap;gap:0;">' +
+            '<div class="file-tabs-bar" style="display:flex;border-bottom:1px solid var(--wz-border);overflow-x:auto;flex-shrink:0;flex-wrap:nowrap;gap:0;">' +
                 tabsHtml +
             '</div>' +
             // Filename banner + content
-            '<div style="background:#f0f0f0;padding:8px 20px;border-bottom:1px solid #e0e0e0;flex-shrink:0;display:flex;align-items:center;gap:8px;">' +
-                '<i class="bi bi-file-earmark-code" style="color:#6c757d;"></i>' +
+            '<div style="background:#f0f0f0;padding:8px 20px;border-bottom:1px solid var(--wz-border);flex-shrink:0;display:flex;align-items:center;gap:8px;">' +
+                '<i class="bi bi-file-earmark-code" style="color:var(--wz-muted);"></i>' +
                 '<span style="font-weight:600;font-size:0.9rem;">Save as:</span>' +
-                '<code id="currentFilename" style="background:#fff;padding:3px 10px;border-radius:4px;font-size:0.9rem;font-weight:700;color:var(--primary);border:1px solid #dee2e6;">' + escapeHtml(firstFile) + '</code>' +
+                '<code id="currentFilename" style="background:var(--wz-surface);padding:3px 10px;border-radius:4px;font-size:0.9rem;font-weight:700;color:var(--primary);border:1px solid var(--wz-border);">' + escapeHtml(firstFile) + '</code>' +
             '</div>' +
             '<div style="flex:1;min-height:0;overflow:auto;padding:0;">' +
                 '<div id="fileContentArea">' + initialContent + '</div>' +
             '</div>' +
             // Footer with copy + progress
-            '<div style="padding:12px 25px;border-top:1px solid #e9ecef;display:flex;gap:12px;align-items:center;background:#f8f9fa;flex-shrink:0;flex-wrap:wrap;">' +
-                '<span id="fileIndicator" style="font-size:0.85rem;color:#666;">File 1 of ' + fileCount + '</span>' +
-                '<span id="copyProgress" style="font-size:0.85rem;color:#666;"> -- <strong>0 of ' + fileCount + '</strong> copied</span>' +
+            '<div style="padding:12px 25px;border-top:1px solid var(--wz-border);display:flex;gap:12px;align-items:center;background:var(--wz-surface-2);flex-shrink:0;flex-wrap:wrap;">' +
+                '<span id="fileIndicator" style="font-size:0.85rem;color:var(--wz-muted);">File 1 of ' + fileCount + '</span>' +
+                '<span id="copyProgress" style="font-size:0.85rem;color:var(--wz-muted);"> -- <strong>0 of ' + fileCount + '</strong> copied</span>' +
                 '<span style="flex:1;"></span>' +
-                '<button class="btn btn-secondary" id="saveFileBtn" title="Download this file directly">' +
+                '<button class="btn btn-secondary" id="copyFileBtn">' +
+                    '<i class="bi bi-clipboard"></i> Copy to Clipboard' +
+                '</button>' +
+                '<button class="btn btn-secondary" id="saveFileBtn" title="Download just this file">' +
                     '<i class="bi bi-download"></i> Save File' +
                 '</button>' +
-                '<button class="btn btn-primary" id="copyFileBtn">' +
-                    '<i class="bi bi-clipboard"></i> Copy to Clipboard' +
+                '<button class="btn btn-primary" id="saveAllBtn" title="Download all files at once">' +
+                    '<i class="bi bi-download"></i> Save all ' + fileCount + ' files' +
                 '</button>' +
             '</div>' +
             // Done bar (separate from action buttons for clarity)
-            '<div style="padding:10px 25px;border-top:1px solid #e9ecef;display:flex;justify-content:flex-end;align-items:center;background:#f1f3f5;flex-shrink:0;">' +
+            '<div style="padding:10px 25px;border-top:1px solid var(--wz-border);display:flex;justify-content:flex-end;align-items:center;background:#f1f3f5;flex-shrink:0;">' +
                 '<button class="btn btn-secondary" id="doneBtn" style="min-width:100px;">' +
                     '<i class="bi bi-x-lg"></i> Close' +
                 '</button>' +
@@ -2311,6 +2404,12 @@ function showDownloadModal(files) {
     modal.querySelector('#saveFileBtn').addEventListener('click', function(e) {
         e.stopPropagation();
         saveCurrentFile();
+    });
+
+    // Save-all button handler (download every file, staggered so the browser doesn't block them)
+    modal.querySelector('#saveAllBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        saveAllFiles();
     });
 
     // Done button handler -- warn if not all files copied/saved
@@ -2360,7 +2459,7 @@ function showFileContent(filename) {
     // Update content
     var contentArea = document.getElementById('fileContentArea');
     if (contentArea) {
-        contentArea.innerHTML = '<pre style="margin:0;padding:20px;background:#1e1e1e;color:#d4d4d4;font-family:Consolas,monospace;font-size:0.85rem;overflow:auto;max-height:100%;">' + escapeHtml(files[filename]) + '</pre>';
+        contentArea.innerHTML = '<pre style="margin:0;padding:20px;background:#1e1e1e;color:#d4d4d4;font-family:Consolas,monospace;font-size:0.85rem;overflow:auto;">' + escapeHtml(files[filename]) + '</pre>';
     }
 
     // Update filename banner
@@ -2449,7 +2548,47 @@ function saveCurrentFile() {
     }
 }
 
-function markFileCopied(filename) {
+function saveAllFiles() {
+    // Download every file in one go, staggered so the browser doesn't block the batch.
+    var files = window._downloadFiles;
+    if (!files) return;
+    var names = Object.keys(files);
+    var btn = document.getElementById('saveAllBtn');
+    var origHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...'; }
+    var i = 0, ok = 0, failed = 0;
+    function next() {
+        if (i >= names.length) {
+            if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+            if (failed === 0) {
+                showToast('Saving all ' + ok + ' files to your Downloads folder.', 'success');
+            } else {
+                showToast('Saved ' + ok + ' files; ' + failed + ' could not download. Use Copy for those.', 'warning');
+            }
+            return;
+        }
+        var filename = names[i++];
+        try {
+            var blob = new Blob([files[filename]], { type: 'text/plain;charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            markFileCopied(filename, true); // skip per-file tab auto-advance during a bulk save
+            ok++;
+        } catch (err) {
+            failed++;
+        }
+        setTimeout(next, 200);
+    }
+    next();
+}
+
+function markFileCopied(filename, skipAdvance) {
     // Track this file as copied/saved
     if (!window._copiedFiles) window._copiedFiles = {};
     window._copiedFiles[filename] = true;
@@ -2476,7 +2615,7 @@ function markFileCopied(filename) {
     }
 
     // Auto-advance to next uncopied tab after a short delay
-    if (copied < total) {
+    if (!skipAdvance && copied < total) {
         var fileKeys = Object.keys(window._downloadFiles);
         var nextFile = null;
         for (var i = 0; i < fileKeys.length; i++) {

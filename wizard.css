@@ -162,7 +162,7 @@ body {
     flex-direction: column;
     align-items: center;
     cursor: pointer;
-    opacity: 0.5;
+    opacity: 0.8;
     transition: opacity 0.3s;
 }
 
@@ -178,7 +178,7 @@ body {
     justify-content: center;
     margin-bottom: 8px;
     font-size: 0.9rem;
-    color: #666;
+    color: var(--wz-muted);
     transition: background 0.3s ease, color 0.3s ease;
 }
 
@@ -194,7 +194,7 @@ body {
 
 .step-label {
     font-size: 0.75rem;
-    color: #666;
+    color: var(--wz-text);
     text-align: center;
 }
 
@@ -307,10 +307,13 @@ body {
     bottom: 0;
     background: rgba(0,0,0,0.8);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     z-index: 10000;
     padding: 40px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     animation: fadeIn 0.3s ease;
 }
 
@@ -320,11 +323,13 @@ body {
     width: 100%;
     max-width: 1000px;
     max-height: 90vh;
+    max-height: 90dvh;
     overflow: hidden;
     box-shadow: 0 25px 80px rgba(0,0,0,0.5);
     animation: slideUp 0.3s ease;
     display: flex;
     flex-direction: column;
+    margin: auto;
 }
 
 .preview-modal .preview-header {
@@ -625,7 +630,7 @@ body {
     background: white;
 }
 
-/* Per-card color previews — subtle tinted borders + backgrounds on idle */
+/* Per-card color previews - subtle tinted borders + backgrounds on idle */
 .mode-card.content-card {
     border-color: rgba(37,99,235,0.2);
     background: linear-gradient(135deg, rgba(37,99,235,0.02), rgba(37,99,235,0.05));
@@ -1768,9 +1773,13 @@ small {
     bottom: 0;
     background: rgba(0,0,0,0.6);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     z-index: 9999;
+    padding: 24px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     animation: fadeIn 0.3s ease;
 }
 
@@ -1788,6 +1797,8 @@ small {
     text-align: center;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     animation: slideUp 0.3s ease;
+    margin: auto;
+    box-sizing: border-box;
 }
 
 @keyframes slideUp {
@@ -2019,9 +2030,13 @@ small {
     bottom: 0;
     background: rgba(0,0,0,0.5);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     z-index: 10000;
+    padding: 24px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 .filter-modal-content {
@@ -2030,9 +2045,12 @@ small {
     width: 90%;
     max-width: 500px;
     max-height: 80vh;
+    max-height: 80dvh;
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     animation: slideUp 0.3s ease;
+    margin: auto;
+    box-sizing: border-box;
 }
 
 .filter-modal-header {
@@ -2682,3 +2700,37 @@ small {
     cursor: pointer;
 }
 .setup-guide-hint a:hover { color: var(--primary-dark); }
+
+/* ============================================================
+   Dark mode + theming (appended; light values keep the current look,
+   only the dark values flip). Auto-follows the OS via prefers-color-scheme;
+   a data-theme attribute on <html> forces a mode. Preview panel is left
+   as-is on purpose (it is a mini device-screen mock).
+   ============================================================ */
+:root { --wz-bg:#eef1f4; --wz-surface:#ffffff; --wz-surface-2:#f8f9fa; --wz-surface-3:#f0f2f5; --wz-text:#2b3440; --wz-muted:#525b66; --wz-border:#e2e6ea; --wz-input:#ffffff; --wz-input-border:#dee2e6; color-scheme:light dark; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme=light]) { --wz-bg:#0f141a; --wz-surface:#1a2029; --wz-surface-2:#212a34; --wz-surface-3:#2a3540; --wz-text:#eef2f5; --wz-muted:#b6c0ca; --wz-border:#313c48; --wz-input:#212a34; --wz-input-border:#3a4653; --dark:#eef2f5; } }
+:root[data-theme=dark] { --wz-bg:#0f141a; --wz-surface:#1a2029; --wz-surface-2:#212a34; --wz-surface-3:#2a3540; --wz-text:#eef2f5; --wz-muted:#b6c0ca; --wz-border:#313c48; --wz-input:#212a34; --wz-input-border:#3a4653; --dark:#eef2f5; }
+body { background: var(--wz-bg); color: var(--wz-text); }
+.progress-section, .wizard-card, .mode-card, .style-select-card, .action-preset, .dropdown-list, .editor-toolbar button, .draft-modal-content, .filter-modal-content, .filter-quick-guide, .setup-guide, .swimlane-config { background: var(--wz-surface); color: var(--wz-text); }
+.card-footer, .step-description, .writeback-schema-section, .action-config-section, .committee-member-row, .swimlane-item, .swimlane-header, .advanced-toggle, .draft-preview, .field-item, .filter-modal-header, .filter-modal-footer, .filter-guide-example, .setup-guide .source-block, .progress-bar-container, .step-dot, .selected-fields { background: var(--wz-surface-2); }
+.dropdown-item { background: var(--wz-surface); color: var(--wz-text); }
+.dropdown-item:hover, .field-item:hover, .action-preset:hover, .editor-toolbar button:hover { background: var(--wz-surface-3); }
+.card-body, .draft-preview, .draft-preview div, .style-select-name, .swimlane-name, .field-name, .schema-header, .setup-guide, .setup-guide .source-block h5, .mode-card h4 { color: var(--wz-text); }
+.mode-card p, .advanced-toggle label, .draft-modal-content p, .guide-subtitle, .style-select-desc, .style-select-best, .style-category-label, .step-description p, .help-text, .step-label, small, .field-id, .empty-state, .no-filters, .filter-label, .setup-guide-hint, .setup-guide .source-block .source-keys { color: var(--wz-muted); }
+.form-control, .advanced-input, .dropdown-search, .dropdown-search input, .swimlane-item input, .swimlane-header .swimlane-name, .alpha-range-input, .filter-modal-body select { background: var(--wz-input); color: var(--wz-text); border-color: var(--wz-input-border); }
+.form-control::placeholder { color: var(--wz-muted); }
+.mode-card, .style-select-card, .field-item, .form-control, .advanced-input, .swimlane-config, .swimlane-item, .dropdown-list, .card-footer, .selected-fields, .writeback-schema-section, .action-config-section, .filter-modal-content { border-color: var(--wz-border); }
+.setup-guide code { background: var(--wz-surface-3); color: var(--wz-text); }
+  .btn-secondary { background: var(--wz-surface-3); }
+  .btn-secondary:hover { background: var(--wz-border); }
+  .guide-tip { color: #664d03; }
+  #downloadModal .draft-modal-content { background: #ffffff; color: #333333; }
+  /* The live preview is a fixed light "device screen" mock. Pin it to light values
+     in both themes so its text never inherits dark-mode light text onto light chrome. */
+  .preview-panel { --wz-text:#2b3440; --wz-muted:#525b66; --wz-surface:#ffffff; --wz-surface-2:#f8f9fa; --wz-surface-3:#f0f2f5; --wz-border:#e2e6ea; color:#2b3440; }
+  /* Step-content inline colors were refactored to var(--wz-*) on 2026-07-24, so
+     neutral text themes on its own and no !important overrides are needed. This
+     also lets semantic inline colors (danger red, success green on a light tint)
+     keep their meaning in dark mode instead of being force-muted. */
+.theme-toggle-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color:#fff; padding:8px 12px; border-radius:6px; cursor:pointer; font-size:0.9rem; display:inline-flex; align-items:center; gap:6px; transition: background 0.2s; }
+.theme-toggle-btn:hover { background: rgba(255,255,255,0.3); }

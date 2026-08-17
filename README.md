@@ -2,10 +2,23 @@
 
 A wizard that builds dashboards for Softdocs Etrieve. No coding required. Pick a style, point it at your data, and download a ready-to-use dashboard.
 
-## What's New in v4.4.1
+## What's New in v4.6.1
 
-- **Fixed: the View button hung on items still in workflow.** Form Tracker dashboards pointed every View link at the archive renderer (`packageId` + `focusMode=true`). That route only resolves once an item's workflow has ended, so clicking View on anything still sitting in someone's queue spun forever. Because a new dashboard is mostly in-flight items, most View clicks hung. The generated SQL now picks the route per row: an item with an active task gets `taskId` + `itemId`, the pattern that loads the live form in the workflow inbox, and an item with no active task keeps `packageId` + `itemId` + `focusMode=true`.
+- **Fixed: View links got `/central` twice.** The setup step asks for your Etrieve Central URL, and the obvious thing to paste is what your address bar shows, which ends in `/central`. The generated View link already starts with `/central/submissions`, so the two joined into `https://yoursite.etrieve.cloud/central/central/submissions?taskId=...`. Central's router never resolves that, so View spun forever even with the correct v4.6 query. The setup step now reduces both URLs to the bare domain no matter what you paste, and the generated dashboard strips a stray `/central` at runtime as well. Fix for an existing dashboard is one line, under [Something Not Working?](#something-not-working).
+
+## What's New in v4.6
+
+- **Fixed: the View button hung on items still in workflow.** Form Tracker dashboards pointed every View link at the archive renderer (`packageId` + `focusMode=true`). That route only resolves once an item's workflow has ended, so clicking View on anything still sitting in someone's queue spun forever. Because a new dashboard is mostly in-flight items, most View clicks hung. The generated SQL now picks the route per row: an item with an active task gets `taskId` + `itemId`, the pattern that loads the live form in the workflow inbox, and an item with no active task keeps `packageId` + `itemId` + `focusMode=true`. Shipped here first as v4.4.1.
 - **Already built a Form Tracker dashboard? Re-generate its source query.** Only the query changes. The generated dashboard files are unaffected, so leave your dashboard form alone. Steps are under [Something Not Working?](#something-not-working).
+
+## What's New in v4.5
+
+- **Dark mode** -- The builder and the dashboards it generates both follow a light / dark theme, with a toggle in the builder header that applies live. Render functions read theme variables instead of hardcoded colors, so a dashboard looks right in either mode.
+- **Pop-out button** -- Generated dashboards can include an optional full-screen button, useful when an Etrieve form iframe is too small for a wide table.
+- **README and SQL generated as `.html`** -- The finish step emits them in a form Etrieve will accept as an uploaded file, so the setup notes can live on the form beside the dashboard.
+- **Save all files at once** -- One button in the download popup instead of saving each file individually. The popup also scales to any screen size now.
+- **Search in the form picker** -- A search box on the "Choose a Form" list, which matters once a tenant has hundreds of templates.
+- **System font, responsive layout, favicon** -- General polish pass on the builder shell.
 
 ## What's New in v4.4
 
@@ -309,10 +322,16 @@ Pick one, walk through the wizard, and download your finished dashboard. Upload 
 * **403 / NotAuthorized errors** -- Your users need **Get** on each source's **Privileges** tab, and the form's **Connect** tab must have **Get** checked for the source. Also confirm each source's **Connection** points at your Etrieve Content / Central Forms database (not Etrieve Security or another connection).
 * **Source names don't match** -- If you named your sources differently, update the names in `configuration.js` to match.
 * **Wizard won't save in the form editor** -- Make sure you're using the latest files from this repo. Older versions used JavaScript syntax that Etrieve's editor doesn't accept.
-* **View button spins forever** -- Fixed in v4.4.1. Dashboards generated before that put the archive-renderer link (`packageId` + `focusMode=true`) on every row, and that route only resolves once an item's workflow has ended. To confirm that is what you have, click View and read the address of the tab it opens: `packageId` on an item still sitting in someone's queue is the bug. To fix an existing dashboard:
+* **View button spins forever and the address has `/central/central/`** -- Fixed in v4.6.1. Your `centralUrl` has a path on it. Click View, read the address of the tab it opens, and if `central` appears twice this is it. One-line fix, no re-generating:
+  1. Admin Settings > Forms > your dashboard form > Files, and open `configuration.js`.
+  2. Find `centralUrl:` and cut it back to the bare domain, so `https://yoursite.etrieve.cloud/central` becomes `https://yoursite.etrieve.cloud`. Leave everything else alone.
+  3. Save, then hard-refresh the dashboard with Ctrl+F5.
+
+  The source query does not change, and neither does anything else you built. To stop it happening on your next dashboard, re-upload `wizard-templates.js`, `wizard-generators.js` and `wizard-demo.js` to your wizard form and hard-refresh until the footer reads v4.6.1.
+* **View button spins forever** -- Fixed in v4.6 (and v4.4.1). Dashboards generated before that put the archive-renderer link (`packageId` + `focusMode=true`) on every row, and that route only resolves once an item's workflow has ended. To confirm that is what you have, click View and read the address of the tab it opens: `packageId` on an item still sitting in someone's queue is the bug. To fix an existing dashboard:
   1. Pull the latest files from this repo.
   2. Re-upload `wizard-sql.js` and `wizard-demo.js` to your wizard form (Admin Settings > Forms > your wizard form > Files). The other files are unchanged.
-  3. Open the wizard form and hard-refresh, Ctrl+F5, so Etrieve serves the new JavaScript instead of the cached copy. The footer should read v4.4.1.
+  3. Open the wizard form and hard-refresh, Ctrl+F5, so Etrieve serves the new JavaScript instead of the cached copy. The footer should read v4.6 or later.
   4. Re-open your build: **Import** the `.json` you exported from the finish step, or walk the steps again with the same answers.
   5. On the finish step, copy the generated SQL.
   6. Go to Admin Settings > Sources, open the source feeding your dashboard, paste the new query over the old one, and save.

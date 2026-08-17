@@ -297,6 +297,7 @@ function generateFormsSQL() {
     // A brand-new dashboard is mostly in-flight rows, so that reads as "View spins".
     // Do NOT "simplify" this back to pd.Url: pd is the LatestPackage CTE, which
     // projects only SourceID/PackageID/rn, and Url is not in the GROUP BY either.
+    // That was tried in the public repo (a9dbe8c, 2026-03-17) and cannot run.
     sql += ',\n' +
         '   ' + _Q.CS + ' ' + _Q.WN + ' tq.TaskQueueID ' + _Q.IS + ' ' + _Q.NL + '\n' +
         "        " + _Q.TN + " '/central/submissions?packageId=' + " + _Q.CT + '(pd.PackageID ' + _Q.AS + ' ' + _Q.VC + '(50))\n' +
