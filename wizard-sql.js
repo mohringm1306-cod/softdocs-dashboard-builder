@@ -242,9 +242,18 @@ function generateFormsSQL() {
         '),\n' +
         'ActiveTask ' + _Q.AS + ' (\n' +
         '   ' + _Q.SL + ' tq.*,\n' +
-        '      ' + _Q.RN + '() ' + _Q.OV + ' (' + _Q.PB + ' tq.PackageId ' + _Q.OB + ' tq.TaskQueueID ' + _Q.DS + ') ' + _Q.AS + ' rn\n' +
+        '      ' + _Q.RN + '() ' + _Q.OV + ' (' + _Q.PB + ' tq.PackageId\n' +
+        '         ' + _Q.OB + ' ' + _Q.CS + ' ' + _Q.WN + ' tq.[Status] = 3 ' + _Q.TN + ' 0 ' + _Q.EL + ' 1 ' + _Q.EN + ',\n' +
+        '                  tq.LastUpdateDate ' + _Q.DS + ') ' + _Q.AS + ' rn\n' +
         '   ' + _Q.FR + ' reporting.central_flow_TaskQueue tq\n' +
+        '   ' + _Q.WH + ' tq.[Status] ' + _Q.NI + ' (7, 8)\n' +
         ')\n' +
+        '-- NOTE: TaskQueue KEEPS closed task rows (3 = open, 7 / 8 = closed, 9999 = error),\n' +
+        '-- so ActiveTask has to exclude the closed ones and rank open ahead of errored.\n' +
+        '-- Ranking by TaskQueueID, a GUID, picks an arbitrary row out of the package\n' +
+        '-- history: a finished task then reads as In Progress and its dead taskId lands in\n' +
+        '-- the View link, where Central spins forever because the SPA resolves it through\n' +
+        '-- /flow/api/user-dashboard/packages?taskId=, which only returns OPEN tasks.\n' +
         '-- NOTE: LatestPackage + ActiveTask collapse each form to its most recent package and\n' +
         '-- current task, so a resubmitted form or a parallel / multi-signer step shows as ONE\n' +
         '-- row, not one row per package or per active task.\n' +
@@ -287,24 +296,25 @@ function generateFormsSQL() {
         sql += ',\n   actor.[Name] ' + _Q.AS + ' AssignedTo';
     }
 
-    // View URL. There are TWO routes and they are not interchangeable:
-    //   ACTIVE (still has a TaskQueue row) -> taskId + itemId, NO focusMode.
-    //     This is the only pattern that loads the live form in the workflow inbox.
-    //   ARCHIVED (no TaskQueue row)        -> packageId + itemId + focusMode=true,
-    //     the view-only archive renderer.
-    // Emitting the archive route for an in-flight row makes the View button hang
-    // (the archive renderer never resolves a package that still has an active task).
-    // A brand-new dashboard is mostly in-flight rows, so that reads as "View spins".
-    // Do NOT "simplify" this back to pd.Url: pd is the LatestPackage CTE, which
+    // View URL. There are TWO routes and they are not interchangeable, and the route is
+    // chosen by the task's Status, NOT by whether a TaskQueue row exists:
+    //   OPEN task (Status 3)  -> taskId + itemId, NO focusMode. Verified live 2026-08-18:
+    //     this is what Central itself puts in the address bar for an item still in a queue.
+    //   anything else         -> packageId + itemId + focusMode=true, the archive renderer.
+    // A CLOSED task's GUID in the taskId slot hangs on a spinner forever (verified against
+    // a real closed COD task, 2026-08-18): the SPA calls
+    // /flow/api/user-dashboard/packages?taskId= and that endpoint only resolves open tasks.
+    // A garbage GUID is different: that one errors out visibly instead of hanging.
+    // Do NOT 'simplify' this back to pd.Url: pd is the LatestPackage CTE, which
     // projects only SourceID/PackageID/rn, and Url is not in the GROUP BY either.
     // That was tried in the public repo (a9dbe8c, 2026-03-17) and cannot run.
     sql += ',\n' +
-        '   ' + _Q.CS + ' ' + _Q.WN + ' tq.TaskQueueID ' + _Q.IS + ' ' + _Q.NL + '\n' +
-        "        " + _Q.TN + " '/central/submissions?packageId=' + " + _Q.CT + '(pd.PackageID ' + _Q.AS + ' ' + _Q.VC + '(50))\n' +
+        '   ' + _Q.CS + ' ' + _Q.WN + ' tq.[Status] = 3\n' +
+        "        " + _Q.TN + " '/central/submissions?taskId=' + " + _Q.CT + '(tq.TaskQueueID ' + _Q.AS + ' ' + _Q.VC + '(50))\n' +
+        "             + '&itemId=' + " + _Q.CT + '(f.FormID ' + _Q.AS + ' ' + _Q.VC + ')\n' +
+        '        ' + _Q.EL + " '/central/submissions?packageId=' + " + _Q.CT + '(pd.PackageID ' + _Q.AS + ' ' + _Q.VC + '(50))\n' +
         "             + '&itemId=' + " + _Q.CT + '(f.FormID ' + _Q.AS + ' ' + _Q.VC + ')\n' +
         "             + '&focusMode=true'\n" +
-        '        ' + _Q.EL + " '/central/submissions?taskId=' + " + _Q.CT + '(tq.TaskQueueID ' + _Q.AS + ' ' + _Q.VC + '(50))\n' +
-        "             + '&itemId=' + " + _Q.CT + '(f.FormID ' + _Q.AS + ' ' + _Q.VC + ')\n' +
         '   ' + _Q.EN + ' ' + _Q.AS + ' url';
 
     sql += '\n' + _Q.FR + ' reporting.central_forms_Form f\n' +

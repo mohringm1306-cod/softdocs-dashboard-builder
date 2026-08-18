@@ -2,6 +2,10 @@
 
 A wizard that builds dashboards for Softdocs Etrieve. No coding required. Pick a style, point it at your data, and download a ready-to-use dashboard.
 
+## What's New in v4.6.2
+
+- **Fixed: View still spun on items sitting in a queue, because the query handed Central a CLOSED task.** `TaskQueue` keeps a row for every task a package has ever had, not just the open one, and the generated `ActiveTask` step ranked those rows by `TaskQueueID`, a GUID, with no status filter. Ranking GUIDs is arbitrary, so the row it picked was often a task that had already finished. Two things went wrong from there: the item read as "In Progress" when it was not, and its dead task id went into the View link. Central resolves a `taskId` link through `/flow/api/user-dashboard/packages?taskId=`, which only returns OPEN tasks, so the tab sits on a spinner forever with no error. `ActiveTask` now excludes closed tasks and ranks the open one first, and the View link uses `taskId` only when the task is genuinely open. Fix for an existing dashboard is one paste into your source query, under [Something Not Working?](#something-not-working).
+
 ## What's New in v4.6.1
 
 - **Fixed: View links got `/central` twice.** The setup step asks for your Etrieve Central URL, and the obvious thing to paste is what your address bar shows, which ends in `/central`. The generated View link already starts with `/central/submissions`, so the two joined into `https://yoursite.etrieve.cloud/central/central/submissions?taskId=...`. Central's router never resolves that, so View spun forever even with the correct v4.6 query. The setup step now reduces both URLs to the bare domain no matter what you paste, and the generated dashboard strips a stray `/central` at runtime as well. Fix for an existing dashboard is one line, under [Something Not Working?](#something-not-working).
@@ -322,6 +326,20 @@ Pick one, walk through the wizard, and download your finished dashboard. Upload 
 * **403 / NotAuthorized errors** -- Your users need **Get** on each source's **Privileges** tab, and the form's **Connect** tab must have **Get** checked for the source. Also confirm each source's **Connection** points at your Etrieve Content / Central Forms database (not Etrieve Security or another connection).
 * **Source names don't match** -- If you named your sources differently, update the names in `configuration.js` to match.
 * **Wizard won't save in the form editor** -- Make sure you're using the latest files from this repo. Older versions used JavaScript syntax that Etrieve's editor doesn't accept.
+* **View button spins forever, and the address looks correct** -- Fixed in v4.6.2. If the address of the tab View opens reads `/central/submissions?taskId=...&itemId=...`, with `central` only once, the shape is right and the task id is the problem: the query picked a task that has already closed, and Central cannot open one of those. It shows a spinner rather than an error, which is why it looks like nothing was fixed. Confirm it in ten seconds: open Central's own **Submissions** list, find that same item, click it, and compare the `taskId` in the address bar to the one your dashboard produced. Different id means this bug. To fix it, edit your source query (Admin Settings > Sources, open the source feeding your dashboard) and paste this over the existing `ActiveTask` block:
+
+  ```sql
+  ActiveTask AS (
+     SELECT tq.*,
+        ROW_NUMBER() OVER (PARTITION BY tq.PackageId
+           ORDER BY CASE WHEN tq.[Status] = 3 THEN 0 ELSE 1 END,
+                    tq.LastUpdateDate DESC) AS rn
+     FROM reporting.central_flow_TaskQueue tq
+     WHERE tq.[Status] NOT IN (7, 8)
+  )
+  ```
+
+  Save, then hard-refresh your dashboard with Ctrl+F5. Nothing else in the query changes, and your dashboard files are untouched. Status 3 is an open task, 7 and 8 are closed, 9999 is an error. As a side effect, finished items stop reporting themselves as In Progress. To get it right on your next dashboard, re-upload `wizard-sql.js` and `wizard-demo.js` to your wizard form and hard-refresh until the footer reads v4.6.2.
 * **View button spins forever and the address has `/central/central/`** -- Fixed in v4.6.1. Your `centralUrl` has a path on it. Click View, read the address of the tab it opens, and if `central` appears twice this is it. One-line fix, no re-generating:
   1. Admin Settings > Forms > your dashboard form > Files, and open `configuration.js`.
   2. Find `centralUrl:` and cut it back to the bare domain, so `https://yoursite.etrieve.cloud/central` becomes `https://yoursite.etrieve.cloud`. Leave everything else alone.

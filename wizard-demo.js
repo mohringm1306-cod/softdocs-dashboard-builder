@@ -6,8 +6,8 @@
 // ============================================================================
 // VERSION TRACKING (single source of truth)
 // ============================================================================
-var WIZARD_VERSION = '4.6.1';
-var WIZARD_BUILD_DATE = '2026-08-11';
+var WIZARD_VERSION = '4.6.2';
+var WIZARD_BUILD_DATE = '2026-08-18';
 
 // Changelog (newest first)
 // 4.5   (2026-07-23) - Generated README + query SQL now emit as .html (rendered setup guide + copy-friendly SQL code boxes) so they upload to the Etrieve form and stay saved in the cloud (.md/.sql are rejected by form upload). Download popup scales to any screen (dvh cap, pinned buttons, single-row scrollable file tabs) and adds a "Save all files" button. Search/filter box on every long picker (forms, folder, document types, fields), remembered across multi-select re-renders. Mode naming unified across welcome cards, header badge, and progress title (Document Lookup / Form Tracker / Combined View); combined form step retitled "Choose a Form"; Access Control jargon removed.
