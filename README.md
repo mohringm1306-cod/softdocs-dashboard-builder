@@ -2,6 +2,10 @@
 
 A wizard that builds dashboards for Softdocs Etrieve. No coding required. Pick a style, point it at your data, and download a ready-to-use dashboard.
 
+## Documentation update, 2026-08-19
+
+- **Corrected: the setup steps told you to put all six sources on your Content connection.** That is right on a tenant where one connection reaches both the Content tables and the `reporting.central_*` views, and wrong on a split install where those are separate databases. Step 1 now says which sources need which, and there is a troubleshooting entry for "Unable to load document folders. Form Tracker mode still works," which is what a split install looks like. The 403 entry was also wrong to suggest checking the connection: a wrong connection returns a 500. No code changed, so there is nothing to re-upload.
+
 ## What's New in v4.7.0
 
 - **Fixed: View could not work at all on a row sitting in someone else's queue, and said nothing.** This is the last of four separate causes behind "View just spins," and the only one that was never a bug in the query. Central resolves an in-flight `taskId` link through `GET /flow/api/user-dashboard/packages?taskId=`, and that endpoint is scoped to the signed-in user: it returns the package when the task is the caller's, and `null` for everyone else. `null` leaves the tab on a blank page with a spinner and no error text. On a departmental dashboard, where the whole point is that you can see the whole department's work, that means every in-flight row looks broken to everybody except the one person it is assigned to. Nothing was wrong with the data, so no amount of checking the query would have found it.
@@ -97,9 +101,18 @@ Three things: create the data sources, upload the files, and connect them. Takes
 
 Go to **Admin Settings > Sources** and click **Add New Source** (Source Type: **Database**).
 
+**Which connection each source needs.** The six sources read from two different places, and whether that is one connection or two depends on your install.
+
+| Sources | What they read | Connection |
+|---|---|---|
+| `GetAreas`, `GetDocTypes`, `GetKeyFields` | Content tables (`dbo.Catalog`, `dbo.DocumentType`, `dbo.Field`) | your Etrieve **Content** database |
+| `GetFormTemplates`, `GetFormInputs`, `GetWorkflowSteps` | the `reporting.central_*` views | whichever connection resolves those |
+
+On a cloud tenant one connection usually reaches both, so all six can share it. On a split install with separate `etContent` and `etCentral` databases, the first three need the Content connection and the last three need the Central one. If your form templates load but the folder picker does not, that split is why; see **Something Not Working?** below.
+
 For each source below:
 
-1. **General Settings** tab -- Set the **Name** (copy it exactly) and set **Connection** to your Etrieve Content database connection
+1. **General Settings** tab -- Set the **Name** (copy it exactly) and set **Connection** per the table above
 2. **Actions** tab -- Turn on **Get**, turn on **Custom Action**, and paste the SQL into the **Query Editor**. If a parameter is listed, add it under **Source Keys**
 3. **Privileges** tab -- Add your users and give them **Get** access
 4. Click **Save**
@@ -334,7 +347,8 @@ Pick one, walk through the wizard, and download your finished dashboard. Upload 
 * **View is greyed out and says "In someone's queue"** -- Working as intended as of v4.7.0, not a fault. Central only opens an item that is still in workflow for the person it is currently assigned to; for anyone else the link returns nothing and the tab sits on a spinner forever. Rather than hand you a link that cannot work, the dashboard now tells you where the item actually is. To open it, the assignee has to, or the item has to move on to you. Rows assigned to a group stay clickable, because you may be a member.
 * **View opens a tab that closes again with a red message** -- Also v4.7.0 and also intended. The dashboard asked Central whether it could open that item, Central said no, so the blank tab was closed instead of left spinning. The message names the queue the item is in when the dashboard knows it.
 * **Something failed and I cannot tell what** -- Scroll to the bottom of the dashboard. If anything went wrong there is a **Diagnostics** strip with the details and a **Copy for support** button. Paste that into your ticket.
-* **403 / NotAuthorized errors** -- Your users need **Get** on each source's **Privileges** tab, and the form's **Connect** tab must have **Get** checked for the source. Also confirm each source's **Connection** points at your Etrieve Content / Central Forms database (not Etrieve Security or another connection).
+* **"Unable to load document folders. Form Tracker mode still works."** -- `WizardBuilder_GetAreas` failed while `WizardBuilder_GetFormTemplates` succeeded, so the folder sources are on a connection that cannot see your Content database. Open the wizard with F12 on the **Network** tab, reload, and find the `POST /forms/api/Integration` call for GetAreas. A **500** is the connection: move `GetAreas`, `GetDocTypes` and `GetKeyFields` onto your Content connection (see the table in Step 1), then hard-refresh with Ctrl+F5. A **403 with an empty body** is not the connection, see the next entry.
+* **403 / NotAuthorized errors** -- An attachment or privileges problem, never the connection. A source pointed at the wrong database returns a 500, not a 403. Your users need **Get** on each source's **Privileges** tab, and the form's **Connect** tab must have **Get** checked for that source. An attachment that has lost its Get bit returns a 403 with an empty body while the form's source list still looks correct, so re-save the Connect tab if you are unsure.
 * **Source names don't match** -- If you named your sources differently, update the names in `configuration.js` to match.
 * **Wizard won't save in the form editor** -- Make sure you're using the latest files from this repo. Older versions used JavaScript syntax that Etrieve's editor doesn't accept.
 * **View button spins forever, and the address looks correct** -- Fixed in v4.6.2. If the address of the tab View opens reads `/central/submissions?taskId=...&itemId=...`, with `central` only once, the shape is right and the task id is the problem: the query picked a task that has already closed, and Central cannot open one of those. It shows a spinner rather than an error, which is why it looks like nothing was fixed. Confirm it in ten seconds: open Central's own **Submissions** list, find that same item, click it, and compare the `taskId` in the address bar to the one your dashboard produced. Different id means this bug. To fix it, edit your source query (Admin Settings > Sources, open the source feeding your dashboard) and paste this over the existing `ActiveTask` block:

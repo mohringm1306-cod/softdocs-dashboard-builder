@@ -7,6 +7,7 @@ Full instructions with screenshots are in the [README](README.md). This is the s
 - [ ] Etrieve Cloud (or on-prem with Hybrid Server)
 - [ ] Admin access to Etrieve Central
 - [ ] A SQL connection to your Etrieve Content database already configured in Central
+- [ ] On a split install, a second connection that resolves the `reporting.central_*` views
 
 ## Checklist
 
@@ -21,7 +22,9 @@ Go to **Admin Settings > Sources** and create these 6 sources (Source Type: **Da
 - [ ] `WizardBuilder_GetFormInputs` (source key: `@TemplateVersionID`, Integer)
 - [ ] `WizardBuilder_GetWorkflowSteps` (source key: `@TemplateID`, Integer)
 
-For each: set the Connection to your Content database, enable **Get** + **Custom Action**, paste the SQL, add source keys if listed, and give your users **Get** privileges.
+For each: enable **Get** + **Custom Action**, paste the SQL, add source keys if listed, and give your users **Get** privileges.
+
+Connection depends on the source. `GetAreas`, `GetDocTypes` and `GetKeyFields` read Content tables (`dbo.Catalog` and friends) and need your **Content** connection. The other three read the `reporting.central_*` views. One connection usually reaches both on a cloud tenant; on a split install they are two. Templates loading but folders not is the sign you have a split, see the README troubleshooting.
 
 ### 2. Upload Files
 
